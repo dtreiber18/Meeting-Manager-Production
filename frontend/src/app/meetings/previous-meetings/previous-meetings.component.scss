@@ -1,0 +1,279 @@
+// Previous Meetings Component Styles
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// Custom animation for loading spinner
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+// Hover animations for meeting cards
+.meeting-card {
+  transition: all 0.2s ease-in-out;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+}
+
+// Filter section styles
+.filters-section {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  
+  .filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    
+    @media (min-width: 768px) {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+}
+
+// Search input focus styles
+.search-input {
+  transition: all 0.15s ease-in-out;
+  
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+}
+
+// View mode toggle buttons
+.view-toggle {
+  display: flex;
+  background-color: #f3f4f6;
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+  
+  .toggle-button {
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.15s ease-in-out;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    
+    &.active {
+      background-color: #dbeafe;
+      color: #1d4ed8;
+    }
+    
+    &:not(.active) {
+      color: #6b7280;
+      
+      &:hover {
+        background-color: #e5e7eb;
+      }
+    }
+  }
+}
+
+// Meeting type badges
+.meeting-type-badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  
+  &.external {
+    background-color: #dbeafe;
+    color: #1e40af;
+  }
+  
+  &.internal {
+    background-color: #dcfce7;
+    color: #166534;
+  }
+  
+  &.default {
+    background-color: #f3f4f6;
+    color: #374151;
+  }
+}
+
+// Action items indicator
+.action-items-indicator {
+  display: flex;
+  align-items: center;
+  color: #f59e0b;
+  font-size: 0.75rem;
+  
+  svg {
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.25rem;
+  }
+}
+
+// Results summary banner
+.results-banner {
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  
+  .results-text {
+    color: #1e40af;
+    font-size: 0.875rem;
+    
+    strong {
+      font-weight: 600;
+    }
+  }
+  
+  .filters-active {
+    color: #2563eb;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+  }
+}
+
+// Empty state styling
+.empty-state {
+  text-align: center;
+  padding: 3rem 0;
+  
+  svg {
+    width: 3rem;
+    height: 3rem;
+    color: #9ca3af;
+    margin: 0 auto 1rem;
+  }
+  
+  h3 {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: #111827;
+    margin-bottom: 0.5rem;
+  }
+  
+  p {
+    color: #6b7280;
+  }
+}
+
+// Error state styling
+.error-banner {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  
+  .error-content {
+    display: flex;
+    align-items: center;
+    
+    svg {
+      width: 1.25rem;
+      height: 1.25rem;
+      color: #f87171;
+      margin-right: 0.5rem;
+    }
+    
+    p {
+      color: #991b1b;
+      font-size: 0.875rem;
+    }
+  }
+  
+  .retry-button {
+    margin-top: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out;
+    
+    &:hover {
+      background-color: #fecaca;
+    }
+  }
+}
+
+// Loading state
+.loading-state {
+  text-align: center;
+  padding: 3rem 0;
+  
+  .spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 2px solid transparent;
+    border-top: 2px solid #3b82f6;
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+  }
+  
+  p {
+    color: #6b7280;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .filter-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .view-toggle {
+    justify-content: center;
+  }
+  
+  .meeting-card {
+    margin-bottom: 1rem;
+  }
+}
+
+// Focus styles for accessibility
+select:focus,
+input:focus,
+button:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+// Custom scrollbar for multi-select elements
+select[multiple] {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db #f9fafb;
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f9fafb;
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 4px;
+    
+    &:hover {
+      background: #9ca3af;
+    }
+  }
+}
