@@ -1,0 +1,267 @@
+<div class="space-y-8">
+  <!-- Search and Filter Bar -->
+  <div class="flex flex-col sm:flex-row gap-4">
+    <div class="flex-1 relative">
+      <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5">search</mat-icon>
+      <input
+        type="text"
+        name="search"
+        placeholder="Search meetings, participants, action items..."
+  [value]="searchQuery"
+  (input)="onSearchInput($any($event.target).value)"
+        class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+        title="Search meetings, participants, action items"
+      />
+    </div>
+    <button
+      (click)="showFilters = !showFilters"
+      class="flex items-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+    >
+      <mat-icon class="w-5 h-5 mr-2">filter_list</mat-icon>
+      Filters
+      <mat-icon class="w-4 h-4 ml-2">{{ showFilters ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </button>
+  </div>
+
+  <!-- Filter Panel -->
+  <div *ngIf="showFilters" class="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-medium text-gray-900">Filter Meetings</h3>
+      <button (click)="clearFilters()" class="text-sm text-blue-600 hover:text-blue-700 font-medium">Clear All</button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+        <div class="flex space-x-2">
+          <input
+            type="date"
+            name="dateStart"
+            title="Start date"
+            [value]="localFilterConfig.dateRange?.start"
+            (change)="setDateRangeStart($any($event.target).value)"
+            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+          <input
+            type="date"
+            name="dateEnd"
+            title="End date"
+            [value]="localFilterConfig.dateRange?.end"
+            (change)="setDateRangeEnd($any($event.target).value)"
+            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Meeting Type</label>
+        <select multiple name="meetingType" title="Meeting Type" [ngModel]="localFilterConfig.meetingType" (ngModelChange)="handleFilterChange('meetingType', $event)"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-24">
+          <option *ngFor="let type of getAllMeetingTypes()" [value]="type">{{ formatMeetingType(type) }}</option>
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Participants</label>
+        <select multiple name="participants" title="Participants" [ngModel]="localFilterConfig.participants" (ngModelChange)="handleFilterChange('participants', $event)"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-24">
+          <option *ngFor="let participant of getAllParticipants()" [value]="participant">{{ participant }}</option>
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Additional Filters</label>
+        <div class="space-y-2">
+          <label class="flex items-center">
+            <input type="checkbox" name="hasActionItems" title="Has Action Items" [(ngModel)]="localFilterConfig.hasActionItems" (change)="handleFilterChange('hasActionItems', $any($event.target).checked)" class="rounded text-blue-600 mr-2" />
+            <span class="text-sm">Has Action Items</span>
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" name="hasRecording" title="Has Recording" [(ngModel)]="localFilterConfig.hasRecording" (change)="handleFilterChange('hasRecording', $any($event.target).checked)" class="rounded text-blue-600 mr-2" />
+            <span class="text-sm">Has Recording</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  <div *ngIf="searchQuery || (localFilterConfig && ((localFilterConfig.meetingType ?? []).length > 0 || (localFilterConfig.participants ?? []).length > 0 || localFilterConfig.hasActionItems || localFilterConfig.hasRecording || (localFilterConfig.dateRange && (localFilterConfig.dateRange.start || localFilterConfig.dateRange.end))))" class="pt-4 border-t border-gray-200">
+      <p class="text-sm text-gray-600">
+        Showing {{ filteredMeetings.length }} of {{ meetings.length }} meetings
+      </p>
+    </div>
+  </div>
+
+  <!-- Results Summary -->
+  <div *ngIf="searchQuery || (localFilterConfig && ((localFilterConfig.meetingType ?? []).length > 0 || (localFilterConfig.participants ?? []).length > 0 || localFilterConfig.hasActionItems || localFilterConfig.hasRecording || (localFilterConfig.dateRange && (localFilterConfig.dateRange.start || localFilterConfig.dateRange.end))))" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-blue-800">
+          <strong>{{ filteredMeetings.length }}</strong> meetings found
+          <span *ngIf="searchQuery"> matching "{{ searchQuery }}"</span>
+        </p>
+  <p *ngIf="localFilterConfig && ((localFilterConfig.meetingType ?? []).length > 0 || (localFilterConfig.participants ?? []).length > 0 || localFilterConfig.hasActionItems || localFilterConfig.hasRecording || (localFilterConfig.dateRange && (localFilterConfig.dateRange.start || localFilterConfig.dateRange.end)))" class="text-xs text-blue-600 mt-1">
+          Active filters applied
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Results -->
+  <div *ngIf="searchQuery || (localFilterConfig && ((localFilterConfig.meetingType ?? []).length > 0 || (localFilterConfig.participants ?? []).length > 0 || localFilterConfig.hasActionItems || localFilterConfig.hasRecording || (localFilterConfig.dateRange && (localFilterConfig.dateRange.start || localFilterConfig.dateRange.end))))" class="bg-white rounded-xl shadow-sm border border-gray-200">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-900">Search Results</h2>
+        <button (click)="onViewAllMeetingsClick()" class="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium">
+          All Meetings
+          <mat-icon class="w-4 h-4 ml-1">arrow_forward</mat-icon>
+        </button>
+      </div>
+    </div>
+    <div class="divide-y divide-gray-200">
+  <div *ngFor="let meeting of nonJustCompletedMeetings" class="p-6 hover:bg-gray-50 cursor-pointer transition-colors" (click)="onMeetingClick(meeting)">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <h3 class="font-medium text-gray-900 mb-1">{{ meeting.subject }}</h3>
+            <div class="flex items-center space-x-4 text-sm text-gray-600 mb-2">
+              <span>{{ meeting.date }} at {{ meeting.time }}</span>
+              <span>{{ meeting.participants.length }} participants</span>
+              <span *ngIf="meeting.actionItems.length > 0" class="flex items-center">
+                <mat-icon class="w-4 h-4 mr-1 text-orange-500">warning</mat-icon>
+                {{ meeting.actionItems.length }} action items
+              </span>
+            </div>
+            <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getMeetingTypeColor(meeting.type)">
+              {{ formatMeetingType(meeting.type) }}
+            </span>
+          </div>
+          <mat-icon class="w-5 h-5 text-gray-400 ml-4">arrow_forward</mat-icon>
+        </div>
+      </div>
+  <div *ngIf="nonJustCompletedMeetings.length === 0" class="p-6 text-center text-gray-500">
+    <ng-container *ngIf="meetings && meetings.length > 0; else noMeetings">
+      No meetings found matching your search criteria
+    </ng-container>
+    <ng-template #noMeetings>
+      No meetings available. Create a new meeting to get started!
+    </ng-template>
+  </div>
+    </div>
+  </div>
+
+  <!-- Just Completed Meeting -->
+  <div *ngIf="justCompletedMeeting" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-semibold text-white">Just Completed Meeting</h2>
+          <p class="text-blue-100 text-sm mt-1">Review and take action on your latest meeting</p>
+        </div>
+        <div class="bg-white/20 rounded-lg px-3 py-1">
+          <span class="text-white text-sm font-medium">New</span>
+        </div>
+      </div>
+    </div>
+    <div class="p-6">
+      <div class="flex items-start justify-between mb-6">
+        <div class="flex-1">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ justCompletedMeeting.subject }}</h3>
+          <div class="flex items-center space-x-4 text-sm text-gray-600 mb-4">
+            <div class="flex items-center">
+              <mat-icon class="w-4 h-4 mr-1">event</mat-icon>
+              {{ justCompletedMeeting.date }}
+            </div>
+            <div class="flex items-center">
+              <mat-icon class="w-4 h-4 mr-1">schedule</mat-icon>
+              {{ justCompletedMeeting.time }}
+            </div>
+            <div class="flex items-center">
+              <mat-icon class="w-4 h-4 mr-1">group</mat-icon>
+              {{ justCompletedMeeting.participants.length }} participants
+            </div>
+          </div>
+          <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getMeetingTypeColor(justCompletedMeeting.type)">
+            {{ formatMeetingType(justCompletedMeeting.type) }}
+          </span>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Participants -->
+        <div>
+          <h4 class="font-medium text-gray-900 mb-3">Participants</h4>
+          <div class="space-y-2">
+            <div *ngFor="let participant of justCompletedMeeting.participants" class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-2 h-2 rounded-full mr-3" [ngClass]="participant.attended ? 'bg-green-500' : 'bg-red-500'"></div>
+                <span class="text-sm text-gray-900">{{ participant.name }}</span>
+              </div>
+              <span class="text-xs px-2 py-1 rounded-full" [ngClass]="participant.attended ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                {{ participant.attended ? 'Attended' : 'Absent' }}
+              </span>
+            </div>
+          </div>
+        </div>
+        <!-- Action Items -->
+        <div>
+          <h4 class="font-medium text-gray-900 mb-3">Action Items ({{ justCompletedMeeting.actionItems.length }})</h4>
+          <div class="space-y-3">
+            <div *ngFor="let item of justCompletedMeeting.actionItems.slice(0, 3)" class="flex items-start space-x-3">
+              <div class="w-2 h-2 rounded-full mt-2" [ngClass]="item.priority === 'high' ? 'bg-red-500' : item.priority === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'"></div>
+              <div class="flex-1">
+                <p class="text-sm text-gray-900">{{ item.description }}</p>
+                <p class="text-xs text-gray-500 mt-1">Due: {{ item.dueDate }} • {{ item.assignedTo }}</p>
+              </div>
+            </div>
+            <p *ngIf="justCompletedMeeting.actionItems.length > 3" class="text-sm text-gray-500">+{{ justCompletedMeeting.actionItems.length - 3 }} more items</p>
+          </div>
+        </div>
+      </div>
+      <!-- Meeting Summary -->
+      <div class="mt-6">
+        <h4 class="font-medium text-gray-900 mb-2">Meeting Summary</h4>
+        <p class="text-sm text-gray-700 leading-relaxed">{{ justCompletedMeeting.summary }}</p>
+      </div>
+      <div class="mt-6 flex justify-end">
+        <button (click)="onMeetingClick(justCompletedMeeting)" class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          View Full Details
+          <mat-icon class="w-4 h-4 ml-2">arrow_forward</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Meetings -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-900">Recent Meetings</h2>
+        <button (click)="onViewAllMeetingsClick()" class="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium">
+          All Meetings
+          <mat-icon class="w-4 h-4 ml-1">arrow_forward</mat-icon>
+        </button>
+      </div>
+    </div>
+    <div class="divide-y divide-gray-200">
+      <div *ngFor="let meeting of recentMeetings" class="p-6 hover:bg-gray-50 cursor-pointer transition-colors" (click)="onMeetingClick(meeting)">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <h3 class="font-medium text-gray-900 mb-1">{{ meeting.subject }}</h3>
+            <div class="flex items-center space-x-4 text-sm text-gray-600 mb-2">
+              <span>{{ meeting.date }} at {{ meeting.time }}</span>
+              <span>{{ meeting.participants.length }} participants</span>
+              <span *ngIf="meeting.actionItems.length > 0" class="flex items-center">
+                <mat-icon class="w-4 h-4 mr-1 text-orange-500">warning</mat-icon>
+                {{ meeting.actionItems.length }} action items
+              </span>
+            </div>
+            <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getMeetingTypeColor(meeting.type)">
+              {{ formatMeetingType(meeting.type) }}
+            </span>
+          </div>
+          <mat-icon class="w-5 h-5 text-gray-400 ml-4">arrow_forward</mat-icon>
+        </div>
+      </div>
+      <div *ngIf="recentMeetings.length === 0" class="p-6 text-center text-gray-500">
+        No recent meetings
+      </div>
+    </div>
+  </div>
+</div>

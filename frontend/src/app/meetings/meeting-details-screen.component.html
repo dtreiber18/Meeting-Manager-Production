@@ -1,0 +1,228 @@
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="bg-white rounded-lg border border-gray-200 p-6">
+    <div class="flex items-start justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ editedMeeting.subject }}</h1>
+        <div class="flex items-center space-x-6 text-sm text-gray-600">
+          <div class="flex items-center">
+            <mat-icon class="w-4 h-4 mr-2">event</mat-icon>
+            {{ editedMeeting.date }}
+          </div>
+          <div class="flex items-center">
+            <mat-icon class="w-4 h-4 mr-2">schedule</mat-icon>
+            {{ editedMeeting.time }}
+          </div>
+          <div class="flex items-center">
+            <mat-icon class="w-4 h-4 mr-2">group</mat-icon>
+            {{ allParticipants.length }} participants
+          </div>
+        </div>
+      </div>
+      <a *ngIf="editedMeeting.recordingUrl" [href]="editedMeeting.recordingUrl" target="_blank" rel="noopener noreferrer"
+         class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        <mat-icon class="w-4 h-4 mr-2">videocam</mat-icon>
+        View Recording
+      </a>
+    </div>
+  </div>
+
+  <!-- Participants -->
+  <div class="bg-white rounded-lg border border-gray-200 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Meeting Participants</h2>
+    <div class="space-y-4">
+      <div>
+        <h3 class="text-md font-medium text-green-700 mb-3">Attended ({{ sortedAttended.length }})</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+          <label *ngFor="let participant of sortedAttended" class="flex items-center p-3 bg-green-50 rounded-lg cursor-pointer hover:bg-green-100 transition-colors">
+            <input type="checkbox" [checked]="true" (change)="handleParticipantToggle(participant)" class="rounded text-green-600 focus:ring-green-500 mr-3" />
+            <span class="text-green-800 font-medium">{{ participant }}</span>
+          </label>
+        </div>
+      </div>
+      <div>
+        <h3 class="text-md font-medium text-red-700 mb-3">Absent ({{ sortedAbsent.length }})</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+          <label *ngFor="let participant of sortedAbsent" class="flex items-center p-3 bg-red-50 rounded-lg cursor-pointer hover:bg-red-100 transition-colors">
+            <input type="checkbox" [checked]="false" (change)="handleParticipantToggle(participant)" class="rounded text-red-600 focus:ring-red-500 mr-3" />
+            <span class="text-red-800 font-medium">{{ participant }}</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Meeting Overview -->
+  <div class="bg-white rounded-lg border border-gray-200 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-gray-900">Meeting Overview</h2>
+      <ng-container *ngIf="!isEditingOverview; else editingOverviewBtns">
+        <button (click)="isEditingOverview = true" class="flex items-center px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+          <mat-icon class="w-4 h-4 mr-2">edit</mat-icon>
+          Edit
+        </button>
+      </ng-container>
+      <ng-template #editingOverviewBtns>
+        <div class="flex space-x-2">
+          <button (click)="handleSaveOverview()" class="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <mat-icon class="w-4 h-4 mr-2">save</mat-icon>
+            Save
+          </button>
+          <button (click)="handleCancelOverview()" class="flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+            <mat-icon class="w-4 h-4 mr-2">close</mat-icon>
+            Cancel
+          </button>
+        </div>
+      </ng-template>
+    </div>
+    <div *ngIf="isEditingOverview; else overviewDisplay" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Summary</label>
+  <textarea [(ngModel)]="editedMeeting.summary" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="3" title="Meeting summary" placeholder="Enter meeting summary..."></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Details</label>
+  <textarea [(ngModel)]="editedMeeting.details" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="5" title="Meeting details" placeholder="Enter meeting details..."></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Next Steps</label>
+  <textarea [(ngModel)]="editedMeeting.nextSteps" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="3" title="Next steps" placeholder="Enter next steps..."></textarea>
+      </div>
+    </div>
+    <ng-template #overviewDisplay>
+      <div class="space-y-4">
+        <div>
+          <h3 class="text-sm font-medium text-gray-700 mb-2">Summary</h3>
+          <p class="text-gray-900">{{ editedMeeting.summary || 'No summary available' }}</p>
+        </div>
+        <div>
+          <h3 class="text-sm font-medium text-gray-700 mb-2">Details</h3>
+          <p class="text-gray-900 whitespace-pre-wrap">{{ editedMeeting.details || 'No details available' }}</p>
+        </div>
+        <div>
+          <h3 class="text-sm font-medium text-gray-700 mb-2">Next Steps</h3>
+          <p class="text-gray-900 whitespace-pre-wrap">{{ editedMeeting.nextSteps || 'No next steps defined' }}</p>
+        </div>
+      </div>
+    </ng-template>
+  </div>
+
+  <!-- Action Items -->
+  <div class="bg-white rounded-lg border border-gray-200 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-gray-900">Action Items</h2>
+      <button (click)="isEditingActionItems = !isEditingActionItems" class="flex items-center px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+        <mat-icon class="w-4 h-4 mr-2">edit</mat-icon>
+        {{ isEditingActionItems ? 'Done Editing' : 'Edit' }}
+      </button>
+    </div>
+    <ng-container *ngIf="editedMeeting.actionItems?.length; else noActionItems">
+      <div *ngFor="let item of editedMeeting.actionItems" class="flex items-center justify-between p-4 border border-gray-200 rounded-lg mb-2">
+        <div class="flex-1">
+          <ng-container *ngIf="isEditingActionItems; else actionItemDisplay">
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Task Description</label>
+                <textarea [(ngModel)]="item.description" (ngModelChange)="handleUpdateActionItem(item.id, { description: $event })" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none" rows="2" title="Task description" placeholder="Enter task description..."></textarea>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Assignee</label>
+                  <select [(ngModel)]="item.assignedTo" (ngModelChange)="handleUpdateActionItem(item.id, { assignedTo: $event })" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" title="Assignee">
+                    <option value="">Select assignee...</option>
+                    <option *ngFor="let participant of allParticipants" [value]="participant">{{ participant }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                  <input type="date" [(ngModel)]="item.dueDate" (ngModelChange)="handleUpdateActionItem(item.id, { dueDate: $event })" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" title="Due date" placeholder="Due date" />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                  <select [(ngModel)]="item.priority" (ngModelChange)="handleUpdateActionItem(item.id, { priority: $event })" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" title="Priority">
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                  <select [(ngModel)]="item.status" (ngModelChange)="handleUpdateActionItem(item.id, { status: $event })" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" title="Status">
+                    <option value="pending">Pending</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+          <ng-template #actionItemDisplay>
+            <div class="flex items-center space-x-3 mb-2">
+              <mat-icon class="w-4 h-4 text-gray-400">check_box</mat-icon>
+              <span class="font-medium text-gray-900">{{ item.description }}</span>
+              <span class="px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getPriorityColor(item.priority || 'medium')">
+                {{ item.priority || 'medium' }}
+              </span>
+              <span class="px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getStatusColor(item.status || 'pending')">
+                {{ item.status || 'pending' }}
+              </span>
+            </div>
+            <div class="text-sm text-gray-600">
+              Assigned to: {{ item.assignedTo }} <span *ngIf="item.dueDate">• Due: {{ item.dueDate }}</span>
+            </div>
+          </ng-template>
+        </div>
+        <button *ngIf="isEditingActionItems" (click)="handleDeleteActionItem(item.id)" class="ml-3 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+          <mat-icon class="w-4 h-4">delete</mat-icon>
+        </button>
+      </div>
+    </ng-container>
+    <ng-template #noActionItems>
+      <p class="text-gray-500 text-center py-8">No action items recorded for this meeting.</p>
+    </ng-template>
+    <div *ngIf="isEditingActionItems" class="mt-6 p-4 bg-gray-50 rounded-lg">
+      <h3 class="text-sm font-medium text-gray-700 mb-3">Add New Action Item</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Task Description</label>
+          <textarea [(ngModel)]="newActionItem.description" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none" rows="2" title="Task description" placeholder="Enter task description..."></textarea>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Assignee</label>
+            <select [(ngModel)]="newActionItem.assignedTo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" title="Assignee">
+              <option value="">Select assignee...</option>
+              <option *ngFor="let participant of allParticipants" [value]="participant">{{ participant }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+            <input type="date" [(ngModel)]="newActionItem.dueDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" title="Due date" placeholder="Due date" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+            <select [(ngModel)]="newActionItem.priority" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" title="Priority">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <select [(ngModel)]="newActionItem.status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" title="Status">
+              <option value="pending">Pending</option>
+              <option value="in-progress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+          <div class="flex items-end">
+            <button (click)="handleAddActionItem()" class="w-full flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              <mat-icon class="w-4 h-4 mr-2">add</mat-icon>
+              Add Action Item
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
