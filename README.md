@@ -320,13 +320,132 @@ mvn spotbugs:check    # Static analysis
 - **CDN integration** for static assets
 - **Caching layers** with Redis (planned)
 
+## 🔧 Git Repository Setup
+
+### Initial Setup Complete ✅
+
+The project has been initialized with Git and is ready for GitHub:
+
+```bash
+# Repository initialized with comprehensive .gitignore
+# Initial commit includes all working code
+git log --oneline  # View commit history
+```
+
+### GitHub Repository Setup
+
+1. **Create GitHub Repository**:
+   ```bash
+   # Option 1: Using GitHub CLI (recommended)
+   gh repo create Meeting-Manager-Production --public --description "Enterprise Meeting Manager - Angular + Spring Boot"
+   
+   # Option 2: Create manually on GitHub.com then:
+   git remote add origin https://github.com/YOUR_USERNAME/Meeting-Manager-Production.git
+   ```
+
+2. **Push to GitHub**:
+   ```bash
+   git branch -M main
+   git push -u origin main
+   ```
+
+### GitHub Actions CI/CD Setup
+
+The project includes a complete CI/CD pipeline in `.github/workflows/ci-cd.yml`:
+
+#### Required GitHub Secrets
+
+Set these in GitHub → Settings → Secrets and variables → Actions:
+
+```bash
+# Azure Container Registry
+AZURE_CONTAINER_REGISTRY     # e.g., meetingmanager.azurecr.io
+AZURE_REGISTRY_USERNAME      # ACR username
+AZURE_REGISTRY_PASSWORD      # ACR password
+
+# Azure Deployment
+AZURE_CREDENTIALS           # Service principal JSON
+AZURE_RESOURCE_GROUP        # Production resource group
+AZURE_RESOURCE_GROUP_DEV    # Development resource group
+
+# SonarQube (optional)
+SONAR_TOKEN                 # SonarQube authentication token
+SONAR_HOST_URL             # SonarQube server URL
+
+# Health Check URLs
+BACKEND_URL                 # Production backend URL
+FRONTEND_URL               # Production frontend URL
+```
+
+#### Required GitHub Variables
+
+Set these in GitHub → Settings → Secrets and variables → Actions → Variables:
+
+```bash
+AZURE_CONTAINER_REGISTRY    # e.g., meetingmanager.azurecr.io
+AZURE_RESOURCE_GROUP        # Production resource group name
+```
+
+#### Pipeline Features
+
+- ✅ **Frontend Build**: Node.js 18, npm install, lint, test, build
+- ✅ **Backend Build**: Java 17, Maven compile, test, package
+- ✅ **Security Scanning**: Trivy vulnerability scanner, OWASP ZAP
+- ✅ **Code Quality**: SonarQube analysis
+- ✅ **Docker Build**: Multi-stage builds for frontend/backend
+- ✅ **Azure Deployment**: Container Apps with blue-green deployment
+- ✅ **Health Checks**: Automated post-deployment verification
+
+#### Workflow Triggers
+
+```yaml
+# Automatic triggers
+on:
+  push:
+    branches: [ main, develop ]    # Full pipeline
+  pull_request:
+    branches: [ main ]             # Build + test only
+```
+
+### Development Workflow
+
+```bash
+# Create feature branch
+git checkout -b feature/new-feature
+
+# Make changes and commit
+git add .
+git commit -m "feat: add new feature"
+
+# Push and create pull request
+git push origin feature/new-feature
+# Then create PR on GitHub - triggers CI pipeline
+
+# After PR approval and merge to main:
+# - Full CI/CD pipeline runs
+# - Docker images built and pushed
+# - Deployment to Azure Container Apps
+# - Health checks verify deployment
+```
+
+### Monitoring and Alerts
+
+After deployment, monitor your application:
+
+- **Application Insights**: Real-time performance monitoring
+- **Azure Monitor**: Infrastructure and container metrics
+- **GitHub Actions**: Build/deployment status and history
+- **SonarQube**: Code quality and security analysis
+
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Run tests and linting
-5. Submit a pull request
+4. Run tests and linting locally
+5. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Create a Pull Request
 
 ## 📄 License
 
