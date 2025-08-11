@@ -1,1 +1,7 @@
 <router-outlet></router-outlet>
+
+<!-- AI Chat Assistant - Available on all pages -->
+<app-ai-chat 
+  [pageType]="getCurrentPageType()" 
+  [context]="getCurrentContext()">
+</app-ai-chat>

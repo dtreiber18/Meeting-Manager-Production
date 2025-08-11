@@ -28,6 +28,13 @@ A modern, enterprise-grade meeting management application built with Angular 17+
 ## 🚀 Features
 
 ### Current Features (Implemented ✅)
+- **AI Chat Assistant** - Intelligent contextual assistant
+  - Floating chat button accessible on all pages
+  - Context-aware responses based on current page/route
+  - Material Design chat interface with real-time messaging
+  - Contextual welcome messages for different app sections
+  - Typing indicators and smooth animations
+  - Mobile-responsive design with proper breakpoints
 - **Settings Management** - Complete configuration interface
   - Account settings with user profile management
   - Integration source configuration (Google Calendar, Outlook, Zoom)
@@ -104,15 +111,18 @@ meeting-manager/
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── components/   # UI components
+│   │   │   ├── ai-chat/      # AI Chat Assistant component
+│   │   │   │   └── ai-chat.component.ts    # Contextual AI assistant
+│   │   │   ├── models/       # TypeScript models
+│   │   │   │   └── chat.model.ts           # Chat interfaces and types
+│   │   │   ├── services/     # Business services
+│   │   │   │   ├── chat.service.ts         # AI chat service
+│   │   │   │   └── meeting.service.ts      # Meeting data service
 │   │   │   ├── meetings/     # Meeting-related components
-│   │   │   │   └── previous-meetings/  # Previous Meetings component
+│   │   │   │   └── previous-meetings/      # Previous Meetings component
 │   │   │   │       ├── previous-meetings.component.ts
 │   │   │   │       ├── previous-meetings.component.html
 │   │   │   │       └── previous-meetings.component.scss
-│   │   │   ├── services/     # Business services
-│   │   │   │   └── meeting.service.ts
-│   │   │   ├── models/       # TypeScript models
-│   │   │   │   └── meeting.model.ts
 │   │   │   └── guards/       # Route guards
 │   │   └── assets/           # Static assets
 │   ├── Dockerfile
@@ -153,6 +163,64 @@ meeting-manager/
 ```
 
 ## 📋 Component Architecture
+
+### AI Chat Assistant
+
+The AI Chat Assistant (`frontend/src/app/ai-chat/`) provides an intelligent, context-aware chat interface available throughout the application:
+
+#### Key Features
+- **Context-Aware Responses**: Adapts AI responses based on current page/route (home, meetings, detail, settings)
+- **Floating Interface**: Non-intrusive floating action button with expandable chat window
+- **Real-time Messaging**: Instant message sending with typing indicators and loading states
+- **Material Design**: Consistent UI using Angular Material components with smooth animations
+- **Mobile Responsive**: Optimized for both desktop and mobile experiences
+- **Route Integration**: Automatically detects page context through router event monitoring
+
+#### Technical Implementation
+```typescript
+// Router-based context detection
+private updatePageTypeFromRoute(url: string): void {
+  if (url === '/' || url === '/home') {
+    this.currentPageType = 'home';
+  } else if (url.includes('/meetings')) {
+    this.currentPageType = url.includes('/meetings/') ? 'detail' : 'meetings';
+  } else if (url.includes('/settings')) {
+    this.currentPageType = 'settings';
+  }
+}
+
+// Contextual AI responses
+generateAIResponse(message: string, pageType: PageType): Observable<string> {
+  return this.getContextualResponse(message, pageType).pipe(
+    delay(1500 + Math.random() * 1000) // Simulate processing
+  );
+}
+```
+
+#### Chat Service Features
+```typescript
+// Contextual welcome messages
+getContextualWelcome(pageType: PageType): string {
+  switch (pageType) {
+    case 'home': return "Hi! I'm here to help you navigate your dashboard...";
+    case 'meetings': return "Welcome to the meetings section! I can help you...";
+    case 'detail': return "I can help you understand this meeting's details...";
+    case 'settings': return "Let me help you configure your settings...";
+  }
+}
+
+// Intelligent response matching
+private getContextualResponse(message: string, pageType: PageType): Observable<string> {
+  // Smart keyword matching with page-specific responses
+  // Handles queries about navigation, features, and functionality
+}
+```
+
+#### Global Integration
+- **App Component**: Included in `app.component.html` outside router-outlet for global availability
+- **Router Tracking**: Monitors `NavigationEnd` events to update context automatically
+- **Performance**: OnPush change detection and trackBy functions for optimal rendering
+- **Accessibility**: ARIA labels, keyboard navigation, and screen reader support
 
 ### Previous Meetings Component
 
