@@ -1,17 +1,193 @@
-export interface Participant {
-  id: string;
+export interface Organization {
+  id: number;
   name: string;
+  domain: string;
+  timezone: string;
+  isActive: boolean;
+  maxUsers: number;
+  maxMeetings: number;
+  subscriptionTier: string;
+  currentUserCount: number;
+  currentMeetingCount: number;
+}
+
+export interface User {
+  id: number;
+  firstName: string;
+  lastName: string;
   email: string;
-  attended?: boolean;
+  jobTitle?: string;
+  department?: string;
+  profileImageUrl?: string;
+  bio?: string;
+  isActive: boolean;
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  timezone: string;
+  language: string;
+  displayName: string;
+  fullName: string;
+  roles: any[];
+}
+
+export interface Participant {
+  id: number;
+  email: string;
+  name: string;
+  participantRole: string;
+  invitationStatus: string;
+  attendanceStatus: string;
+  isRequired: boolean;
+  canEdit: boolean;
+  canInviteOthers: boolean;
+  attendanceDurationMinutes?: number;
+  createdAt: string;
+  updatedAt: string;
+  user?: User;
+  organizer: boolean;
+  presenter: boolean;
+  external: boolean;
+  attended: boolean;
+  internal: boolean;
 }
 
 export interface ActionItem {
-  id: string;
+  id: number;
+  title: string;
   description: string;
-  assignedTo: string;
+  status: string;
+  priority: string;
+  type: string;
   dueDate: string;
-  priority?: 'high' | 'medium' | 'low';
-  status?: 'pending' | 'in-progress' | 'completed';
+  startDate?: string;
+  completedAt?: string;
+  completed: boolean;
+  isRecurring: boolean;
+  recurringPattern?: string;
+  estimatedHours?: number;
+  actualHours?: number;
+  notes?: string;
+  completionNotes?: string;
+  tags?: string;
+  createdAt: string;
+  updatedAt: string;
+  lastReminderSent?: string;
+  assignee?: User;
+  reporter?: User;
+  organization: Organization;
+  subTasks: ActionItem[];
+  parentActionItem?: ActionItem;
+  overdue: boolean;
+  progressPercentage: number;
+  assignedTo?: string;
+}
+
+export interface Organization {
+  id: number;
+  name: string;
+  domain: string;
+  description?: string;
+  website?: string;
+  logoUrl?: string;
+  industry?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+  timezone: string;
+  isActive: boolean;
+  maxUsers: number;
+  maxMeetings: number;
+  subscriptionTier: string;
+  subscriptionExpiresAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  currentUserCount: number;
+  currentMeetingCount: number;
+}
+
+export interface User {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  passwordHash?: string;
+  phoneNumber?: string;
+  jobTitle?: string;
+  department?: string;
+  profileImageUrl?: string;
+  bio?: string;
+  isActive: boolean;
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  timezone: string;
+  language: string;
+  azureAdObjectId?: string;
+  createdAt: string;
+  updatedAt: string;
+  lastLoginAt?: string;
+  roles: any[];
+  displayName: string;
+  fullName: string;
+}
+
+export interface Participant {
+  id: number;
+  email: string;
+  name: string;
+  participantRole: string;
+  invitationStatus: string;
+  attendanceStatus: string;
+  isRequired: boolean;
+  canEdit: boolean;
+  canInviteOthers: boolean;
+  joinedAt?: string;
+  leftAt?: string;
+  attendanceDurationMinutes?: number;
+  invitedAt: string;
+  respondedAt?: string;
+  lastReminderSentAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  user?: User;
+  internal: boolean;
+  external: boolean;
+  organizer: boolean;
+  presenter: boolean;
+  attended: boolean;
+}
+
+export interface ActionItem {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  type: string;
+  dueDate: string;
+  startDate?: string;
+  completedAt?: string;
+  completed: boolean;
+  isRecurring: boolean;
+  recurringPattern?: string;
+  estimatedHours?: number;
+  actualHours?: number;
+  notes?: string;
+  completionNotes?: string;
+  tags?: string;
+  createdAt: string;
+  updatedAt: string;
+  lastReminderSent?: string;
+  assignee?: User;
+  reporter?: User;
+  organization: Organization;
+  subTasks: ActionItem[];
+  parentActionItem?: ActionItem;
+  overdue: boolean;
+  progressPercentage: number;
+  assignedTo?: string;
 }
 
 export interface FilterConfig {
@@ -23,17 +199,95 @@ export interface FilterConfig {
 }
 
 export interface Meeting {
-  id: string;
-  subject: string;
-  title?: string;
-  date: string;
-  time?: string;
+  id: number;
+  title: string;
+  description: string;
+  agenda?: string;
   summary?: string;
-  details?: string;
-  type: string;
+  keyDecisions?: string;
+  nextSteps?: string;
+  startTime: string;
+  endTime: string;
+  meetingType: string;
+  status: string;
+  priority: string;
+  isRecurring: boolean;
+  recurrencePattern?: string;
+  recurrenceEndDate?: string;
+  location?: string;
+  meetingLink?: string;
+  recordingUrl?: string;
+  transcriptUrl?: string;
+  isPublic: boolean;
+  requiresApproval: boolean;
+  allowRecording: boolean;
+  autoTranscription: boolean;
+  aiAnalysisEnabled: boolean;
+  aiInsights?: string;
+  createdAt: string;
+  updatedAt: string;
+  organization: Organization;
+  organizer: User;
+  meetingRoom?: any;
   participants: Participant[];
   actionItems: ActionItem[];
-  nextSteps: string[];
+  notes: any[];
+  attachments: any[];
+  details: string;
+  durationInMinutes: number;
+  upcoming: boolean;
+  inProgress: boolean;
+  subject: string;
+  type: string;
+  // Legacy fields for backward compatibility
+  date?: string;
+  time?: string;
   isJustCompleted?: boolean;
+}
+
+export interface Meeting {
+  id: number;
+  title: string;
+  description: string;
+  agenda?: string;
+  summary?: string;
+  keyDecisions?: string;
+  nextSteps?: string;
+  startTime: string;
+  endTime: string;
+  meetingType: string;
+  status: string;
+  priority: string;
+  isRecurring: boolean;
+  recurrencePattern?: string;
+  recurrenceEndDate?: string;
+  location?: string;
+  meetingLink?: string;
   recordingUrl?: string;
+  transcriptUrl?: string;
+  isPublic: boolean;
+  requiresApproval: boolean;
+  allowRecording: boolean;
+  autoTranscription: boolean;
+  aiAnalysisEnabled: boolean;
+  aiInsights?: string;
+  createdAt: string;
+  updatedAt: string;
+  organization: Organization;
+  organizer: User;
+  meetingRoom?: any;
+  participants: Participant[];
+  actionItems: ActionItem[];
+  notes: any[];
+  attachments: any[];
+  details: string;
+  durationInMinutes: number;
+  upcoming: boolean;
+  inProgress: boolean;
+  subject: string;
+  type: string;
+  // Compatibility properties for existing components
+  date?: string;
+  time?: string;
+  isJustCompleted?: boolean;
 }

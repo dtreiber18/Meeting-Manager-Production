@@ -1,5 +1,7 @@
 package com.g37.meetingmanager.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -64,10 +66,12 @@ public class MeetingAttachment {
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "meeting_id", nullable = false)
+    @JsonBackReference("meeting-attachments")
     private Meeting meeting;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uploaded_by_id", nullable = false)
+    @JsonIgnoreProperties({"meetings", "actionItemsAssigned", "actionItemsReported", "meetingNotes", "organizations", "hibernateLazyInitializer", "handler"})
     private User uploadedBy;
 
     // Lifecycle callbacks

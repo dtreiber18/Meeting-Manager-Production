@@ -1,16 +1,10 @@
 <div class="space-y-8">
-  <!-- Page Header with Settings Link -->
+  <!-- Page Header -->
   <div class="flex justify-between items-center">
     <div>
-      <h1 class="text-3xl font-bold text-gray-900">Meeting Manager</h1>
+      <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
       <p class="text-gray-600 mt-1">Manage your meetings efficiently</p>
     </div>
-    <button 
-      class="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-      (click)="onSettingsClick()">
-      <mat-icon class="w-5 h-5 mr-2">settings</mat-icon>
-      Settings
-    </button>
   </div>
 
   <!-- Search and Filter Bar -->
@@ -130,8 +124,8 @@
         </button>
       </div>
     </div>
-    <div class="divide-y divide-gray-200">
-  <div *ngFor="let meeting of nonJustCompletedMeetings" class="p-6 hover:bg-gray-50 cursor-pointer transition-colors" (click)="onMeetingClick(meeting)">
+    <div class="divide-y divide-gray-200 space-y-1">
+  <div *ngFor="let meeting of nonJustCompletedMeetings" class="p-6 hover:bg-gray-50 cursor-pointer transition-colors mb-2 rounded-lg border border-gray-100" (click)="onMeetingClick(meeting)">
         <div class="flex items-start justify-between">
           <div class="flex-1">
             <h3 class="font-medium text-gray-900 mb-1">{{ meeting.subject }}</h3>
@@ -253,8 +247,8 @@
         </button>
       </div>
     </div>
-    <div class="divide-y divide-gray-200">
-      <div *ngFor="let meeting of recentMeetings" class="p-6 hover:bg-gray-50 cursor-pointer transition-colors" (click)="onMeetingClick(meeting)">
+    <div class="divide-y-0 space-y-2 p-2">
+      <div *ngFor="let meeting of recentMeetings" class="p-6 hover:bg-gray-50 cursor-pointer transition-colors rounded-lg border border-gray-100 hover:border-gray-200" (click)="onMeetingClick(meeting)">
         <div class="flex items-start justify-between">
           <div class="flex-1">
             <h3 class="font-medium text-gray-900 mb-1">{{ meeting.subject }}</h3>
@@ -273,7 +267,7 @@
           <mat-icon class="w-5 h-5 text-gray-400 ml-4">arrow_forward</mat-icon>
         </div>
       </div>
-      <div *ngIf="recentMeetings.length === 0" class="p-6 text-center text-gray-500">
+      <div *ngIf="recentMeetings.length === 0" class="p-6 text-center text-gray-500 m-2 rounded-lg bg-gray-50">
         No recent meetings
       </div>
     </div>

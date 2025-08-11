@@ -1,5 +1,7 @@
 package com.g37.meetingmanager.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -65,9 +67,11 @@ public class MeetingRoom {
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id")
+    @JsonIgnoreProperties({"meetingRooms", "users", "meetings", "hibernateLazyInitializer", "handler"})
     private Organization organization;
 
     @OneToMany(mappedBy = "meetingRoom", cascade = CascadeType.ALL)
+    @JsonManagedReference("room-meetings")
     private List<Meeting> meetings = new ArrayList<>();
 
     // Lifecycle callbacks

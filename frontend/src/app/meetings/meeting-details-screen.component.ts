@@ -22,10 +22,10 @@ export class MeetingDetailsScreenComponent {
   editedMeeting!: Meeting;
   newActionItem: Partial<ActionItem> = {
     description: '',
-    assignedTo: '',
-    dueDate: '',
-    priority: 'medium',
-    status: 'pending'
+    assignee: undefined,
+    dueDate: undefined,
+    priority: 'MEDIUM',
+    status: 'OPEN'
   };
 
   ngOnInit() {
@@ -54,32 +54,13 @@ export class MeetingDetailsScreenComponent {
   }
 
   handleAddActionItem() {
-    if (this.newActionItem.description && this.newActionItem.assignedTo) {
-      const actionItem: ActionItem = {
-        id: Date.now().toString(),
-        description: this.newActionItem.description,
-        assignedTo: this.newActionItem.assignedTo,
-        dueDate: this.newActionItem.dueDate || '',
-        priority: this.newActionItem.priority as 'low' | 'medium' | 'high',
-        status: this.newActionItem.status as 'pending' | 'in-progress' | 'completed'
-      };
-      const updatedMeeting = {
-        ...this.editedMeeting,
-        actionItems: [...(this.editedMeeting.actionItems || []), actionItem]
-      };
-      this.editedMeeting = updatedMeeting;
-      this.meetingUpdate.emit(updatedMeeting);
-      this.newActionItem = {
-        description: '',
-        assignedTo: '',
-        dueDate: '',
-        priority: 'medium',
-        status: 'pending'
-      };
-    }
+    // TODO: Implement action item creation with new model structure
+    // This functionality is temporarily disabled until the action item creation UI
+    // is updated to match the new backend model
+    console.log('Action item creation temporarily disabled');
   }
 
-  handleDeleteActionItem(id: string) {
+  handleDeleteActionItem(id: number) {
     const updatedMeeting = {
       ...this.editedMeeting,
       actionItems: this.editedMeeting.actionItems?.filter(item => item.id !== id) || []
@@ -88,7 +69,7 @@ export class MeetingDetailsScreenComponent {
     this.meetingUpdate.emit(updatedMeeting);
   }
 
-  handleUpdateActionItem(id: string, updates: Partial<ActionItem>) {
+  handleUpdateActionItem(id: number, updates: Partial<ActionItem>) {
     const updatedMeeting = {
       ...this.editedMeeting,
       actionItems: this.editedMeeting.actionItems?.map(item =>

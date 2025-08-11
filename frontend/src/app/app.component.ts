@@ -10,6 +10,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { ButtonModule } from 'primeng/button';
 import { AiChatComponent } from './ai-chat/ai-chat.component';
+import { HeaderComponent } from './shared/header/header.component';
 import { MeetingService } from './meetings/meeting.service';
 import { Meeting, FilterConfig } from './meetings/meeting.model';
 import { PageType } from './models/chat.model';
@@ -26,7 +27,8 @@ import { filter } from 'rxjs/operators';
     MatFormFieldModule,
     MatInputModule,
     ButtonModule,
-    AiChatComponent
+    AiChatComponent,
+    HeaderComponent
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']

@@ -135,7 +135,7 @@ export class PreviousMeetingsComponent implements OnInit, OnDestroy {
       const query = this.searchQuery.toLowerCase();
       filtered = filtered.filter(meeting => {
         return (
-          meeting.subject.toLowerCase().includes(query) ||
+          meeting.title.toLowerCase().includes(query) ||
           (meeting.summary && meeting.summary.toLowerCase().includes(query)) ||
           (meeting.details && meeting.details.toLowerCase().includes(query)) ||
           meeting.participants.some(p => 
@@ -144,10 +144,10 @@ export class PreviousMeetingsComponent implements OnInit, OnDestroy {
           ) ||
           meeting.actionItems.some(ai => 
             ai.description.toLowerCase().includes(query) || 
-            ai.assignedTo.toLowerCase().includes(query)
+            (ai.assignee?.firstName && ai.assignee.firstName.toLowerCase().includes(query))
           ) ||
-          meeting.nextSteps.some(step => step.toLowerCase().includes(query)) ||
-          this.formatMeetingType(meeting.type).toLowerCase().includes(query)
+          (meeting.nextSteps && meeting.nextSteps.toLowerCase().includes(query)) ||
+          this.formatMeetingType(meeting.meetingType).toLowerCase().includes(query)
         );
       });
     }
@@ -157,7 +157,7 @@ export class PreviousMeetingsComponent implements OnInit, OnDestroy {
       const startDate = new Date(this.filterConfig.dateRange.start);
       const endDate = new Date(this.filterConfig.dateRange.end);
       filtered = filtered.filter(meeting => {
-        const meetingDate = new Date(meeting.date);
+        const meetingDate = new Date(meeting.startTime);
         return meetingDate >= startDate && meetingDate <= endDate;
       });
     }
@@ -165,7 +165,7 @@ export class PreviousMeetingsComponent implements OnInit, OnDestroy {
     // Meeting type filter
     if (this.filterConfig.meetingType && this.filterConfig.meetingType.length > 0) {
       filtered = filtered.filter(meeting => 
-        this.filterConfig.meetingType!.includes(meeting.type)
+        this.filterConfig.meetingType!.includes(meeting.meetingType)
       );
     }
 
@@ -192,7 +192,7 @@ export class PreviousMeetingsComponent implements OnInit, OnDestroy {
 
     // Sort by date (newest first)
     this.filteredMeetings = filtered.sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
+      new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
     );
   }
 
@@ -237,6 +237,6 @@ export class PreviousMeetingsComponent implements OnInit, OnDestroy {
   }
 
   trackByMeetingId(index: number, meeting: Meeting): string {
-    return meeting.id;
+    return meeting.id.toString();
   }
 }

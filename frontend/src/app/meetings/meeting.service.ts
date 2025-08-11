@@ -1,20 +1,27 @@
 
 import { Meeting } from './meeting.model';
+import { MeetingMapperService } from './meeting-mapper.service';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
 export class MeetingService {
   private apiUrl = '/api/meetings';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private mapper: MeetingMapperService
+  ) {}
 
   getMeetings(): Observable<Meeting[]> {
-    return this.http.get<Meeting[]>(this.apiUrl);
+    return this.http.get<any[]>(this.apiUrl).pipe(
+      map(backendMeetings => this.mapper.transformMeetingsFromBackend(backendMeetings))
+    );
   }
 
-  getMeeting(id: string): Observable<Meeting> {
+  getMeeting(id: string | number): Observable<Meeting> {
     return this.http.get<Meeting>(`${this.apiUrl}/${id}`);
   }
 
@@ -22,11 +29,11 @@ export class MeetingService {
     return this.http.post<Meeting>(this.apiUrl, meeting);
   }
 
-  updateMeeting(id: string, meeting: Meeting): Observable<Meeting> {
+  updateMeeting(id: string | number, meeting: Meeting): Observable<Meeting> {
     return this.http.put<Meeting>(`${this.apiUrl}/${id}`, meeting);
   }
 
-  deleteMeeting(id: string): Observable<void> {
+  deleteMeeting(id: string | number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }

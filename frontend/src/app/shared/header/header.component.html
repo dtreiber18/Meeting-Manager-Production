@@ -1,0 +1,137 @@
+<mat-toolbar class="app-header">
+  <!-- Logo/Brand Section -->
+    <!-- Logo and Brand -->
+    <div class="header-brand" routerLink="/">
+      <mat-icon class="brand-icon">event_note</mat-icon>
+      <div class="brand-text">
+        <span class="brand-title">Meeting Manager</span>
+      </div>
+    </div>  <!-- Navigation Menu (only show when authenticated) -->
+  <nav class="header-nav" *ngIf="isAuthenticated$ | async">
+    <ng-container *ngFor="let item of navigationItems">
+      <!-- Simple navigation item -->
+      <button 
+        *ngIf="!item.children"
+        mat-button 
+        [routerLink]="item.route"
+        [class.active]="isActiveRoute(item.route)"
+        class="nav-item">
+        <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
+        <span class="nav-label">{{ item.label }}</span>
+      </button>
+
+      <!-- Navigation item with dropdown -->
+      <ng-container *ngIf="item.children">
+        <button 
+          mat-button 
+          [matMenuTriggerFor]="navMenu"
+          [class.active]="isActiveRoute(item.route)"
+          class="nav-item">
+          <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
+          <span class="nav-label">{{ item.label }}</span>
+          <mat-icon class="dropdown-arrow">expand_more</mat-icon>
+        </button>
+
+        <!-- Dropdown menu -->
+        <mat-menu #navMenu="matMenu" class="nav-dropdown">
+          <button 
+            *ngFor="let child of item.children"
+            mat-menu-item 
+            [routerLink]="child.route">
+            <mat-icon>{{ child.icon }}</mat-icon>
+            <span>{{ child.label }}</span>
+          </button>
+        </mat-menu>
+      </ng-container>
+    </ng-container>
+  </nav>
+
+  <!-- Spacer -->
+  <div class="flex-spacer"></div>
+
+  <!-- Right-side actions (only show when authenticated) -->
+  <div class="header-actions" *ngIf="isAuthenticated$ | async">
+    <!-- Notifications -->
+    <button 
+      mat-icon-button 
+      (click)="onNotificationsClick()"
+      class="action-btn"
+      [attr.aria-label]="'Notifications (' + getNotificationCount() + ' unread)'">
+      <mat-icon [matBadge]="getNotificationCount()" 
+                [matBadgeHidden]="getNotificationCount() === 0"
+                matBadgeColor="warn" 
+                matBadgeSize="small"
+                aria-hidden="false">notifications</mat-icon>
+    </button>
+
+    <!-- Help -->
+    <button 
+      mat-icon-button 
+      (click)="onHelpClick()"
+      class="action-btn">
+      <mat-icon>help_outline</mat-icon>
+    </button>
+
+    <!-- Settings -->
+    <button 
+      mat-icon-button 
+      routerLink="/settings"
+      class="action-btn">
+      <mat-icon>settings</mat-icon>
+    </button>
+
+    <!-- User Profile -->
+    <button 
+      mat-button 
+      [matMenuTriggerFor]="userMenu"
+      class="user-profile-btn"
+      *ngIf="currentUser$ | async as user">
+      <div class="user-info-container">
+        <div class="user-avatar-circle">
+          {{ getUserInitials(user) }}
+        </div>
+        <mat-icon class="profile-dropdown-icon">keyboard_arrow_down</mat-icon>
+      </div>
+    </button>
+
+    <!-- User dropdown menu -->
+    <mat-menu #userMenu="matMenu" class="user-dropdown-menu">
+      <div class="user-menu-header" *ngIf="currentUser$ | async as user">
+        <div class="user-menu-avatar">
+          {{ getUserInitials(user) }}
+        </div>
+        <div class="user-menu-info">
+          <div class="user-menu-name">{{ getUserDisplayName(user) }}</div>
+          <div class="user-menu-email">{{ user.email }}</div>
+          <div class="user-menu-role">{{ user.roles[0] || 'USER' }}</div>
+        </div>
+      </div>
+
+      <mat-divider></mat-divider>
+
+      <button mat-menu-item (click)="navigateToProfile()">
+        <mat-icon>person</mat-icon>
+        <span>My Profile</span>
+      </button>
+
+      <button mat-menu-item (click)="navigateToOrganization()">
+        <mat-icon>business</mat-icon>
+        <span>Organization Settings</span>
+      </button>
+
+      <mat-divider></mat-divider>
+
+      <button mat-menu-item (click)="onLogout()" class="logout-item">
+        <mat-icon>logout</mat-icon>
+        <span>Sign Out</span>
+      </button>
+    </mat-menu>
+  </div>
+
+  <!-- Login button (only show when not authenticated) -->
+  <div class="header-actions" *ngIf="!(isAuthenticated$ | async)">
+    <button mat-raised-button color="primary" routerLink="/auth" class="login-btn">
+      Sign In
+    </button>
+  </div>
+</mat-toolbar>

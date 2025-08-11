@@ -1,5 +1,6 @@
 package com.g37.meetingmanager.controller;
 
+import com.g37.meetingmanager.dto.UserDTO;
 import com.g37.meetingmanager.model.User;
 import com.g37.meetingmanager.service.AuthService;
 import com.g37.meetingmanager.service.JwtService;
@@ -39,7 +40,7 @@ public class AuthController {
             String refreshToken = jwtService.generateRefreshToken(user);
 
             AuthResponse response = AuthResponse.builder()
-                    .user(user)
+                    .user(new UserDTO(user))
                     .token(token)
                     .refreshToken(refreshToken)
                     .expiresIn(jwtService.getExpirationTime())
@@ -76,7 +77,7 @@ public class AuthController {
             String refreshToken = jwtService.generateRefreshToken(user);
 
             AuthResponse response = AuthResponse.builder()
-                    .user(user)
+                    .user(new UserDTO(user))
                     .token(token)
                     .refreshToken(refreshToken)
                     .expiresIn(jwtService.getExpirationTime())
@@ -145,7 +146,7 @@ public class AuthController {
                         .body(Map.of("message", "User not found or inactive"));
             }
 
-            return ResponseEntity.ok(user);
+            return ResponseEntity.ok(new UserDTO(user));
 
         } catch (Exception e) {
             log.error("Get current user error", e);
@@ -192,7 +193,7 @@ public class AuthController {
             String refreshToken = jwtService.generateRefreshToken(user);
 
             AuthResponse response = AuthResponse.builder()
-                    .user(user)
+                    .user(new UserDTO(user))
                     .token(token)
                     .refreshToken(refreshToken)
                     .expiresIn(jwtService.getExpirationTime())
@@ -258,7 +259,7 @@ public class AuthController {
     }
 
     public static class AuthResponse {
-        private User user;
+        private UserDTO user;
         private String token;
         private String refreshToken;
         private long expiresIn;
@@ -268,8 +269,8 @@ public class AuthController {
         }
 
         // Getters and setters
-        public User getUser() { return user; }
-        public void setUser(User user) { this.user = user; }
+        public UserDTO getUser() { return user; }
+        public void setUser(UserDTO user) { this.user = user; }
         public String getToken() { return token; }
         public void setToken(String token) { this.token = token; }
         public String getRefreshToken() { return refreshToken; }
@@ -278,12 +279,12 @@ public class AuthController {
         public void setExpiresIn(long expiresIn) { this.expiresIn = expiresIn; }
 
         public static class AuthResponseBuilder {
-            private User user;
+            private UserDTO user;
             private String token;
             private String refreshToken;
             private long expiresIn;
 
-            public AuthResponseBuilder user(User user) { this.user = user; return this; }
+            public AuthResponseBuilder user(UserDTO user) { this.user = user; return this; }
             public AuthResponseBuilder token(String token) { this.token = token; return this; }
             public AuthResponseBuilder refreshToken(String refreshToken) { this.refreshToken = refreshToken; return this; }
             public AuthResponseBuilder expiresIn(long expiresIn) { this.expiresIn = expiresIn; return this; }

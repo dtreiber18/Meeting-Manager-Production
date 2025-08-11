@@ -18,7 +18,6 @@ import { Meeting, FilterConfig } from '../meetings/meeting.model';
       (meetingSelect)="onMeetingSelect($event)"
       (searchChange)="onSearchChange($event)"
       (filterChange)="onFilterChange($event)"
-      (settingsClick)="onSettingsClick()"
     ></app-home-screen>
   `
 })
@@ -65,9 +64,5 @@ export class HomeContainerComponent {
 
   onFilterChange(config: FilterConfig) {
     this.filterConfig = config;
-  }
-
-  onSettingsClick() {
-    this.router.navigate(['/settings']);
   }
 }
