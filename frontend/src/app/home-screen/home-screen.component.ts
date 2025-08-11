@@ -34,6 +34,7 @@ export class HomeScreenComponent implements OnInit {
   @Output() meetingSelect = new EventEmitter<Meeting>();
   @Output() searchChange = new EventEmitter<string>();
   @Output() filterChange = new EventEmitter<FilterConfig>();
+  @Output() settingsClick = new EventEmitter<void>();
 
   showFilters = false;
   expandedMeeting: string | null = null;
@@ -188,5 +189,9 @@ export class HomeScreenComponent implements OnInit {
 
   onViewAllMeetingsClick() {
     this.viewAllMeetings.emit();
+  }
+
+  onSettingsClick() {
+    this.settingsClick.emit();
   }
 }

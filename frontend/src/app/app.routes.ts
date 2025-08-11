@@ -5,6 +5,7 @@ import { MeetingListComponent } from './meetings/meeting-list/meeting-list.compo
 import { MeetingDetailsComponent } from './meetings/meeting-details/meeting-details.component';
 import { MeetingFormComponent } from './meetings/meeting-form/meeting-form.component';
 import { PreviousMeetingsComponent } from './meetings/previous-meetings/previous-meetings.component';
+import { SimpleSettingsComponent } from './simple-settings/simple-settings.component';
 
 export const routes: Routes = [
 	{ path: '', component: HomeContainerComponent },
@@ -13,5 +14,6 @@ export const routes: Routes = [
 	{ path: 'meetings/new', component: MeetingFormComponent },
 	{ path: 'meetings/:id', component: MeetingDetailsComponent },
 	{ path: 'meetings/:id/edit', component: MeetingFormComponent },
+	{ path: 'settings', component: SimpleSettingsComponent },
 	{ path: '**', redirectTo: '', pathMatch: 'full' }
 ];
