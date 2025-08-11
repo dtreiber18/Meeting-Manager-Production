@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+    environment:
+      - API_URL=http://backend:8080/api
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+      - mongodb
+    environment:
+      - DB_USERNAME=meetingmanager
+      - DB_PASSWORD=password
+      - MONGODB_URI=mongodb://mongodb:27017/meeting_manager
+      - SPRING_PROFILES_ACTIVE=docker
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=meeting_manager
+      - MYSQL_USER=meetingmanager
+      - MYSQL_PASSWORD=password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  mongodb:
+    image: mongo:7.0
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=meeting_manager
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mysql_data:
+  mongodb_data:

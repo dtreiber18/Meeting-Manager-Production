@@ -1,0 +1,25 @@
+/* TailwindCSS imports */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Angular Material theme already imported via angular.json */
+
+/* Global styles */
+html, body { 
+  height: 100%; 
+}
+
+body { 
+  margin: 0; 
+  font-family: Roboto, "Helvetica Neue", sans-serif; 
+}
+
+/* Custom utility classes for Material + Tailwind integration */
+.mat-mdc-card {
+  @apply shadow-md;
+}
+
+.mat-mdc-button {
+  @apply transition-all duration-200;
+}

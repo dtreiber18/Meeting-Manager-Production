@@ -1,0 +1,98 @@
+# Meeting Manager Backend Configuration
+spring:
+  application:
+    name: meeting-manager-backend
+  
+  # Disable Azure auto-configuration for local development
+  autoconfigure:
+    exclude:
+      - com.azure.spring.cloud.autoconfigure.implementation.context.AzureGlobalConfigurationAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.keyvault.secrets.AzureKeyVaultSecretsAutoConfiguration
+      - com.azure.spring.cloud.autoconfigure.implementation.aad.AzureActiveDirectoryAutoConfiguration
+  cloud:
+    azure:
+      active-directory:
+        enabled: false
+      keyvault:
+        secret:
+          enabled: false
+  
+  # Database Configuration
+  datasource:
+    url: jdbc:mysql://localhost:3306/meeting_manager?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USERNAME:meetingmanager}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    properties:
+      hibernate:
+        format_sql: true
+  
+  # MongoDB Configuration
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/meeting_manager}
+  
+  # Security Configuration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AZURE_AD_ISSUER_URI:https://login.microsoftonline.com/your-tenant-id/v2.0}
+          audiences: ${AZURE_AD_CLIENT_ID:your-client-id}
+
+# Azure Configuration
+azure:
+  keyvault:
+    secret:
+      endpoint: ${AZURE_KEYVAULT_ENDPOINT:https://your-keyvault.vault.azure.net/}
+  openai:
+    endpoint: ${AZURE_OPENAI_ENDPOINT:https://your-openai.openai.azure.com/}
+    api-key: ${AZURE_OPENAI_API_KEY:your-api-key}
+  cognitiveservices:
+    textanalytics:
+      endpoint: ${AZURE_TEXT_ANALYTICS_ENDPOINT:https://your-textanalytics.cognitiveservices.azure.com/}
+      api-key: ${AZURE_TEXT_ANALYTICS_API_KEY:your-api-key}
+
+# Application Configuration
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+  jwt:
+    secret: ${JWT_SECRET:your-jwt-secret-key}
+    expiration: ${JWT_EXPIRATION:86400000} # 24 hours
+  
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+# Logging Configuration
+logging:
+  level:
+    com.g37.meetingmanager: INFO
+    org.springframework.security: DEBUG
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Server Configuration
+server:
+  port: ${PORT:8080}
+  servlet:
+    context-path: /api
