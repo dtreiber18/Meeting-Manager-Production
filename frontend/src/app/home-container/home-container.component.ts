@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { HomeScreenComponent } from '../home-screen/home-screen.component';
 import { MeetingService } from '../meetings/meeting.service';
 import { Meeting, FilterConfig } from '../meetings/meeting.model';
@@ -31,7 +32,10 @@ export class HomeContainerComponent {
     hasRecording: false
   };
 
-  constructor(private meetingService: MeetingService) {
+  constructor(
+    private meetingService: MeetingService,
+    private router: Router
+  ) {
     this.loadMeetings();
   }
 
@@ -41,17 +45,17 @@ export class HomeContainerComponent {
         this.meetings = data;
       },
       error: err => {
-        // handle error if needed
+        console.error('Error loading meetings:', err);
       }
     });
   }
 
   onViewAllMeetings() {
-    // Optionally navigate or handle event
+    this.router.navigate(['/meetings/previous']);
   }
 
   onMeetingSelect(meeting: Meeting) {
-    // Optionally navigate or handle event
+    this.router.navigate(['/meetings', meeting.id]);
   }
 
   onSearchChange(query: string) {
