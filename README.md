@@ -28,6 +28,12 @@ A modern, enterprise-grade meeting management application built with Angular 17+
 ## 🚀 Features
 
 ### Current Features (Implemented ✅)
+- **🔐 Authentication System** - Complete JWT-based authentication with RBAC
+  - **Frontend (Angular)**: AuthService (300+ lines), Material Design login/register UI, AuthGuard route protection, JWT interceptor
+  - **Backend (Spring Boot)**: AuthController (400+ lines), JwtService (200+ lines), BCrypt password encryption
+  - **Security Features**: JWT tokens, password hashing, role-based access control (USER/ADMIN), permission system
+  - **Azure AD Integration**: Ready for Azure AD B2C SSO with existing authentication infrastructure
+  - **Database Support**: Enhanced User model with passwordHash, Role/Permission entities for RBAC
 - **AI Chat Assistant** - Intelligent contextual assistant
   - Floating chat button accessible on all pages
   - Context-aware responses based on current page/route
@@ -122,6 +128,11 @@ meeting-manager/
 ├── frontend/                 # Angular 17+ application
 │   ├── src/
 │   │   ├── app/
+│   │   │   ├── auth/         # Authentication system
+│   │   │   │   ├── auth.component.ts         # Material Design login/register UI (250+ lines)
+│   │   │   │   ├── auth.service.ts           # Complete authentication management (300+ lines)
+│   │   │   │   ├── auth.guard.ts             # Route protection guard
+│   │   │   │   └── auth.interceptor.ts       # JWT token interceptor
 │   │   │   ├── components/   # UI components
 │   │   │   ├── ai-chat/      # AI Chat Assistant component
 │   │   │   │   └── ai-chat.component.ts    # Contextual AI assistant
@@ -142,8 +153,11 @@ meeting-manager/
 ├── backend/                  # Spring Boot application
 │   ├── src/main/java/com/g37/meetingmanager/
 │   │   ├── controller/       # REST controllers
+│   │   │   ├── AuthController.java           # Authentication endpoints (400+ lines)
 │   │   │   └── MeetingController.java
 │   │   ├── service/          # Business logic
+│   │   │   ├── AuthService.java              # Authentication business logic (150+ lines)
+│   │   │   ├── JwtService.java               # JWT token management (200+ lines)
 │   │   │   └── MeetingService.java
 │   │   ├── repository/       # Data access
 │   │   │   ├── mysql/        # MySQL repositories
@@ -159,10 +173,10 @@ meeting-manager/
 │   │   │   │   └── MeetingAttachmentRepository.java
 │   │   │   └── mongodb/      # MongoDB repositories
 │   │   ├── model/            # Entity models
-│   │   │   ├── User.java                    # Enterprise user model with Azure AD integration
+│   │   │   ├── User.java                    # Enhanced user model with passwordHash field
 │   │   │   ├── Organization.java            # Multi-tenant organization management
-│   │   │   ├── Role.java                    # RBAC role definitions
-│   │   │   ├── Permission.java              # Fine-grained permissions
+│   │   │   ├── Role.java                    # RBAC role definitions (USER, ADMIN)
+│   │   │   ├── Permission.java              # Fine-grained permissions (READ, WRITE, DELETE, ADMIN)
 │   │   │   ├── Meeting.java                 # Enhanced meeting model with types and priorities
 │   │   │   ├── MeetingParticipant.java      # Professional participant management
 │   │   │   ├── ActionItem.java              # Advanced action items with sub-tasks
@@ -170,6 +184,7 @@ meeting-manager/
 │   │   │   ├── MeetingNote.java             # Meeting documentation and notes
 │   │   │   └── MeetingAttachment.java       # File attachment management
 │   │   ├── config/           # Configuration
+│   │   │   ├── SecurityConfig.java          # Spring Security with BCrypt and JWT
 │   │   │   ├── CorsConfig.java
 │   │   │   └── DataSeeder.java
 │   │   └── dto/              # Data Transfer Objects
@@ -189,6 +204,149 @@ meeting-manager/
 ```
 
 ## 📋 Component Architecture
+
+### 🔐 Authentication System
+
+The Meeting Manager includes a comprehensive authentication system built with JWT tokens and role-based access control:
+
+#### Frontend Authentication (Angular)
+
+**AuthService** (`frontend/src/app/auth/auth.service.ts`) - 300+ lines of authentication management:
+```typescript
+// Core authentication features
+- login(email: string, password: string): Observable<AuthResponse>
+- register(user: RegisterRequest): Observable<AuthResponse>
+- refreshToken(): Observable<AuthResponse>
+- logout(): void
+- isAuthenticated(): boolean
+- hasRole(role: string): boolean
+- hasPermission(permission: string): boolean
+- getUser(): Observable<User | null>
+```
+
+**AuthComponent** (`frontend/src/app/auth/auth.component.ts`) - Material Design authentication UI:
+- Tabbed interface for Login/Register with Material Design
+- Reactive forms with comprehensive validation
+- Azure AD SSO integration button
+- Real-time validation feedback and error handling
+- Mobile-responsive design with proper breakpoints
+
+**AuthGuard** - Route protection for authenticated users:
+```typescript
+canActivate(): boolean {
+  if (this.authService.isAuthenticated()) {
+    return true;
+  }
+  this.router.navigate(['/login']);
+  return false;
+}
+```
+
+**AuthInterceptor** - Automatic JWT token injection:
+```typescript
+intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+  const token = this.authService.getToken();
+  if (token) {
+    request = request.clone({
+      setHeaders: { Authorization: `Bearer ${token}` }
+    });
+  }
+  return next.handle(request);
+}
+```
+
+#### Backend Authentication (Spring Boot)
+
+**AuthController** (`backend/src/main/java/.../controller/AuthController.java`) - 400+ lines:
+```java
+// Authentication endpoints
+@PostMapping("/login")     - User login with JWT token generation
+@PostMapping("/register")  - User registration with password encryption
+@PostMapping("/refresh")   - JWT token refresh
+@PostMapping("/logout")    - User logout with token blacklisting
+@GetMapping("/profile")    - Get current user profile
+@PostMapping("/azure-callback") - Azure AD SSO callback
+```
+
+**JwtService** (`backend/src/main/java/.../service/JwtService.java`) - 200+ lines:
+```java
+// JWT token management
+- generateToken(User user): String
+- validateToken(String token): boolean
+- getUserFromToken(String token): User
+- getPermissionsFromToken(String token): Set<String>
+- isTokenExpired(String token): boolean
+- refreshToken(String token): String
+```
+
+**SecurityConfig** - Spring Security configuration:
+```java
+// Security features
+- BCryptPasswordEncoder for password hashing
+- JWT authentication filter
+- CORS configuration for frontend integration
+- Role-based access control (RBAC)
+- Permission-based authorization
+```
+
+#### Database Integration
+
+**Enhanced User Model** with authentication support:
+```java
+@Entity
+public class User {
+    @Column(nullable = false, unique = true)
+    private String email;
+    
+    @Column(nullable = false)
+    @Size(min = 60, max = 60) // BCrypt hash length
+    private String passwordHash;
+    
+    @ManyToMany(fetch = FetchType.EAGER)
+    private Set<Role> roles = new HashSet<>();
+    
+    // Azure AD integration fields
+    private String azureObjectId;
+    private String azureTenantId;
+}
+```
+
+**RBAC System** with Role and Permission entities:
+```java
+@Entity
+public class Role {
+    private String name; // USER, ADMIN, MANAGER
+    
+    @ManyToMany(fetch = FetchType.EAGER)
+    private Set<Permission> permissions = new HashSet<>();
+}
+
+@Entity
+public class Permission {
+    private String name; // READ, WRITE, DELETE, ADMIN
+    private String description;
+}
+```
+
+#### Security Features
+
+- ✅ **JWT Token Authentication**: Stateless authentication with secure token generation
+- ✅ **Password Encryption**: BCrypt hashing with salt for secure password storage
+- ✅ **Role-Based Access Control**: USER and ADMIN roles with fine-grained permissions
+- ✅ **Token Refresh**: Automatic token refresh to maintain session continuity
+- ✅ **Azure AD Integration**: Ready for enterprise SSO with Azure Active Directory
+- ✅ **CORS Support**: Configured for cross-origin requests from frontend
+- ✅ **Route Protection**: Frontend guards to protect authenticated routes
+- ✅ **Automatic Token Injection**: HTTP interceptor for seamless API authentication
+
+#### Authentication Flow
+
+1. **Registration**: User creates account → Password encrypted with BCrypt → Default USER role assigned
+2. **Login**: Credentials validated → JWT token generated with user roles/permissions
+3. **Token Usage**: Frontend automatically includes JWT in all API requests
+4. **Authorization**: Backend validates token and checks user permissions for each endpoint
+5. **Token Refresh**: Automatic token renewal before expiration
+6. **Logout**: Token blacklisted and user session cleared
 
 ### AI Chat Assistant
 
@@ -290,6 +448,56 @@ The component integrates with the backend through the `MeetingService`:
 - **Lazy Loading**: Component loaded on-demand for performance
 
 ## 🔧 Configuration
+
+### Authentication Configuration
+
+#### JWT Settings (application.yml)
+```yaml
+app:
+  jwt:
+    secret: ${JWT_SECRET:super-secure-jwt-secret-key-that-is-at-least-256-bits-long-for-proper-security}
+    expiration: ${JWT_EXPIRATION:86400000} # 24 hours in milliseconds
+    
+# Azure AD B2C Integration (for enterprise SSO)
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AZURE_AD_ISSUER_URI:https://login.microsoftonline.com/your-tenant-id/v2.0}
+          audiences: ${AZURE_AD_CLIENT_ID:your-client-id}
+```
+
+#### Angular Authentication Routes
+```typescript
+// app.routes.ts - Protected routes with authentication guards
+const routes: Routes = [
+  { path: 'login', component: AuthComponent },
+  { path: 'register', component: AuthComponent },
+  { 
+    path: 'meetings', 
+    component: MeetingsComponent,
+    canActivate: [AuthGuard] // Requires authentication
+  },
+  { 
+    path: 'settings', 
+    component: SettingsComponent,
+    canActivate: [AuthGuard] // Requires authentication
+  }
+];
+```
+
+#### HTTP Interceptor Configuration
+```typescript
+// app.config.ts - JWT token interceptor setup
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideHttpClient(
+      withInterceptors([authInterceptor]) // Automatic JWT injection
+    )
+  ]
+};
+```
 
 ### Backend Configuration
 
@@ -400,11 +608,14 @@ export class MeetingService {
 - `DB_PASSWORD` - MySQL password
 - `DB_URL` - MySQL connection URL
 - `MONGODB_URI` - MongoDB connection string
+- `JWT_SECRET` - JWT signing secret (minimum 256 bits)
+- `JWT_EXPIRATION` - JWT token expiration time in milliseconds (default: 86400000)
+- `AZURE_AD_ISSUER_URI` - Azure AD B2C issuer URI for SSO
+- `AZURE_AD_CLIENT_ID` - Azure AD application client ID
 - `AZURE_OPENAI_ENDPOINT` - Azure OpenAI endpoint
 - `AZURE_OPENAI_API_KEY` - Azure OpenAI API key
 - `AZURE_TEXT_ANALYTICS_ENDPOINT` - Text Analytics endpoint
 - `AZURE_TEXT_ANALYTICS_API_KEY` - Text Analytics API key
-- `JWT_SECRET` - JWT signing secret
 
 ### Sample Data Configuration
 

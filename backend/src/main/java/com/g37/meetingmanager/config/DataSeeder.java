@@ -4,6 +4,7 @@ import com.g37.meetingmanager.model.*;
 import com.g37.meetingmanager.repository.mysql.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -26,6 +27,15 @@ public class DataSeeder implements CommandLineRunner {
     @Autowired
     private ActionItemRepository actionItemRepository;
 
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private PermissionRepository permissionRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Override
     public void run(String... args) throws Exception {
         // Only seed if database is empty
@@ -35,6 +45,23 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedDatabase() {
+        // Create default permissions
+        Permission readPermission = createPermissionIfNotExists("READ", "Can read data");
+        Permission writePermission = createPermissionIfNotExists("WRITE", "Can write data");
+        Permission deletePermission = createPermissionIfNotExists("DELETE", "Can delete data");
+        Permission adminPermission = createPermissionIfNotExists("ADMIN", "Full administrative access");
+
+        // Create default roles
+        Role userRole = createRoleIfNotExists("USER", "Standard user role");
+        userRole.getPermissions().add(readPermission);
+        userRole.getPermissions().add(writePermission);
+
+        Role adminRole = createRoleIfNotExists("ADMIN", "Administrator role");
+        adminRole.getPermissions().add(readPermission);
+        adminRole.getPermissions().add(writePermission);
+        adminRole.getPermissions().add(deletePermission);
+        adminRole.getPermissions().add(adminPermission);
+
         // Create sample organization
         Organization organization = new Organization();
         organization.setName("Acme Corporation");
@@ -50,7 +77,9 @@ public class DataSeeder implements CommandLineRunner {
         user1.setLastName("Doe");
         user1.setJobTitle("Product Manager");
         user1.setDepartment("Product");
+        user1.setPasswordHash(passwordEncoder.encode("password123")); // Default password
         user1.setOrganization(organization);
+        user1.getRoles().add(adminRole); // Make first user admin
         user1 = userRepository.save(user1);
 
         User user2 = new User();
@@ -59,7 +88,9 @@ public class DataSeeder implements CommandLineRunner {
         user2.setLastName("Smith");
         user2.setJobTitle("Software Engineer");
         user2.setDepartment("Engineering");
+        user2.setPasswordHash(passwordEncoder.encode("password123")); // Default password
         user2.setOrganization(organization);
+        user2.getRoles().add(userRole); // Standard user
         user2 = userRepository.save(user2);
 
         User user3 = new User();
@@ -68,7 +99,9 @@ public class DataSeeder implements CommandLineRunner {
         user3.setLastName("Wilson");
         user3.setJobTitle("UX Designer");
         user3.setDepartment("Design");
+        user3.setPasswordHash(passwordEncoder.encode("password123")); // Default password
         user3.setOrganization(organization);
+        user3.getRoles().add(userRole); // Standard user
         user3 = userRepository.save(user3);
 
         // Create sample meetings
@@ -174,6 +207,24 @@ public class DataSeeder implements CommandLineRunner {
         actionItemRepository.save(actionItem4);
 
         System.out.println("Database seeded with sample data!");
+    }
+
+    private Permission createPermissionIfNotExists(String name, String description) {
+        return permissionRepository.findByName(name).orElseGet(() -> {
+            Permission permission = new Permission();
+            permission.setName(name);
+            permission.setDescription(description);
+            return permissionRepository.save(permission);
+        });
+    }
+
+    private Role createRoleIfNotExists(String name, String description) {
+        return roleRepository.findByName(name).orElseGet(() -> {
+            Role role = new Role();
+            role.setName(name);
+            role.setDescription(description);
+            return roleRepository.save(role);
+        });
     }
 
     private MeetingParticipant createMeetingParticipant(Meeting meeting, User user, MeetingParticipant.ParticipantRole role) {
