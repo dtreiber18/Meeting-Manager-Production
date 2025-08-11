@@ -1,0 +1,346 @@
+.settings-container {
+  min-height: calc(100vh - 64px);
+  background-color: #f8fafc;
+}
+
+.settings-card {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.settings-tabs {
+  .mat-mdc-tab-group {
+    .mat-mdc-tab-header {
+      border-bottom: 1px solid #e5e7eb;
+      
+      .mat-mdc-tab {
+        min-width: 120px;
+        
+        .mdc-tab__text-label {
+          font-weight: 500;
+          color: #6b7280;
+        }
+        
+        &.mdc-tab--active .mdc-tab__text-label {
+          color: #2563eb;
+        }
+      }
+      
+      .mat-mdc-tab-header-pagination {
+        display: none;
+      }
+    }
+  }
+}
+
+.tab-content {
+  min-height: 600px;
+}
+
+// Account specific styles
+.save-button {
+  min-width: 140px;
+  
+  .mat-icon {
+    margin-right: 8px;
+    
+    &.animate-spin {
+      animation: spin 1s linear infinite;
+    }
+  }
+}
+
+// App cards
+.app-card {
+  transition: all 0.2s ease-in-out;
+  border-radius: 12px;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+  
+  &.source-card:hover {
+    border-color: #3b82f6;
+  }
+  
+  &.destination-card:hover {
+    border-color: #10b981;
+  }
+}
+
+.app-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &.app-icon-source {
+    background-color: #dbeafe;
+    color: #2563eb;
+  }
+  
+  &.app-icon-destination {
+    background-color: #d1fae5;
+    color: #059669;
+  }
+  
+  .mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+// Configuration cards
+.config-card {
+  border-radius: 12px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  
+  .mat-mdc-card-header {
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    
+    .mat-mdc-card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #111827;
+    }
+  }
+  
+  .mat-mdc-card-content {
+    padding: 24px;
+  }
+}
+
+.field-mapping-card {
+  .mat-mdc-card-header {
+    .mat-mdc-card-subtitle {
+      color: #6b7280;
+      font-size: 14px;
+      margin-top: 4px;
+    }
+  }
+}
+
+// Button styles
+.add-button {
+  .mat-icon {
+    margin-right: 8px;
+  }
+}
+
+.back-button {
+  color: #2563eb;
+  
+  .mat-icon {
+    margin-right: 8px;
+  }
+  
+  &:hover {
+    background-color: #eff6ff;
+  }
+}
+
+.delete-button {
+  color: #dc2626;
+  
+  .mat-icon {
+    margin-right: 8px;
+  }
+  
+  &:hover {
+    background-color: #fef2f2;
+  }
+}
+
+.test-button {
+  .mat-icon {
+    margin-right: 8px;
+    
+    &.animate-spin {
+      animation: spin 1s linear infinite;
+    }
+  }
+}
+
+// Form field customizations
+.mat-mdc-form-field {
+  &.mat-form-field-appearance-outline {
+    .mat-mdc-text-field-wrapper {
+      .mat-mdc-form-field-flex {
+        .mat-mdc-floating-label {
+          color: #374151;
+        }
+      }
+    }
+    
+    &.mat-focused {
+      .mat-mdc-text-field-wrapper {
+        .mat-mdc-form-field-flex {
+          .mat-mdc-floating-label {
+            color: #2563eb;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Status badges
+.status-badge {
+  &.active {
+    background-color: #d1fae5;
+    color: #065f46;
+  }
+  
+  &.inactive {
+    background-color: #f3f4f6;
+    color: #374151;
+  }
+}
+
+// Loading states
+.mat-mdc-progress-spinner {
+  margin: auto;
+}
+
+// Empty states
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  
+  .mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #d1d5db;
+    margin-bottom: 16px;
+  }
+  
+  h3 {
+    font-size: 18px;
+    font-weight: 500;
+    color: #111827;
+    margin-bottom: 8px;
+  }
+  
+  p {
+    color: #6b7280;
+    margin-bottom: 24px;
+  }
+}
+
+// Animations
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .settings-container {
+    padding: 16px;
+  }
+  
+  .tab-content {
+    padding: 16px;
+    min-height: auto;
+  }
+  
+  .app-card {
+    margin-bottom: 16px;
+  }
+  
+  .config-card .mat-mdc-card-content {
+    padding: 16px;
+  }
+  
+  .grid {
+    &.md\\:grid-cols-2 {
+      grid-template-columns: 1fr;
+    }
+    
+    &.lg\\:grid-cols-3 {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+// Success and error snackbar styles
+.success-snackbar {
+  --mdc-snackbar-container-color: #065f46;
+  --mdc-snackbar-supporting-text-color: #ffffff;
+}
+
+.error-snackbar {
+  --mdc-snackbar-container-color: #dc2626;
+  --mdc-snackbar-supporting-text-color: #ffffff;
+}
+
+// Focus states for accessibility
+.mat-mdc-button:focus,
+.mat-mdc-raised-button:focus {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.mat-mdc-checkbox.mat-mdc-checkbox-checked .mdc-checkbox__native-control:focus ~ .mdc-checkbox__background {
+  border-color: #2563eb;
+}
+
+// Material tab overrides
+.mat-mdc-tab-group .mat-mdc-tab-header .mat-mdc-tab .mdc-tab__text-label {
+  font-weight: 500;
+}
+
+.mat-mdc-tab-group .mat-mdc-tab-header .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
+  color: #2563eb;
+}
+
+// Card content spacing
+.mat-mdc-card-content {
+  &:last-child {
+    padding-bottom: 24px;
+  }
+}
+
+// Form validation styles
+.mat-mdc-form-field.mat-form-field-invalid {
+  .mat-mdc-text-field-wrapper {
+    .mat-mdc-form-field-flex {
+      .mat-mdc-floating-label {
+        color: #dc2626;
+      }
+    }
+  }
+}
+
+// Grid improvements
+.grid {
+  display: grid;
+  gap: 1rem;
+  
+  &.grid-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+  
+  &.md\\:grid-cols-2 {
+    @media (min-width: 768px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  
+  &.lg\\:grid-cols-3 {
+    @media (min-width: 1024px) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+}
