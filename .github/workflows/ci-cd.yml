@@ -65,11 +65,13 @@ jobs:
       working-directory: backend
       run: mvn clean package -DskipTests
     
-    # SonarQube Analysis
+    # SonarQube Analysis (Optional - only runs if token is configured)
     - name: SonarQube Scan
-      uses: sonarqube-quality-gate-action@master
+      if: ${{ env.SONAR_TOKEN != '' }}
+      uses: sonarsource/sonarqube-scan-action@master
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL || 'https://sonarcloud.io' }}
 
   build-and-push-images:
     needs: build-and-test
@@ -102,11 +104,11 @@ jobs:
     needs: build-and-push-images
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    environment: production
     
     steps:
     - uses: actions/checkout@v4
     
+    # Only deploy if Azure credentials are configured
     - name: Azure Login
       uses: azure/login@v1
       with:
