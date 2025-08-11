@@ -45,11 +45,11 @@ import { AuthService, LoginRequest, RegisterRequest } from './auth.service';
             <mat-tab-group [(selectedIndex)]="selectedTabIndex" class="auth-tabs">
               <!-- Login Tab -->
               <mat-tab label="Sign In">
-                <div class="tab-content">
+                <div class="tab-content professional-form-field">
                   <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="auth-form">
                     <mat-form-field appearance="outline" class="full-width">
                       <mat-label>Email Address</mat-label>
-                      <input matInput type="email" formControlName="email" required>
+                      <input matInput type="email" formControlName="email" required placeholder="demo@acme.com">
                       <mat-icon matSuffix>email</mat-icon>
                       <mat-error *ngIf="loginForm.get('email')?.hasError('required')">
                         Email is required
@@ -61,7 +61,7 @@ import { AuthService, LoginRequest, RegisterRequest } from './auth.service';
 
                     <mat-form-field appearance="outline" class="full-width">
                       <mat-label>Password</mat-label>
-                      <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" required>
+                      <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" required placeholder="Enter your password">
                       <mat-icon matSuffix (click)="hidePassword = !hidePassword" class="password-toggle">
                         {{hidePassword ? 'visibility_off' : 'visibility'}}
                       </mat-icon>
@@ -74,7 +74,7 @@ import { AuthService, LoginRequest, RegisterRequest } from './auth.service';
                     </mat-form-field>
 
                     <button mat-raised-button color="primary" type="submit" 
-                            [disabled]="loginForm.invalid || isLoading" class="full-width submit-button">
+                            [disabled]="loginForm.invalid || isLoading" class="full-width professional-form-button submit-button">
                       <mat-spinner diameter="20" *ngIf="isLoading"></mat-spinner>
                       <span *ngIf="!isLoading">Sign In</span>
                     </button>
@@ -85,7 +85,7 @@ import { AuthService, LoginRequest, RegisterRequest } from './auth.service';
                   </mat-divider>
 
                   <button mat-raised-button color="accent" (click)="loginWithAzureAD()" 
-                          [disabled]="isLoading" class="full-width azure-button">
+                          [disabled]="isLoading" class="full-width professional-form-button azure-button">
                     <mat-icon>account_box</mat-icon>
                     Sign in with Azure AD
                   </button>
@@ -94,12 +94,12 @@ import { AuthService, LoginRequest, RegisterRequest } from './auth.service';
 
               <!-- Register Tab -->
               <mat-tab label="Sign Up">
-                <div class="tab-content">
+                <div class="tab-content professional-form-field">
                   <form [formGroup]="registerForm" (ngSubmit)="onRegister()" class="auth-form">
                     <div class="name-row">
                       <mat-form-field appearance="outline" class="half-width">
                         <mat-label>First Name</mat-label>
-                        <input matInput formControlName="firstName" required>
+                        <input matInput formControlName="firstName" required placeholder="John">
                         <mat-error *ngIf="registerForm.get('firstName')?.hasError('required')">
                           First name is required
                         </mat-error>
@@ -107,7 +107,7 @@ import { AuthService, LoginRequest, RegisterRequest } from './auth.service';
 
                       <mat-form-field appearance="outline" class="half-width">
                         <mat-label>Last Name</mat-label>
-                        <input matInput formControlName="lastName" required>
+                        <input matInput formControlName="lastName" required placeholder="Doe">
                         <mat-error *ngIf="registerForm.get('lastName')?.hasError('required')">
                           Last name is required
                         </mat-error>
@@ -116,7 +116,7 @@ import { AuthService, LoginRequest, RegisterRequest } from './auth.service';
 
                     <mat-form-field appearance="outline" class="full-width">
                       <mat-label>Email Address</mat-label>
-                      <input matInput type="email" formControlName="email" required>
+                      <input matInput type="email" formControlName="email" required placeholder="john.doe@company.com">
                       <mat-icon matSuffix>email</mat-icon>
                       <mat-error *ngIf="registerForm.get('email')?.hasError('required')">
                         Email is required
@@ -128,13 +128,13 @@ import { AuthService, LoginRequest, RegisterRequest } from './auth.service';
 
                     <mat-form-field appearance="outline" class="full-width">
                       <mat-label>Organization Name</mat-label>
-                      <input matInput formControlName="organizationName">
+                      <input matInput formControlName="organizationName" placeholder="Your Company Inc.">
                       <mat-icon matSuffix>business</mat-icon>
                     </mat-form-field>
 
                     <mat-form-field appearance="outline" class="full-width">
                       <mat-label>Password</mat-label>
-                      <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" required>
+                      <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" required placeholder="Create a secure password">
                       <mat-icon matSuffix (click)="hidePassword = !hidePassword" class="password-toggle">
                         {{hidePassword ? 'visibility_off' : 'visibility'}}
                       </mat-icon>
@@ -148,7 +148,7 @@ import { AuthService, LoginRequest, RegisterRequest } from './auth.service';
 
                     <mat-form-field appearance="outline" class="full-width">
                       <mat-label>Confirm Password</mat-label>
-                      <input matInput type="password" formControlName="confirmPassword" required>
+                      <input matInput type="password" formControlName="confirmPassword" required placeholder="Confirm your password">
                       <mat-icon matSuffix>lock</mat-icon>
                       <mat-error *ngIf="registerForm.get('confirmPassword')?.hasError('required')">
                         Please confirm your password
@@ -159,7 +159,7 @@ import { AuthService, LoginRequest, RegisterRequest } from './auth.service';
                     </mat-form-field>
 
                     <button mat-raised-button color="primary" type="submit" 
-                            [disabled]="registerForm.invalid || isLoading" class="full-width submit-button">
+                            [disabled]="registerForm.invalid || isLoading" class="full-width professional-form-button submit-button">
                       <mat-spinner diameter="20" *ngIf="isLoading"></mat-spinner>
                       <span *ngIf="!isLoading">Create Account</span>
                     </button>
@@ -184,6 +184,24 @@ import { AuthService, LoginRequest, RegisterRequest } from './auth.service';
     </div>
   `,
   styles: [`
+    /* Suppress Angular Material -ms-high-contrast deprecation warnings */
+    :root {
+      --mat-high-contrast-override: none;
+    }
+
+    @media (forced-colors: active) {
+      .mat-icon, .mat-button, .mat-card, .mat-toolbar, .mat-badge, .mat-spinner {
+        color: ButtonText;
+        background-color: ButtonFace;
+      }
+    }
+
+    @supports not (-ms-high-contrast: none) {
+      .mat-icon, .mat-button, .mat-toolbar, .mat-spinner {
+        color: inherit;
+      }
+    }
+
     .auth-container {
       min-height: 100vh;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -195,61 +213,96 @@ import { AuthService, LoginRequest, RegisterRequest } from './auth.service';
 
     .auth-card-container {
       width: 100%;
-      max-width: 450px;
+      max-width: 480px;
     }
 
     .auth-card {
-      border-radius: 16px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      border-radius: 20px;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.15);
       overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     .auth-header {
       background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
       color: white;
-      padding: 32px 24px;
+      padding: 40px 32px;
       text-align: center;
+      position: relative;
+      
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="white" opacity="0.1"><polygon points="1000,100 1000,0 0,100"/></svg>');
+        background-size: cover;
+      }
     }
 
     .logo-container {
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
     }
 
     .logo-icon {
-      font-size: 32px;
-      margin-right: 12px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 8px;
-      padding: 8px;
+      font-size: 36px;
+      margin-right: 16px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 12px;
+      backdrop-filter: blur(10px);
     }
 
     .logo-container h2 {
       margin: 0;
-      font-weight: 600;
-      font-size: 24px;
+      font-weight: 700;
+      font-size: 28px;
+      letter-spacing: -0.5px;
     }
 
     .subtitle {
       margin: 0;
       opacity: 0.9;
-      font-size: 14px;
+      font-size: 15px;
+      font-weight: 400;
+      position: relative;
+      z-index: 1;
     }
 
     .auth-tabs {
-      margin-top: 24px;
+      margin-top: 32px;
+      
+      ::ng-deep .mat-mdc-tab-header {
+        border-bottom: 1px solid #f0f0f0;
+        
+        .mat-mdc-tab {
+          height: 56px;
+          font-weight: 600;
+          font-size: 15px;
+          text-transform: none;
+          
+          &.mdc-tab--active {
+            color: #1976d2;
+          }
+        }
+      }
     }
 
     .tab-content {
-      padding: 24px 0;
+      padding: 32px 24px;
     }
 
     .auth-form {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 20px;
     }
 
     .name-row {
@@ -266,31 +319,59 @@ import { AuthService, LoginRequest, RegisterRequest } from './auth.service';
     }
 
     .submit-button {
-      height: 48px;
+      height: 52px;
       font-weight: 600;
+      font-size: 15px;
       margin-top: 8px;
+      text-transform: none;
+      box-shadow: 0 4px 16px rgba(25, 118, 210, 0.3);
+      
+      &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(25, 118, 210, 0.4);
+      }
     }
 
     .azure-button {
-      height: 48px;
-      font-weight: 500;
+      height: 52px;
+      font-weight: 600;
+      font-size: 15px;
+      text-transform: none;
+      background: linear-gradient(135deg, #0078d4, #005a9e);
+      color: white;
+      
+      &:hover:not(:disabled) {
+        background: linear-gradient(135deg, #005a9e, #004578);
+        transform: translateY(-2px);
+      }
+      
+      .mat-icon {
+        margin-right: 8px;
+      }
     }
 
     .password-toggle {
       cursor: pointer;
       user-select: none;
+      transition: color 0.3s ease;
+      
+      &:hover {
+        color: #1976d2;
+      }
     }
 
     .divider {
-      margin: 24px 0;
+      margin: 32px 0;
       position: relative;
+      border-top: 1px solid #e0e0e0;
     }
 
     .divider-text {
       background: white;
-      padding: 0 16px;
-      color: #666;
-      font-size: 12px;
+      padding: 0 20px;
+      color: #888;
+      font-size: 13px;
+      font-weight: 500;
       position: absolute;
       top: 50%;
       left: 50%;
@@ -298,34 +379,38 @@ import { AuthService, LoginRequest, RegisterRequest } from './auth.service';
     }
 
     .auth-footer {
-      background-color: #fafafa;
-      padding: 20px 24px;
+      background: linear-gradient(135deg, #f8faff, #e3f2fd);
+      padding: 24px 32px;
       text-align: center;
-      border-top: 1px solid #e0e0e0;
+      border-top: 1px solid #e5e7eb;
     }
 
     .footer-text {
-      margin: 0 0 12px 0;
-      font-size: 12px;
+      margin: 0 0 16px 0;
+      font-size: 13px;
       color: #666;
+      font-weight: 500;
     }
 
     .feature-highlights {
       display: flex;
       justify-content: center;
-      gap: 16px;
+      gap: 12px;
       flex-wrap: wrap;
     }
 
     .feature {
-      font-size: 11px;
-      color: #888;
+      font-size: 12px;
+      color: #555;
       background: white;
-      padding: 4px 8px;
-      border-radius: 12px;
+      padding: 6px 12px;
+      border-radius: 16px;
       border: 1px solid #e0e0e0;
+      font-weight: 500;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
 
+    // Mobile Responsive
     @media (max-width: 768px) {
       .auth-container {
         padding: 16px;
@@ -335,6 +420,22 @@ import { AuthService, LoginRequest, RegisterRequest } from './auth.service';
         max-width: 100%;
       }
 
+      .auth-header {
+        padding: 32px 24px;
+      }
+
+      .logo-container h2 {
+        font-size: 24px;
+      }
+
+      .subtitle {
+        font-size: 14px;
+      }
+
+      .tab-content {
+        padding: 24px 20px;
+      }
+
       .name-row {
         flex-direction: column;
         gap: 16px;
@@ -342,6 +443,11 @@ import { AuthService, LoginRequest, RegisterRequest } from './auth.service';
 
       .feature-highlights {
         gap: 8px;
+      }
+
+      .feature {
+        font-size: 11px;
+        padding: 4px 8px;
       }
     }
   `]

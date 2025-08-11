@@ -14,10 +14,27 @@ import { Meeting } from '../meeting.model';
 })
 export class MeetingDetailsComponent {
   meeting?: Meeting;
+  loading = true;
+  error: string | null = null;
+
   constructor(private route: ActivatedRoute, private meetingService: MeetingService) {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
-      this.meetingService.getMeeting(id).subscribe(data => this.meeting = data);
+      this.meetingService.getMeeting(id).subscribe({
+        next: (data) => {
+          console.log('Meeting data received:', data);
+          this.meeting = data;
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Error fetching meeting:', error);
+          this.error = 'Failed to load meeting details';
+          this.loading = false;
+        }
+      });
+    } else {
+      this.error = 'No meeting ID provided';
+      this.loading = false;
     }
   }
 }

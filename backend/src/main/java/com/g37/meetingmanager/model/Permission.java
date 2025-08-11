@@ -1,5 +1,6 @@
 package com.g37.meetingmanager.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -38,6 +39,7 @@ public class Permission {
 
     // Relationships
     @ManyToMany(mappedBy = "permissions", fetch = FetchType.LAZY)
+    @JsonIgnore
     private Set<Role> roles;
 
     // Lifecycle callbacks

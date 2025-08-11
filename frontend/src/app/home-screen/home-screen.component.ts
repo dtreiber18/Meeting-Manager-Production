@@ -34,7 +34,6 @@ export class HomeScreenComponent implements OnInit {
   @Output() meetingSelect = new EventEmitter<Meeting>();
   @Output() searchChange = new EventEmitter<string>();
   @Output() filterChange = new EventEmitter<FilterConfig>();
-  @Output() settingsClick = new EventEmitter<void>();
 
   showFilters = false;
   expandedMeeting: string | null = null;
@@ -64,26 +63,26 @@ export class HomeScreenComponent implements OnInit {
       // Search query filter
       if (this.searchQuery) {
         const matchesSearch = (
-          (meeting.subject && meeting.subject.toLowerCase().includes(query)) ||
+          (meeting.title && meeting.title.toLowerCase().includes(query)) ||
           (meeting.summary && meeting.summary.toLowerCase().includes(query)) ||
           meeting.participants.some((p: Participant) => p.name.toLowerCase().includes(query) || (p.email && p.email.toLowerCase().includes(query))) ||
-          meeting.actionItems.some((ai: ActionItem) => ai.description.toLowerCase().includes(query) || ai.assignedTo.toLowerCase().includes(query)) ||
-          (meeting.nextSteps && meeting.nextSteps.some((step: string) => step.toLowerCase().includes(query))) ||
+          meeting.actionItems.some((ai: ActionItem) => ai.description.toLowerCase().includes(query) || (ai.assignee?.firstName && ai.assignee.firstName.toLowerCase().includes(query))) ||
+          (meeting.nextSteps && meeting.nextSteps.toLowerCase().includes(query)) ||
           (meeting.details && meeting.details.toLowerCase().includes(query)) ||
-          this.formatMeetingType(meeting.type).toLowerCase().includes(query)
+          this.formatMeetingType(meeting.meetingType).toLowerCase().includes(query)
         );
         if (!matchesSearch) return false;
       }
       // Date range filter
       if (this.localFilterConfig.dateRange?.start && this.localFilterConfig.dateRange?.end) {
-        const meetingDate = new Date(meeting.date);
+        const meetingDate = new Date(meeting.startTime);
         const startDate = new Date(this.localFilterConfig.dateRange.start ?? '');
         const endDate = new Date(this.localFilterConfig.dateRange.end ?? '');
         if (meetingDate < startDate || meetingDate > endDate) return false;
       }
       // Meeting type filter
       if ((this.localFilterConfig.meetingType ?? []).length > 0) {
-        if (!(this.localFilterConfig.meetingType ?? []).includes(meeting.type)) return false;
+        if (!(this.localFilterConfig.meetingType ?? []).includes(meeting.meetingType)) return false;
       }
       // Participants filter
       if ((this.localFilterConfig.participants ?? []).length > 0) {
@@ -110,7 +109,7 @@ export class HomeScreenComponent implements OnInit {
 
   get recentMeetings(): Meeting[] {
     return this.applyFilters(this.meetings.filter(m => !m.isJustCompleted))
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
       .slice(0, 5);
   }
 
@@ -175,7 +174,7 @@ export class HomeScreenComponent implements OnInit {
   }
 
   getAllMeetingTypes(): string[] {
-    const types = new Set(this.meetings.map(m => m.type));
+    const types = new Set(this.meetings.map(m => m.meetingType));
     return Array.from(types).sort();
   }
 
@@ -189,9 +188,5 @@ export class HomeScreenComponent implements OnInit {
 
   onViewAllMeetingsClick() {
     this.viewAllMeetings.emit();
-  }
-
-  onSettingsClick() {
-    this.settingsClick.emit();
   }
 }

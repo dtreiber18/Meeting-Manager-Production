@@ -1,5 +1,8 @@
 package com.g37.meetingmanager.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -11,10 +14,10 @@ import java.util.Set;
 
 @Entity
 @Table(name = "users", indexes = {
-    @Index(columnList = "email", unique = true),
-    @Index(columnList = "organizationId"),
-    @Index(columnList = "isActive"),
-    @Index(columnList = "createdAt")
+        @Index(columnList = "email", unique = true),
+        @Index(columnList = "organizationId"),
+        @Index(columnList = "isActive"),
+        @Index(columnList = "createdAt")
 })
 public class User {
     @Id
@@ -86,23 +89,24 @@ public class User {
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id")
+    @JsonBackReference("organization-users")
     private Organization organization;
 
     @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "user_roles",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
+    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
+    @JsonManagedReference("user-roles")
     private Set<Role> roles = new HashSet<>();
 
     @OneToMany(mappedBy = "organizer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Meeting> organizedMeetings;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<MeetingParticipant> meetingParticipations;
 
     @OneToMany(mappedBy = "assignee", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<ActionItem> assignedActionItems;
 
     // Lifecycle callbacks
@@ -118,7 +122,8 @@ public class User {
     }
 
     // Constructors
-    public User() {}
+    public User() {
+    }
 
     public User(String firstName, String lastName, String email) {
         this.firstName = firstName;
@@ -140,75 +145,195 @@ public class User {
     }
 
     // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getFirstName() { return firstName; }
-    public void setFirstName(String firstName) { this.firstName = firstName; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getLastName() { return lastName; }
-    public void setLastName(String lastName) { this.lastName = lastName; }
+    public String getFirstName() {
+        return firstName;
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
 
-    public String getPasswordHash() { return passwordHash; }
-    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+    public String getLastName() {
+        return lastName;
+    }
 
-    public String getPhoneNumber() { return phoneNumber; }
-    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
 
-    public String getJobTitle() { return jobTitle; }
-    public void setJobTitle(String jobTitle) { this.jobTitle = jobTitle; }
+    public String getEmail() {
+        return email;
+    }
 
-    public String getDepartment() { return department; }
-    public void setDepartment(String department) { this.department = department; }
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
-    public String getProfileImageUrl() { return profileImageUrl; }
-    public void setProfileImageUrl(String profileImageUrl) { this.profileImageUrl = profileImageUrl; }
+    public String getPasswordHash() {
+        return passwordHash;
+    }
 
-    public String getBio() { return bio; }
-    public void setBio(String bio) { this.bio = bio; }
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
 
-    public Boolean getIsActive() { return isActive; }
-    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
 
-    public Boolean getEmailNotifications() { return emailNotifications; }
-    public void setEmailNotifications(Boolean emailNotifications) { this.emailNotifications = emailNotifications; }
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
 
-    public Boolean getPushNotifications() { return pushNotifications; }
-    public void setPushNotifications(Boolean pushNotifications) { this.pushNotifications = pushNotifications; }
+    public String getJobTitle() {
+        return jobTitle;
+    }
 
-    public String getTimezone() { return timezone; }
-    public void setTimezone(String timezone) { this.timezone = timezone; }
+    public void setJobTitle(String jobTitle) {
+        this.jobTitle = jobTitle;
+    }
 
-    public String getLanguage() { return language; }
-    public void setLanguage(String language) { this.language = language; }
+    public String getDepartment() {
+        return department;
+    }
 
-    public String getAzureAdObjectId() { return azureAdObjectId; }
-    public void setAzureAdObjectId(String azureAdObjectId) { this.azureAdObjectId = azureAdObjectId; }
+    public void setDepartment(String department) {
+        this.department = department;
+    }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
 
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+    }
 
-    public LocalDateTime getLastLoginAt() { return lastLoginAt; }
-    public void setLastLoginAt(LocalDateTime lastLoginAt) { this.lastLoginAt = lastLoginAt; }
+    public String getBio() {
+        return bio;
+    }
 
-    public Organization getOrganization() { return organization; }
-    public void setOrganization(Organization organization) { this.organization = organization; }
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
 
-    public Set<Role> getRoles() { return roles; }
-    public void setRoles(Set<Role> roles) { this.roles = roles; }
+    public Boolean getIsActive() {
+        return isActive;
+    }
 
-    public List<Meeting> getOrganizedMeetings() { return organizedMeetings; }
-    public void setOrganizedMeetings(List<Meeting> organizedMeetings) { this.organizedMeetings = organizedMeetings; }
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
+    }
 
-    public List<MeetingParticipant> getMeetingParticipations() { return meetingParticipations; }
-    public void setMeetingParticipations(List<MeetingParticipant> meetingParticipations) { this.meetingParticipations = meetingParticipations; }
+    public Boolean getEmailNotifications() {
+        return emailNotifications;
+    }
 
-    public List<ActionItem> getAssignedActionItems() { return assignedActionItems; }
-    public void setAssignedActionItems(List<ActionItem> assignedActionItems) { this.assignedActionItems = assignedActionItems; }
+    public void setEmailNotifications(Boolean emailNotifications) {
+        this.emailNotifications = emailNotifications;
+    }
+
+    public Boolean getPushNotifications() {
+        return pushNotifications;
+    }
+
+    public void setPushNotifications(Boolean pushNotifications) {
+        this.pushNotifications = pushNotifications;
+    }
+
+    public String getTimezone() {
+        return timezone;
+    }
+
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    public String getAzureAdObjectId() {
+        return azureAdObjectId;
+    }
+
+    public void setAzureAdObjectId(String azureAdObjectId) {
+        this.azureAdObjectId = azureAdObjectId;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public LocalDateTime getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public void setLastLoginAt(LocalDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
+    }
+
+    public Organization getOrganization() {
+        return organization;
+    }
+
+    public void setOrganization(Organization organization) {
+        this.organization = organization;
+    }
+
+    public Set<Role> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(Set<Role> roles) {
+        this.roles = roles;
+    }
+
+    public List<Meeting> getOrganizedMeetings() {
+        return organizedMeetings;
+    }
+
+    public void setOrganizedMeetings(List<Meeting> organizedMeetings) {
+        this.organizedMeetings = organizedMeetings;
+    }
+
+    public List<MeetingParticipant> getMeetingParticipations() {
+        return meetingParticipations;
+    }
+
+    public void setMeetingParticipations(List<MeetingParticipant> meetingParticipations) {
+        this.meetingParticipations = meetingParticipations;
+    }
+
+    public List<ActionItem> getAssignedActionItems() {
+        return assignedActionItems;
+    }
+
+    public void setAssignedActionItems(List<ActionItem> assignedActionItems) {
+        this.assignedActionItems = assignedActionItems;
+    }
 }

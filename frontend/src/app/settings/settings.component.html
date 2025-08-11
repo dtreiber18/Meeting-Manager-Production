@@ -35,12 +35,12 @@
             </div>
 
             <!-- Account Information -->
-            <div class="space-y-8">
-              <!-- Basic Account Info -->
-              <div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-6">Account Information</h3>
-                <form [formGroup]="accountForm" class="space-y-4">
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="professional-form-container">
+              <div class="form-section">
+                <h3 class="section-title">Account Information</h3>
+                <p class="section-description">Update your personal details and contact information</p>
+                <form [formGroup]="accountForm" class="professional-form-field">
+                  <div class="professional-form-grid grid-cols-2">
                     <mat-form-field appearance="outline" class="w-full">
                       <mat-label>Display Name</mat-label>
                       <input matInput formControlName="name" placeholder="Enter your name">
@@ -64,13 +64,14 @@
                     </mat-form-field>
                   </div>
 
-                  <div class="flex justify-end pt-4">
+                  <div class="form-actions">
                     <button 
                       mat-raised-button 
+                      type="button"
                       color="primary" 
                       (click)="onAccountUpdate()"
                       [disabled]="!accountForm.valid || isSaving"
-                      class="save-button">
+                      class="professional-form-button">
                       <mat-icon *ngIf="isSaving" class="animate-spin">refresh</mat-icon>
                       <mat-icon *ngIf="!isSaving">save</mat-icon>
                       {{ isSaving ? 'Saving...' : 'Save Changes' }}
@@ -79,11 +80,12 @@
                 </form>
               </div>
 
-              <!-- Password Change -->
-              <div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-6">Change Password</h3>
-                <form [formGroup]="passwordForm" class="space-y-4">
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Password Change Section -->
+              <div class="form-section">
+                <h3 class="section-title">Change Password</h3>
+                <p class="section-description">Update your account password for enhanced security</p>
+                <form [formGroup]="passwordForm" class="professional-form-field">
+                  <div class="professional-form-grid grid-cols-2">
                     <mat-form-field appearance="outline" class="w-full">
                       <mat-label>New Password</mat-label>
                       <input 
@@ -122,13 +124,14 @@
                     </mat-form-field>
                   </div>
 
-                  <div class="flex justify-end pt-4">
+                  <div class="form-actions">
                     <button 
                       mat-raised-button 
+                      type="button"
                       color="primary" 
                       (click)="onPasswordChange()"
                       [disabled]="!passwordForm.valid || isSaving"
-                      class="save-button">
+                      class="professional-form-button">
                       <mat-icon *ngIf="isSaving" class="animate-spin">refresh</mat-icon>
                       <mat-icon *ngIf="!isSaving">lock</mat-icon>
                       {{ isSaving ? 'Updating...' : 'Change Password' }}
@@ -254,109 +257,111 @@
               </div>
 
               <!-- Basic Configuration Card -->
-              <mat-card class="config-card">
-                <mat-card-header>
-                  <mat-card-title>Basic Configuration</mat-card-title>
-                </mat-card-header>
-                <mat-card-content class="space-y-4">
-                  <mat-form-field appearance="outline" class="w-full">
-                    <mat-label>App Name</mat-label>
-                    <input 
-                      matInput 
-                      [(ngModel)]="selectedApp.name"
-                      (ngModelChange)="updateApp({ name: selectedApp.name })"
-                      placeholder="Enter app name">
-                  </mat-form-field>
+              <div class="professional-form-container">
+                <div class="form-section">
+                  <h3 class="section-title">Basic Configuration</h3>
+                  <p class="section-description">Configure basic settings for {{ selectedApp.name }}</p>
                   
-                  <mat-form-field appearance="outline" class="w-full">
-                    <mat-label>Connection Type</mat-label>
-                    <mat-select 
-                      [(ngModel)]="selectedApp.connectionType"
-                      (selectionChange)="updateApp({ connectionType: selectedApp.connectionType })">
-                      <mat-option value="api">API Connection</mat-option>
-                      <mat-option value="folder">Folder Access</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-
-                  <!-- API Configuration -->
-                  <div *ngIf="selectedApp.connectionType === 'api'" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <mat-form-field appearance="outline">
-                      <mat-label>API URL</mat-label>
-                      <input 
-                        matInput 
-                        type="url"
-                        [(ngModel)]="selectedApp.apiUrl"
-                        (ngModelChange)="updateApp({ apiUrl: selectedApp.apiUrl })"
-                        placeholder="https://api.example.com/v1">
-                    </mat-form-field>
-                    <mat-form-field appearance="outline">
-                      <mat-label>API Key</mat-label>
-                      <input 
-                        matInput 
-                        type="password"
-                        [(ngModel)]="selectedApp.apiKey"
-                        (ngModelChange)="updateApp({ apiKey: selectedApp.apiKey })"
-                        placeholder="Enter API key">
-                      <mat-icon matSuffix>key</mat-icon>
-                    </mat-form-field>
-                  </div>
-
-                  <!-- Folder Configuration -->
-                  <div *ngIf="selectedApp.connectionType === 'folder'" class="space-y-4">
+                  <div class="professional-form-field">
                     <mat-form-field appearance="outline" class="w-full">
-                      <mat-label>Folder Path</mat-label>
+                      <mat-label>App Name</mat-label>
                       <input 
                         matInput 
-                        [(ngModel)]="selectedApp.folderPath"
-                        (ngModelChange)="updateApp({ folderPath: selectedApp.folderPath })"
-                        placeholder="/path/to/meeting/notes or \\server\\share\\meetings">
+                        [(ngModel)]="selectedApp.name"
+                        (ngModelChange)="updateApp({ name: selectedApp.name })"
+                        placeholder="Enter app name">
                     </mat-form-field>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    <mat-form-field appearance="outline" class="w-full">
+                      <mat-label>Connection Type</mat-label>
+                      <mat-select 
+                        [(ngModel)]="selectedApp.connectionType"
+                        (selectionChange)="updateApp({ connectionType: selectedApp.connectionType })">
+                        <mat-option value="api">API Connection</mat-option>
+                        <mat-option value="folder">Folder Access</mat-option>
+                      </mat-select>
+                    </mat-form-field>
+
+                    <!-- API Configuration -->
+                    <div *ngIf="selectedApp.connectionType === 'api'" class="professional-form-grid grid-cols-2">
                       <mat-form-field appearance="outline">
-                        <mat-label>Username (Optional)</mat-label>
+                        <mat-label>API URL</mat-label>
                         <input 
                           matInput 
-                          [(ngModel)]="selectedApp.username"
-                          (ngModelChange)="updateApp({ username: selectedApp.username })"
-                          placeholder="Username for folder access">
+                          type="url"
+                          [(ngModel)]="selectedApp.apiUrl"
+                          (ngModelChange)="updateApp({ apiUrl: selectedApp.apiUrl })"
+                          placeholder="https://api.example.com/v1">
                       </mat-form-field>
                       <mat-form-field appearance="outline">
-                        <mat-label>Password (Optional)</mat-label>
+                        <mat-label>API Key</mat-label>
                         <input 
                           matInput 
                           type="password"
-                          [(ngModel)]="selectedApp.password"
-                          (ngModelChange)="updateApp({ password: selectedApp.password })"
-                          placeholder="Password for folder access">
+                          [(ngModel)]="selectedApp.apiKey"
+                          (ngModelChange)="updateApp({ apiKey: selectedApp.apiKey })"
+                          placeholder="Enter API key">
+                        <mat-icon matSuffix>key</mat-icon>
                       </mat-form-field>
                     </div>
-                  </div>
 
-                  <!-- Action Buttons -->
-                  <div class="flex justify-between pt-4">
-                    <button 
-                      mat-button 
-                      color="accent" 
-                      (click)="testConnection()"
-                      [disabled]="isTestingConnection"
-                      class="test-button">
-                      <mat-icon *ngIf="isTestingConnection" class="animate-spin">refresh</mat-icon>
-                      <mat-icon *ngIf="!isTestingConnection">wifi</mat-icon>
-                      {{ isTestingConnection ? 'Testing...' : 'Test Connection' }}
-                    </button>
-                    <button 
-                      mat-raised-button 
-                      color="primary" 
-                      (click)="saveApp()"
-                      [disabled]="isSaving"
-                      class="save-button">
-                      <mat-icon *ngIf="isSaving" class="animate-spin">refresh</mat-icon>
-                      <mat-icon *ngIf="!isSaving">save</mat-icon>
-                      {{ isSaving ? 'Saving...' : 'Save Configuration' }}
-                    </button>
+                    <!-- Folder Configuration -->
+                    <div *ngIf="selectedApp.connectionType === 'folder'" class="space-y-4">
+                      <mat-form-field appearance="outline" class="w-full">
+                        <mat-label>Folder Path</mat-label>
+                        <input 
+                          matInput 
+                          [(ngModel)]="selectedApp.folderPath"
+                          (ngModelChange)="updateApp({ folderPath: selectedApp.folderPath })"
+                          placeholder="/path/to/meeting/notes or \\server\\share\\meetings">
+                      </mat-form-field>
+                      <div class="professional-form-grid grid-cols-2">
+                        <mat-form-field appearance="outline">
+                          <mat-label>Username (Optional)</mat-label>
+                          <input 
+                            matInput 
+                            [(ngModel)]="selectedApp.username"
+                            (ngModelChange)="updateApp({ username: selectedApp.username })"
+                            placeholder="Username for folder access">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                          <mat-label>Password (Optional)</mat-label>
+                          <input 
+                            matInput 
+                            type="password"
+                            [(ngModel)]="selectedApp.password"
+                            (ngModelChange)="updateApp({ password: selectedApp.password })"
+                            placeholder="Password for folder access">
+                        </mat-form-field>
+                      </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="form-actions">
+                      <button 
+                        mat-outlined-button 
+                        color="accent" 
+                        (click)="testConnection()"
+                        [disabled]="isTestingConnection"
+                        class="professional-form-button">
+                        <mat-icon *ngIf="isTestingConnection" class="animate-spin">refresh</mat-icon>
+                        <mat-icon *ngIf="!isTestingConnection">wifi</mat-icon>
+                        {{ isTestingConnection ? 'Testing...' : 'Test Connection' }}
+                      </button>
+                      <button 
+                        mat-raised-button 
+                        color="primary" 
+                        (click)="saveApp()"
+                        [disabled]="isSaving"
+                        class="professional-form-button">
+                        <mat-icon *ngIf="isSaving" class="animate-spin">refresh</mat-icon>
+                        <mat-icon *ngIf="!isSaving">save</mat-icon>
+                        {{ isSaving ? 'Saving...' : 'Save Configuration' }}
+                      </button>
+                    </div>
                   </div>
-                </mat-card-content>
-              </mat-card>
+                </div>
+              </div>
 
               <!-- Field Mapping Card -->
               <mat-card class="field-mapping-card">

@@ -1,140 +1,286 @@
+// Enhanced Settings Component Styling
 .settings-container {
   min-height: calc(100vh - 64px);
-  background-color: #f8fafc;
+  background: linear-gradient(135deg, #f8faff 0%, #e3f2fd 100%);
+  padding: 24px;
 }
 
 .settings-card {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
   overflow: hidden;
-}
-
-.settings-tabs {
-  .mat-mdc-tab-group {
-    .mat-mdc-tab-header {
-      border-bottom: 1px solid #e5e7eb;
-      
-      .mat-mdc-tab {
-        min-width: 120px;
-        
-        .mdc-tab__text-label {
-          font-weight: 500;
-          color: #6b7280;
-        }
-        
-        &.mdc-tab--active .mdc-tab__text-label {
-          color: #2563eb;
-        }
-      }
-      
-      .mat-mdc-tab-header-pagination {
-        display: none;
-      }
-    }
-  }
+  background: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .tab-content {
   min-height: 600px;
 }
 
-// Account specific styles
-.save-button {
-  min-width: 140px;
-  
-  .mat-icon {
-    margin-right: 8px;
+// Professional Form Field Styling
+::ng-deep .settings-container {
+  .mat-mdc-form-field {
+    margin-bottom: 8px;
     
-    &.animate-spin {
-      animation: spin 1s linear infinite;
+    &.mat-form-field-appearance-outline {
+      .mat-mdc-text-field-wrapper {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        border: 2px solid #e5e7eb;
+        transition: all 0.3s ease;
+        
+        &:hover {
+          border-color: #d1d5db;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+      }
+      
+      &.mat-focused .mat-mdc-text-field-wrapper {
+        border-color: #2563eb;
+        box-shadow: 0 4px 16px rgba(37, 99, 235, 0.15);
+        background: #ffffff;
+      }
+      
+      &.mat-form-field-invalid .mat-mdc-text-field-wrapper {
+        border-color: #ef4444;
+        box-shadow: 0 4px 16px rgba(239, 68, 68, 0.15);
+      }
+      
+      .mat-mdc-form-field-focus-overlay {
+        display: none;
+      }
+      
+      .mdc-notched-outline {
+        display: none;
+      }
+      
+      .mat-mdc-form-field-infix {
+        padding: 16px 16px;
+        min-height: 24px;
+      }
+      
+      .mat-mdc-input-element {
+        font-size: 14px;
+        font-weight: 500;
+        color: #374151;
+        
+        &::placeholder {
+          color: #9ca3af;
+          font-weight: 400;
+        }
+      }
+      
+      .mat-mdc-form-field-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        letter-spacing: 0.025em;
+        top: 50%;
+        transform: translateY(-50%);
+        transition: all 0.3s ease;
+      }
+      
+      &.mat-form-field-should-float .mat-mdc-form-field-label,
+      &.mat-focused .mat-mdc-form-field-label {
+        color: #2563eb;
+        font-size: 11px;
+        font-weight: 700;
+        top: -8px;
+        transform: translateY(0);
+        background: white;
+        padding: 0 8px;
+        margin-left: -4px;
+        border-radius: 4px;
+      }
+      
+      // Error styling
+      &.mat-form-field-invalid .mat-mdc-form-field-label {
+        color: #ef4444;
+      }
+    }
+  }
+  
+  // Select field specific styling
+  .mat-mdc-select {
+    .mat-mdc-select-trigger {
+      border: none;
+      background: transparent;
+    }
+    
+    .mat-mdc-select-value {
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+    }
+    
+    .mat-mdc-select-arrow {
+      color: #6b7280;
+    }
+  }
+  
+  // Error message styling
+  .mat-mdc-form-field-error {
+    font-size: 12px;
+    font-weight: 500;
+    color: #ef4444;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    
+    .mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      margin-right: 4px;
+    }
+  }
+  
+  // Password visibility toggle
+  .mat-mdc-form-field-icon-suffix {
+    .mat-mdc-icon-button {
+      width: 40px;
+      height: 40px;
+      color: #6b7280;
+      
+      &:hover {
+        color: #374151;
+        background: rgba(0, 0, 0, 0.04);
+      }
     }
   }
 }
 
-// App cards
-.app-card {
-  transition: all 0.2s ease-in-out;
+// Enhanced Button Styling
+.save-button {
+  min-width: 140px;
+  height: 44px;
   border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: none;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  transition: all 0.3s ease;
   
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+  }
+  
+  .mat-icon {
+    margin-right: 8px;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+  
+  .mat-icon.animate-spin {
+    animation: spin 1s linear infinite;
+  }
+}
+
+// App Card Styling
+.app-card {
+  transition: all 0.3s ease-in-out;
+  border-radius: 16px;
+  border: 2px solid #f3f4f6;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+    border-color: #e5e7eb;
   }
   
   &.source-card:hover {
     border-color: #3b82f6;
+    box-shadow: 0 12px 32px rgba(59, 130, 246, 0.2);
   }
   
   &.destination-card:hover {
     border-color: #10b981;
+    box-shadow: 0 12px 32px rgba(16, 185, 129, 0.2);
   }
 }
 
 .app-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   
   &.app-icon-source {
-    background-color: #dbeafe;
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
     color: #2563eb;
   }
   
   &.app-icon-destination {
-    background-color: #d1fae5;
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
     color: #059669;
   }
   
   .mat-icon {
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
   }
 }
 
-// Configuration cards
+// Configuration Card Styling
 .config-card {
-  border-radius: 12px;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
   
   .mat-mdc-card-header {
-    background-color: #f9fafb;
+    background: linear-gradient(135deg, #f9fafb, #f3f4f6);
     border-bottom: 1px solid #e5e7eb;
+    padding: 20px 24px;
     
     .mat-mdc-card-title {
-      font-size: 16px;
-      font-weight: 600;
+      font-size: 18px;
+      font-weight: 700;
       color: #111827;
+    }
+    
+    .mat-mdc-card-subtitle {
+      font-size: 14px;
+      color: #6b7280;
+      margin-top: 4px;
     }
   }
   
   .mat-mdc-card-content {
-    padding: 24px;
+    padding: 32px 24px;
   }
 }
 
-.field-mapping-card {
-  .mat-mdc-card-header {
-    .mat-mdc-card-subtitle {
-      color: #6b7280;
-      font-size: 14px;
-      margin-top: 4px;
-    }
-  }
-}
-
-// Button styles
+// Enhanced Action Buttons
 .add-button {
+  height: 44px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: none;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  
   .mat-icon {
     margin-right: 8px;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
   }
 }
 
 .back-button {
   color: #2563eb;
+  font-weight: 600;
+  border-radius: 8px;
+  height: 40px;
   
   .mat-icon {
     margin-right: 8px;
@@ -147,6 +293,9 @@
 
 .delete-button {
   color: #dc2626;
+  font-weight: 600;
+  border-radius: 8px;
+  height: 40px;
   
   .mat-icon {
     margin-right: 8px;
@@ -158,93 +307,69 @@
 }
 
 .test-button {
+  height: 44px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: none;
+  border: 2px solid #2563eb;
+  
   .mat-icon {
     margin-right: 8px;
-    
-    &.animate-spin {
-      animation: spin 1s linear infinite;
-    }
-  }
-}
-
-// Form field customizations
-.mat-mdc-form-field {
-  &.mat-form-field-appearance-outline {
-    .mat-mdc-text-field-wrapper {
-      .mat-mdc-form-field-flex {
-        .mat-mdc-floating-label {
-          color: #374151;
-        }
-      }
-    }
-    
-    &.mat-focused {
-      .mat-mdc-text-field-wrapper {
-        .mat-mdc-form-field-flex {
-          .mat-mdc-floating-label {
-            color: #2563eb;
-          }
-        }
-      }
-    }
-  }
-}
-
-// Status badges
-.status-badge {
-  &.active {
-    background-color: #d1fae5;
-    color: #065f46;
-  }
-  
-  &.inactive {
-    background-color: #f3f4f6;
-    color: #374151;
-  }
-}
-
-// Loading states
-.mat-mdc-progress-spinner {
-  margin: auto;
-}
-
-// Empty states
-.empty-state {
-  text-align: center;
-  padding: 48px 24px;
-  
-  .mat-icon {
-    font-size: 64px;
-    width: 64px;
-    height: 64px;
-    color: #d1d5db;
-    margin-bottom: 16px;
-  }
-  
-  h3 {
     font-size: 18px;
-    font-weight: 500;
-    color: #111827;
-    margin-bottom: 8px;
+    width: 18px;
+    height: 18px;
   }
   
-  p {
-    color: #6b7280;
-    margin-bottom: 24px;
+  .mat-icon.animate-spin {
+    animation: spin 1s linear infinite;
   }
 }
 
 // Animations
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// Grid Layout Improvements
+.grid {
+  &.grid-cols-1 {
+    gap: 24px;
   }
-  to {
-    transform: rotate(360deg);
+  
+  &.grid-cols-2 {
+    gap: 20px;
+  }
+  
+  &.grid-cols-3 {
+    gap: 16px;
   }
 }
 
-// Responsive design
+// Tab Styling Enhancement
+::ng-deep .settings-card .mat-mdc-tab-group {
+  .mat-mdc-tab-header {
+    background: linear-gradient(135deg, #f8faff, #e3f2fd);
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .mat-mdc-tab {
+    height: 56px;
+    min-width: 120px;
+    font-weight: 600;
+    text-transform: none;
+    
+    &.mdc-tab--active {
+      color: #2563eb;
+    }
+  }
+  
+  .mat-mdc-tab-body-wrapper {
+    background: white;
+  }
+}
+
+// Responsive Design
 @media (max-width: 768px) {
   .settings-container {
     padding: 16px;
@@ -252,95 +377,27 @@
   
   .tab-content {
     padding: 16px;
-    min-height: auto;
-  }
-  
-  .app-card {
-    margin-bottom: 16px;
+    min-height: 400px;
   }
   
   .config-card .mat-mdc-card-content {
-    padding: 16px;
+    padding: 20px 16px;
   }
   
-  .grid {
-    &.md\\:grid-cols-2 {
-      grid-template-columns: 1fr;
-    }
+  .grid.grid-cols-2,
+  .grid.grid-cols-3 {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .app-icon {
+    width: 40px;
+    height: 40px;
     
-    &.lg\\:grid-cols-3 {
-      grid-template-columns: 1fr;
-    }
-  }
-}
-
-// Success and error snackbar styles
-.success-snackbar {
-  --mdc-snackbar-container-color: #065f46;
-  --mdc-snackbar-supporting-text-color: #ffffff;
-}
-
-.error-snackbar {
-  --mdc-snackbar-container-color: #dc2626;
-  --mdc-snackbar-supporting-text-color: #ffffff;
-}
-
-// Focus states for accessibility
-.mat-mdc-button:focus,
-.mat-mdc-raised-button:focus {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
-}
-
-.mat-mdc-checkbox.mat-mdc-checkbox-checked .mdc-checkbox__native-control:focus ~ .mdc-checkbox__background {
-  border-color: #2563eb;
-}
-
-// Material tab overrides
-.mat-mdc-tab-group .mat-mdc-tab-header .mat-mdc-tab .mdc-tab__text-label {
-  font-weight: 500;
-}
-
-.mat-mdc-tab-group .mat-mdc-tab-header .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
-  color: #2563eb;
-}
-
-// Card content spacing
-.mat-mdc-card-content {
-  &:last-child {
-    padding-bottom: 24px;
-  }
-}
-
-// Form validation styles
-.mat-mdc-form-field.mat-form-field-invalid {
-  .mat-mdc-text-field-wrapper {
-    .mat-mdc-form-field-flex {
-      .mat-mdc-floating-label {
-        color: #dc2626;
-      }
-    }
-  }
-}
-
-// Grid improvements
-.grid {
-  display: grid;
-  gap: 1rem;
-  
-  &.grid-cols-1 {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-  
-  &.md\\:grid-cols-2 {
-    @media (min-width: 768px) {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-  
-  &.lg\\:grid-cols-3 {
-    @media (min-width: 1024px) {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+    .mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
     }
   }
 }

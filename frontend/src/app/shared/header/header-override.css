@@ -1,0 +1,56 @@
+/* 
+ * Nuclear override for Angular Material toolbar styles
+ * This file uses raw CSS to ensure maximum specificity
+ */
+
+/* Force toolbar background - highest specificity possible */
+body .mat-toolbar.app-header,
+body mat-toolbar.app-header,
+body .app-header.mat-toolbar,
+html body .mat-toolbar.app-header {
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%) !important;
+  color: white !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Force all text elements to be white */
+body .app-header *,
+body .app-header .mat-icon,
+body .app-header .mat-button,
+body .app-header button,
+body .app-header span,
+body .app-header div {
+  color: white !important;
+}
+
+/* Override any Angular Material button styles in header */
+body .app-header .mat-mdc-button,
+body .app-header .mat-mdc-icon-button {
+  color: white !important;
+}
+
+body .app-header .mat-mdc-button .mat-icon,
+body .app-header .mat-mdc-icon-button .mat-icon {
+  color: white !important;
+}
+
+/* Ensure brand icon is white */
+body .app-header .brand-icon {
+  color: white !important;
+}
+
+/* Suppress -ms-high-contrast warnings by providing modern alternatives */
+@supports (forced-colors: active) {
+  .mat-icon, .mat-button, .mat-toolbar {
+    forced-color-adjust: auto;
+  }
+}
+
+/* Completely override any -ms-high-contrast CSS from Angular Material */
+@media screen {
+  .mat-icon, .mat-button, .mat-toolbar, .mat-badge {
+    /* Override any MS-specific styles */
+    -ms-high-contrast-adjust: auto;
+  }
+}

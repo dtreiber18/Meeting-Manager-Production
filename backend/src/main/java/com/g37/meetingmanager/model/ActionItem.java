@@ -1,5 +1,7 @@
 package com.g37.meetingmanager.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -78,25 +80,31 @@ public class ActionItem {
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "meeting_id")
+    @JsonBackReference
     private Meeting meeting;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assignee_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "organizedMeetings", "participatedMeetings", "actionItems"})
     private User assignee;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reporter_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "organizedMeetings", "participatedMeetings", "actionItems"})
     private User reporter;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "meetings", "users"})
     private Organization organization;
 
     @OneToMany(mappedBy = "parentActionItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({"parentActionItem"})
     private List<ActionItem> subTasks = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_action_item_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "subTasks"})
     private ActionItem parentActionItem;
 
     // Lifecycle callbacks
