@@ -1,22 +1,18 @@
 name: meeting-manager
 metadata:
   template: meeting-manager@1.0.0
+infra:
+  provider: bicep
+  path: infrastructure/bicep
 services:
   frontend:
     project: ./frontend
     language: ts
     host: containerapp
-    env:
-      - API_URL
   backend:
     project: ./backend
     language: java
     host: containerapp
-    env:
-      - AZURE_OPENAI_ENDPOINT
-      - AZURE_OPENAI_API_KEY
-      - AZURE_TEXT_ANALYTICS_ENDPOINT
-      - AZURE_TEXT_ANALYTICS_API_KEY
 hooks:
   preprovision:
     posix:

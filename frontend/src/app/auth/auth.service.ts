@@ -44,10 +44,11 @@ export interface TokenRefreshResponse {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
-  private readonly API_URL = 'http://localhost:8080/api';
+  private readonly API_URL =
+    'https://ca-backend-jq7rzfkj24zqy.mangoriver-904fd974.eastus.azurecontainerapps.io/api';
   private readonly TOKEN_KEY = 'mm_auth_token';
   private readonly REFRESH_TOKEN_KEY = 'mm_refresh_token';
   private readonly USER_KEY = 'mm_user';
@@ -60,10 +61,7 @@ export class AuthService {
 
   private tokenRefreshTimer: any;
 
-  constructor(
-    private http: HttpClient,
-    private router: Router
-  ) {
+  constructor(private http: HttpClient, private router: Router) {
     this.initializeAuthState();
   }
 
@@ -84,13 +82,14 @@ export class AuthService {
    * Login with email and password
    */
   login(credentials: LoginRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.API_URL}/auth/login`, credentials)
+    return this.http
+      .post<AuthResponse>(`${this.API_URL}/auth/login`, credentials)
       .pipe(
-        map(response => {
+        map((response) => {
           this.handleAuthResponse(response);
           return response;
         }),
-        catchError(error => {
+        catchError((error) => {
           console.error('Login error:', error);
           return throwError(() => error);
         })
@@ -101,13 +100,14 @@ export class AuthService {
    * Register new user
    */
   register(userData: RegisterRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.API_URL}/auth/register`, userData)
+    return this.http
+      .post<AuthResponse>(`${this.API_URL}/auth/register`, userData)
       .pipe(
-        map(response => {
+        map((response) => {
           this.handleAuthResponse(response);
           return response;
         }),
-        catchError(error => {
+        catchError((error) => {
           console.error('Registration error:', error);
           return throwError(() => error);
         })
@@ -126,13 +126,17 @@ export class AuthService {
    * Handle Azure AD callback
    */
   handleAzureCallback(code: string, state: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.API_URL}/auth/azure/callback`, { code, state })
+    return this.http
+      .post<AuthResponse>(`${this.API_URL}/auth/azure/callback`, {
+        code,
+        state,
+      })
       .pipe(
-        map(response => {
+        map((response) => {
           this.handleAuthResponse(response);
           return response;
         }),
-        catchError(error => {
+        catchError((error) => {
           console.error('Azure callback error:', error);
           return throwError(() => error);
         })
@@ -144,20 +148,23 @@ export class AuthService {
    */
   refreshToken(): Observable<TokenRefreshResponse> {
     const refreshToken = this.getStoredRefreshToken();
-    
+
     if (!refreshToken) {
       this.logout();
       return throwError(() => new Error('No refresh token available'));
     }
 
-    return this.http.post<TokenRefreshResponse>(`${this.API_URL}/auth/refresh`, { refreshToken })
+    return this.http
+      .post<TokenRefreshResponse>(`${this.API_URL}/auth/refresh`, {
+        refreshToken,
+      })
       .pipe(
-        map(response => {
+        map((response) => {
           this.storeTokens(response.token, response.refreshToken);
           this.scheduleTokenRefresh();
           return response;
         }),
-        catchError(error => {
+        catchError((error) => {
           console.error('Token refresh error:', error);
           this.logout();
           return throwError(() => error);
@@ -283,7 +290,7 @@ export class AuthService {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const expiryTime = payload.exp * 1000;
       const currentTime = Date.now();
-      const refreshTime = expiryTime - currentTime - (5 * 60 * 1000); // Refresh 5 minutes before expiry
+      const refreshTime = expiryTime - currentTime - 5 * 60 * 1000; // Refresh 5 minutes before expiry
 
       if (refreshTime > 0) {
         this.tokenRefreshTimer = setTimeout(() => {
