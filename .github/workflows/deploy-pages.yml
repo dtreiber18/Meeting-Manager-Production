@@ -45,29 +45,49 @@ jobs:
         # Build with GitHub Pages configuration
         npm run build -- --configuration=github-pages
         
+        # Check what was actually built
+        echo "Checking build output:"
+        find dist -type f -name "*.html" | head -10
+        
+        # Find the correct index.html location
+        if [ -f "dist/frontend/browser/index.html" ]; then
+          BUILD_DIR="dist/frontend/browser"
+        elif [ -f "dist/frontend/index.html" ]; then
+          BUILD_DIR="dist/frontend"
+        elif [ -f "dist/index.html" ]; then
+          BUILD_DIR="dist"
+        else
+          echo "Could not find index.html, checking all locations:"
+          find dist -name "index.html"
+          exit 1
+        fi
+        
+        echo "Using build directory: $BUILD_DIR"
+        
         # Create 404.html for client-side routing
-        cp dist/frontend/index.html dist/frontend/404.html
+        cp "$BUILD_DIR/index.html" "$BUILD_DIR/404.html"
         
         # Create .nojekyll file to prevent Jekyll processing
-        touch dist/frontend/.nojekyll
+        touch "$BUILD_DIR/.nojekyll"
         
         # Create robots.txt for better SEO
-        cat > dist/frontend/robots.txt << 'EOF'
+        cat > "$BUILD_DIR/robots.txt" << 'EOF'
         User-agent: *
         Allow: /
         
         Sitemap: https://dtreiber18.github.io/Meeting-Manager-Production/sitemap.xml
         EOF
+        
+        # Store the build directory for the next step
+        echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_ENV
     
     - name: Setup Pages
       uses: actions/configure-pages@v4
-      with:
-        enablement: true
     
     - name: Upload Pages artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: frontend/dist/frontend
+        path: frontend/${{ env.BUILD_DIR }}
     
     - name: Deploy to GitHub Pages
       id: deployment
