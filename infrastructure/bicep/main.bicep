@@ -35,6 +35,7 @@ module containerAppsEnvironment './modules/container-apps-environment.bicep' = {
   params: {
     name: '${abbrs.appManagedEnvironments}${resourceToken}'
     location: location
+    logAnalyticsWorkspaceName: logAnalytics.outputs.name
     tags: tags
   }
 }
@@ -182,7 +183,7 @@ module backend './modules/container-app.bicep' = {
       }
       {
         name: 'MONGODB_URI'
-        value: cosmosDb.outputs.connectionString
+        value: 'mongodb://${cosmosDb.outputs.accountName}.mongo.cosmos.azure.com:10255/?ssl=true'
       }
       {
         name: 'AZURE_OPENAI_ENDPOINT'

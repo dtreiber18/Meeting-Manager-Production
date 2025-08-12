@@ -19,7 +19,7 @@ spring:
   
   # Database Configuration
   datasource:
-    url: jdbc:mysql://localhost:3306/meeting_manager?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    url: ${DB_URL:jdbc:mysql://localhost:3306/meeting_manager?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
     username: ${DB_USERNAME:meetingmanager}
     password: ${DB_PASSWORD:password}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -46,6 +46,13 @@ spring:
         jwt:
           issuer-uri: ${AZURE_AD_ISSUER_URI:https://login.microsoftonline.com/your-tenant-id/v2.0}
           audiences: ${AZURE_AD_CLIENT_ID:your-client-id}
+  
+  # CORS Configuration
+  web:
+    cors:
+      allowed-origins: "*"
+      allowed-methods: "*"
+      allowed-headers: "*"
 
 # Azure Configuration
 azure:
@@ -55,6 +62,7 @@ azure:
   openai:
     endpoint: ${AZURE_OPENAI_ENDPOINT:https://your-openai.openai.azure.com/}
     api-key: ${AZURE_OPENAI_API_KEY:your-api-key}
+    deployment-name: ${AZURE_OPENAI_DEPLOYMENT_NAME:gpt-4}
   cognitiveservices:
     textanalytics:
       endpoint: ${AZURE_TEXT_ANALYTICS_ENDPOINT:https://your-textanalytics.cognitiveservices.azure.com/}
@@ -67,6 +75,12 @@ app:
   jwt:
     secret: ${JWT_SECRET:super-secure-jwt-secret-key-that-is-at-least-256-bits-long-for-proper-security}
     expiration: ${JWT_EXPIRATION:86400000} # 24 hours
+  frontend-url: ${FRONTEND_URL:http://localhost:4200}
+  
+# JWT Configuration (for backward compatibility)
+jwt:
+  secret: ${JWT_SECRET:super-secure-jwt-secret-key-that-is-at-least-256-bits-long-for-proper-security}
+  expiration: 86400000 # 24 hours
   
 # Management Endpoints
 management:
@@ -93,6 +107,6 @@ logging:
 
 # Server Configuration
 server:
-  port: ${PORT:8080}
+  port: 8080
   servlet:
     context-path: /api
