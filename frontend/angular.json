@@ -58,6 +58,22 @@
               ],
               "outputHashing": "all"
             },
+            "github-pages": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "1mb",
+                  "maximumError": "2mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "10kb",
+                  "maximumError": "15kb"
+                }
+              ],
+              "outputHashing": "all",
+              "baseHref": "/Meeting-Manager-Production/"
+            },
             "development": {
               "optimization": false,
               "extractLicenses": false,
