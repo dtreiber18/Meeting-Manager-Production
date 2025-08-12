@@ -76,7 +76,11 @@ jobs:
   build-and-push-images:
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    if: |
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') &&
+      secrets.AZURE_REGISTRY_USERNAME != '' &&
+      secrets.AZURE_REGISTRY_PASSWORD != '' &&
+      vars.AZURE_CONTAINER_REGISTRY != ''
     
     steps:
     - uses: actions/checkout@v4
@@ -103,7 +107,10 @@ jobs:
   deploy-to-azure:
     needs: build-and-push-images
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: |
+      github.ref == 'refs/heads/main' &&
+      secrets.AZURE_CREDENTIALS != '' &&
+      vars.AZURE_RESOURCE_GROUP != ''
     
     steps:
     - uses: actions/checkout@v4
