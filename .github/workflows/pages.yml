@@ -1,0 +1,180 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: frontend
+      run: npm ci
+    
+    - name: Build application
+      working-directory: frontend
+      run: |
+        # Build with base href for GitHub Pages
+        npm run build -- --base-href=/Meeting-Manager-Production/
+        
+        # Create a simple index.html in the root if it doesn't exist
+        if [ ! -f dist/index.html ]; then
+          echo "Creating index.html redirect..."
+          mkdir -p dist
+          cat > dist/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Meeting Manager - Enterprise Application</title>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { 
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+              margin: 0; 
+              padding: 40px;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+              min-height: 100vh;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            .container {
+              text-align: center;
+              background: rgba(255,255,255,0.1);
+              padding: 40px;
+              border-radius: 20px;
+              backdrop-filter: blur(10px);
+              box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            }
+            h1 { 
+              font-size: 2.5em; 
+              margin-bottom: 20px;
+              font-weight: 300;
+            }
+            p { 
+              font-size: 1.2em; 
+              margin-bottom: 30px;
+              opacity: 0.9;
+            }
+            .btn {
+              display: inline-block;
+              padding: 15px 30px;
+              background: rgba(255,255,255,0.2);
+              border: 2px solid rgba(255,255,255,0.3);
+              border-radius: 50px;
+              color: white;
+              text-decoration: none;
+              font-size: 1.1em;
+              transition: all 0.3s ease;
+            }
+            .btn:hover {
+              background: rgba(255,255,255,0.3);
+              transform: translateY(-2px);
+            }
+            .features {
+              margin-top: 40px;
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+              gap: 20px;
+              text-align: left;
+            }
+            .feature {
+              background: rgba(255,255,255,0.05);
+              padding: 20px;
+              border-radius: 10px;
+            }
+            .feature h3 {
+              margin-top: 0;
+              color: #ffd700;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>🚀 Meeting Manager</h1>
+            <p>Enterprise Application for Meeting Management & AI Integration</p>
+            
+            <div class="features">
+              <div class="feature">
+                <h3>🎯 Smart Meeting Management</h3>
+                <p>Professional Angular 17+ interface with Material Design</p>
+              </div>
+              <div class="feature">
+                <h3>🤖 AI Integration</h3>
+                <p>Azure OpenAI, Speech Services & Text Analytics</p>
+              </div>
+              <div class="feature">
+                <h3>🏢 Enterprise Ready</h3>
+                <p>Spring Boot 3.x backend with Azure AD B2C authentication</p>
+              </div>
+              <div class="feature">
+                <h3>☁️ Cloud Native</h3>
+                <p>Designed for Azure Container Apps with monitoring</p>
+              </div>
+            </div>
+            
+            <p style="margin-top: 40px;">
+              <strong>Note:</strong> This is a demonstration deployment of the frontend application.<br>
+              The backend API and full functionality require proper infrastructure setup.
+            </p>
+            
+            <a href="https://github.com/dtreiber18/Meeting-Manager-Production" class="btn">
+              📚 View Repository
+            </a>
+          </div>
+        </body>
+        </html>
+        EOF
+        fi
+        
+        # List built files
+        echo "Built files:"
+        find dist -type f -name "*.html" -o -name "*.js" -o -name "*.css" | head -20
+    
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+    
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: './frontend/dist'
+    
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+      
+    - name: Display deployment URL
+      run: |
+        echo "🚀 Application deployed successfully!"
+        echo "📱 Live URL: ${{ steps.deployment.outputs.page_url }}"
+        echo "🔗 Direct link: https://dtreiber18.github.io/Meeting-Manager-Production/"
