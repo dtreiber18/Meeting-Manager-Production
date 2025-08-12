@@ -3,8 +3,11 @@ name: Meeting Manager CI/CD
 on:
   push:
     branches: [ main, develop ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
+  release:
+    types: [ published ]
 
 env:
   AZURE_CONTAINER_REGISTRY: ${{ vars.AZURE_CONTAINER_REGISTRY }}
@@ -65,6 +68,21 @@ jobs:
       working-directory: backend
       run: mvn clean package -DskipTests
     
+    # Upload build artifacts
+    - name: Upload frontend build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-dist-${{ github.sha }}
+        path: frontend/dist/
+        retention-days: 30
+    
+    - name: Upload backend JAR artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-jar-${{ github.sha }}
+        path: backend/target/*.jar
+        retention-days: 30
+    
     # SonarQube Analysis (Optional - only runs if token is configured)
     - name: SonarQube Scan
       if: ${{ env.SONAR_TOKEN != '' }}
@@ -72,6 +90,184 @@ jobs:
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL || 'https://sonarcloud.io' }}
+
+  publish-release:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Download frontend artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: frontend-dist-${{ github.sha }}
+        path: ./release/frontend
+    
+    - name: Download backend artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: backend-jar-${{ github.sha }}
+        path: ./release/backend
+    
+    - name: Generate version
+      id: version
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+        else
+          VERSION=$(date +'%Y.%m.%d')-${GITHUB_SHA::8}
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Generated version: $VERSION"
+    
+    - name: Create release package
+      run: |
+        mkdir -p release-package
+        
+        # Create frontend package
+        cd ./release/frontend
+        zip -r ../../release-package/meeting-manager-frontend-${{ steps.version.outputs.version }}.zip ./*
+        cd ../../
+        
+        # Copy backend JAR
+        cp ./release/backend/*.jar ./release-package/meeting-manager-backend-${{ steps.version.outputs.version }}.jar
+        
+        # Create deployment scripts
+        cat > ./release-package/docker-compose.prod.yml << 'EOF'
+        version: '3.8'
+        
+        services:
+          frontend:
+            image: nginx:alpine
+            ports:
+              - "80:80"
+            volumes:
+              - ./frontend:/usr/share/nginx/html:ro
+              - ./nginx.conf:/etc/nginx/nginx.conf:ro
+            depends_on:
+              - backend
+        
+          backend:
+            image: openjdk:17-jre-slim
+            ports:
+              - "8080:8080"
+            volumes:
+              - ./backend:/app:ro
+            working_dir: /app
+            command: java -jar meeting-manager-backend-${{ steps.version.outputs.version }}.jar
+            environment:
+              - SPRING_PROFILES_ACTIVE=production
+        EOF
+        
+        # Create deployment README
+        cat > ./release-package/DEPLOYMENT.md << 'EOF'
+        # Meeting Manager Deployment Guide
+        
+        ## Version: ${{ steps.version.outputs.version }}
+        
+        This package contains:
+        - `meeting-manager-frontend-${{ steps.version.outputs.version }}.zip` - Frontend static files
+        - `meeting-manager-backend-${{ steps.version.outputs.version }}.jar` - Backend Spring Boot application
+        - `docker-compose.prod.yml` - Production Docker Compose configuration
+        
+        ## Quick Deployment
+        
+        1. Extract the frontend files:
+           ```bash
+           unzip meeting-manager-frontend-${{ steps.version.outputs.version }}.zip -d frontend/
+           ```
+        
+        2. Start the services:
+           ```bash
+           docker-compose -f docker-compose.prod.yml up -d
+           ```
+        
+        ## Manual Deployment
+        
+        ### Frontend
+        - Serve the extracted frontend files using any web server (nginx, Apache, etc.)
+        - Configure reverse proxy to backend on port 8080
+        
+        ### Backend
+        - Requires Java 17+
+        - Run: `java -jar meeting-manager-backend-${{ steps.version.outputs.version }}.jar`
+        - Configure database connections via environment variables
+        
+        ## Environment Variables
+        
+        - `SPRING_PROFILES_ACTIVE=production`
+        - `DATABASE_URL` - Database connection string
+        - `AZURE_CLIENT_ID` - Azure AD B2C client ID
+        - `AZURE_TENANT_ID` - Azure AD B2C tenant ID
+        
+        Built from commit: ${{ github.sha }}
+        Build date: $(date)
+        EOF
+        
+        # Create checksums
+        cd release-package
+        sha256sum * > SHA256SUMS
+        cd ..
+        
+        ls -la release-package/
+    
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          release-package/*
+        body: |
+          # Meeting Manager Release ${{ steps.version.outputs.version }}
+          
+          ## 🚀 What's Included
+          
+          - **Frontend Application**: Complete Angular 17+ web application with Material Design
+          - **Backend API**: Spring Boot 3.x REST API with enterprise features
+          - **Deployment Scripts**: Docker Compose and manual deployment configurations
+          - **Documentation**: Complete deployment and configuration guide
+          
+          ## 📦 Artifacts
+          
+          - `meeting-manager-frontend-${{ steps.version.outputs.version }}.zip` - Frontend static files
+          - `meeting-manager-backend-${{ steps.version.outputs.version }}.jar` - Backend JAR file
+          - `docker-compose.prod.yml` - Production Docker Compose
+          - `DEPLOYMENT.md` - Deployment instructions
+          - `SHA256SUMS` - File checksums for verification
+          
+          ## 🔧 Quick Start
+          
+          ```bash
+          # Download and extract release
+          wget https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/meeting-manager-frontend-${{ steps.version.outputs.version }}.zip
+          unzip meeting-manager-frontend-${{ steps.version.outputs.version }}.zip -d frontend/
+          
+          # Run with Docker Compose
+          docker-compose -f docker-compose.prod.yml up -d
+          ```
+          
+          ## 📋 Requirements
+          
+          - Java 17+ (for backend)
+          - Node.js 18+ (for development)
+          - Docker & Docker Compose (for containerized deployment)
+          
+          Built from commit: ${{ github.sha }}
+          
+        draft: false
+        prerelease: ${{ contains(steps.version.outputs.version, 'dev') || contains(steps.version.outputs.version, 'rc') }}
+    
+    - name: Publish development build
+      if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: meeting-manager-release-${{ steps.version.outputs.version }}
+        path: release-package/
+        retention-days: 90
 
   # Commented out until Azure infrastructure is configured
   # build-and-push-images:
