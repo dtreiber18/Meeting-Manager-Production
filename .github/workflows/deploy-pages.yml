@@ -96,7 +96,12 @@ jobs:
     - name: Display deployment URL
       run: |
         echo "🚀 Application deployed successfully!"
-        echo "📱 Live URL: ${{ steps.deployment.outputs.page_url }}"
-        echo "📝 The application is now accessible at the above URL"
+        echo "📱 Live URL: https://dtreiber18.github.io/Meeting-Manager-Production/"
+        echo "📝 Direct link: ${{ steps.deployment.outputs.page_url || 'https://dtreiber18.github.io/Meeting-Manager-Production/' }}"
+        echo ""
+        echo "If the URL doesn't work immediately:"
+        echo "1. Go to repository Settings → Pages"
+        echo "2. Under 'Source', select 'GitHub Actions'"
+        echo "3. Wait 2-3 minutes for deployment to propagate"
         echo ""
         echo "Note: It may take a few minutes for changes to be visible"

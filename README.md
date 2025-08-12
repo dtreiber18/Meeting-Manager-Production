@@ -2,7 +2,13 @@
 
 A modern, enterprise-grade meeting management application built with Angular 17+ frontend and Spring Boot 3.x backend, designed for Azure deployment with AI-powered features.
 
-## 🏗️ Architecture
+## � Live Demo
+
+**🚀 Try the application now: [https://dtreiber18.github.io/Meeting-Manager-Production/](https://dtreiber18.github.io/Meeting-Manager-Production/)**
+
+*Experience the professional enterprise UI, Material Design components, and comprehensive meeting management features.*
+
+## �🏗️ Architecture
 
 ### Frontend
 - **Angular 17+** with TypeScript
