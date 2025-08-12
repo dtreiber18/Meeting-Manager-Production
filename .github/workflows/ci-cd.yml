@@ -73,67 +73,61 @@ jobs:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL || 'https://sonarcloud.io' }}
 
-  build-and-push-images:
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    if: |
-      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') &&
-      secrets.AZURE_REGISTRY_USERNAME != '' &&
-      secrets.AZURE_REGISTRY_PASSWORD != '' &&
-      vars.AZURE_CONTAINER_REGISTRY != ''
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Log in to Azure Container Registry
-      uses: azure/docker-login@v1
-      with:
-        login-server: ${{ env.AZURE_CONTAINER_REGISTRY }}
-        username: ${{ secrets.AZURE_REGISTRY_USERNAME }}
-        password: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
-    
-    - name: Build and push frontend image
-      working-directory: frontend
-      run: |
-        docker build -t ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME_FRONTEND }}:${{ github.sha }} .
-        docker push ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME_FRONTEND }}:${{ github.sha }}
-    
-    - name: Build and push backend image
-      working-directory: backend
-      run: |
-        docker build -t ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME_BACKEND }}:${{ github.sha }} .
-        docker push ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME_BACKEND }}:${{ github.sha }}
+  # Commented out until Azure infrastructure is configured
+  # build-and-push-images:
+  #   needs: build-and-test
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+  #   
+  #   steps:
+  #   - uses: actions/checkout@v4
+  #   
+  #   - name: Log in to Azure Container Registry
+  #     uses: azure/docker-login@v1
+  #     with:
+  #       login-server: ${{ env.AZURE_CONTAINER_REGISTRY }}
+  #       username: ${{ secrets.AZURE_REGISTRY_USERNAME }}
+  #       password: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
+  #   
+  #   - name: Build and push frontend image
+  #     working-directory: frontend
+  #     run: |
+  #       docker build -t ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME_FRONTEND }}:${{ github.sha }} .
+  #       docker push ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME_FRONTEND }}:${{ github.sha }}
+  #   
+  #   - name: Build and push backend image
+  #     working-directory: backend
+  #     run: |
+  #       docker build -t ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME_BACKEND }}:${{ github.sha }} .
+  #       docker push ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME_BACKEND }}:${{ github.sha }}
 
-  deploy-to-azure:
-    needs: build-and-push-images
-    runs-on: ubuntu-latest
-    if: |
-      github.ref == 'refs/heads/main' &&
-      secrets.AZURE_CREDENTIALS != '' &&
-      vars.AZURE_RESOURCE_GROUP != ''
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    # Only deploy if Azure credentials are configured
-    - name: Azure Login
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-    
-    - name: Deploy to Azure Container Apps
-      run: |
-        # Update frontend container app
-        az containerapp update \
-          --name meeting-manager-frontend \
-          --resource-group ${{ env.RESOURCE_GROUP }} \
-          --image ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME_FRONTEND }}:${{ github.sha }}
-        
-        # Update backend container app
-        az containerapp update \
-          --name meeting-manager-backend \
-          --resource-group ${{ env.RESOURCE_GROUP }} \
-          --image ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME_BACKEND }}:${{ github.sha }}
+  # Commented out until Azure infrastructure is configured
+  # deploy-to-azure:
+  #   needs: build-and-push-images
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'
+  #   
+  #   steps:
+  #   - uses: actions/checkout@v4
+  #   
+  #   - name: Azure Login
+  #     uses: azure/login@v1
+  #     with:
+  #       creds: ${{ secrets.AZURE_CREDENTIALS }}
+  #   
+  #   - name: Deploy to Azure Container Apps
+  #     run: |
+  #       # Update frontend container app
+  #       az containerapp update \
+  #         --name meeting-manager-frontend \
+  #         --resource-group ${{ env.RESOURCE_GROUP }} \
+  #         --image ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME_FRONTEND }}:${{ github.sha }}
+  #       
+  #       # Update backend container app
+  #       az containerapp update \
+  #         --name meeting-manager-backend \
+  #         --resource-group ${{ env.RESOURCE_GROUP }} \
+  #         --image ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME_BACKEND }}:${{ github.sha }}
 
   security-scan:
     runs-on: ubuntu-latest
