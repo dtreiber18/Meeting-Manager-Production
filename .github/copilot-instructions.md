@@ -1,6 +1,7 @@
 <!-- Meeting Manager - Enterprise Application Setup -->
 
 ## Project Overview
+
 - **Product Name**: Meeting Manager
 - **Architecture**: Angular 17+ Frontend + Spring Boot 3.x Backend
 - **Target Platform**: Azure Container Apps with enterprise-grade monitoring
@@ -8,6 +9,7 @@
 - **AI Integration**: Azure OpenAI, Speech Services, Text Analytics, Form Recognizer
 
 ## G37 Enterprise Technology Stack
+
 - **Frontend**: Angular 17+ with TypeScript, Angular Material, PWA, PrimeNG
 - **Backend**: Java 17+ with Spring Boot 3.x, Spring Security, Spring Data JPA
 - **Databases**: MongoDB (document data) and MySQL (relational data)
@@ -18,6 +20,7 @@
 - **Testing**: JUnit 5, Test containers, Cypress, SonarQube, OWASP ZAP
 
 ## Development Guidelines
+
 - Use enterprise-grade patterns and practices
 - Implement proper error handling and logging
 - Follow Azure Well-Architected Framework principles
@@ -26,14 +29,16 @@
 - Use dependency injection and proper service layers
 
 ## AI Services Integration Priority
+
 1. Azure OpenAI (chatbot/AI features)
-2. Cognitive Search (content indexing) 
+2. Cognitive Search (content indexing)
 3. Speech Services (voice interaction)
 4. Language Services (text analysis)
 5. Form Recognizer (document processing)
 6. Text Analytics (content analysis)
 
 ## Setup Progress
+
 - [x] ✅ Project Requirements Clarified
 - [x] ✅ Workspace Structure Created
 - [x] ✅ Scaffold Angular Frontend Project (Angular 17+ with Material + PrimeNG)

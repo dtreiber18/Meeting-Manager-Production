@@ -10,8 +10,8 @@ import java.util.Set;
 
 @Entity
 @Table(name = "roles", indexes = {
-    @Index(columnList = "name", unique = true),
-    @Index(columnList = "organizationId")
+        @Index(columnList = "name", unique = true),
+        @Index(columnList = "organizationId")
 })
 public class Role {
     @Id
@@ -49,11 +49,7 @@ public class Role {
     private Set<User> users;
 
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "role_permissions",
-        joinColumns = @JoinColumn(name = "role_id"),
-        inverseJoinColumns = @JoinColumn(name = "permission_id")
-    )
+    @JoinTable(name = "role_permissions", joinColumns = @JoinColumn(name = "role_id"), inverseJoinColumns = @JoinColumn(name = "permission_id"))
     private Set<Permission> permissions;
 
     // Lifecycle callbacks
@@ -69,7 +65,8 @@ public class Role {
     }
 
     // Constructors
-    public Role() {}
+    public Role() {
+    }
 
     public Role(String name, String description) {
         this.name = name;
@@ -89,33 +86,83 @@ public class Role {
     public static final String USER = "USER";
 
     // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public String getName() {
+        return name;
+    }
 
-    public Boolean getIsSystemRole() { return isSystemRole; }
-    public void setIsSystemRole(Boolean isSystemRole) { this.isSystemRole = isSystemRole; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public Boolean getIsActive() { return isActive; }
-    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+    public String getDescription() {
+        return description;
+    }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public Boolean getIsSystemRole() {
+        return isSystemRole;
+    }
 
-    public Organization getOrganization() { return organization; }
-    public void setOrganization(Organization organization) { this.organization = organization; }
+    public void setIsSystemRole(Boolean isSystemRole) {
+        this.isSystemRole = isSystemRole;
+    }
 
-    public Set<User> getUsers() { return users; }
-    public void setUsers(Set<User> users) { this.users = users; }
+    public Boolean getIsActive() {
+        return isActive;
+    }
 
-    public Set<Permission> getPermissions() { return permissions; }
-    public void setPermissions(Set<Permission> permissions) { this.permissions = permissions; }
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public Organization getOrganization() {
+        return organization;
+    }
+
+    public void setOrganization(Organization organization) {
+        this.organization = organization;
+    }
+
+    public Set<User> getUsers() {
+        return users;
+    }
+
+    public void setUsers(Set<User> users) {
+        this.users = users;
+    }
+
+    public Set<Permission> getPermissions() {
+        return permissions;
+    }
+
+    public void setPermissions(Set<Permission> permissions) {
+        this.permissions = permissions;
+    }
 }

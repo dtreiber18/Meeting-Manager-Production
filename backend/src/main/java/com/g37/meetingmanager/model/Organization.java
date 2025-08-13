@@ -10,10 +10,10 @@ import java.util.List;
 
 @Entity
 @Table(name = "organizations", indexes = {
-    @Index(columnList = "name"),
-    @Index(columnList = "domain"),
-    @Index(columnList = "isActive"),
-    @Index(columnList = "createdAt")
+        @Index(columnList = "name"),
+        @Index(columnList = "domain"),
+        @Index(columnList = "isActive"),
+        @Index(columnList = "createdAt")
 })
 public class Organization {
     @Id
@@ -110,7 +110,8 @@ public class Organization {
     }
 
     // Constructors
-    public Organization() {}
+    public Organization() {
+    }
 
     public Organization(String name, String domain) {
         this.name = name;
@@ -142,75 +143,195 @@ public class Organization {
     }
 
     // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getDomain() { return domain; }
-    public void setDomain(String domain) { this.domain = domain; }
+    public String getName() {
+        return name;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public String getWebsite() { return website; }
-    public void setWebsite(String website) { this.website = website; }
+    public String getDomain() {
+        return domain;
+    }
 
-    public String getLogoUrl() { return logoUrl; }
-    public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }
+    public void setDomain(String domain) {
+        this.domain = domain;
+    }
 
-    public String getIndustry() { return industry; }
-    public void setIndustry(String industry) { this.industry = industry; }
+    public String getDescription() {
+        return description;
+    }
 
-    public String getPhone() { return phone; }
-    public void setPhone(String phone) { this.phone = phone; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
+    public String getWebsite() {
+        return website;
+    }
 
-    public String getCity() { return city; }
-    public void setCity(String city) { this.city = city; }
+    public void setWebsite(String website) {
+        this.website = website;
+    }
 
-    public String getState() { return state; }
-    public void setState(String state) { this.state = state; }
+    public String getLogoUrl() {
+        return logoUrl;
+    }
 
-    public String getZipCode() { return zipCode; }
-    public void setZipCode(String zipCode) { this.zipCode = zipCode; }
+    public void setLogoUrl(String logoUrl) {
+        this.logoUrl = logoUrl;
+    }
 
-    public String getCountry() { return country; }
-    public void setCountry(String country) { this.country = country; }
+    public String getIndustry() {
+        return industry;
+    }
 
-    public String getTimezone() { return timezone; }
-    public void setTimezone(String timezone) { this.timezone = timezone; }
+    public void setIndustry(String industry) {
+        this.industry = industry;
+    }
 
-    public Boolean getIsActive() { return isActive; }
-    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+    public String getPhone() {
+        return phone;
+    }
 
-    public Integer getMaxUsers() { return maxUsers; }
-    public void setMaxUsers(Integer maxUsers) { this.maxUsers = maxUsers; }
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
 
-    public Integer getMaxMeetings() { return maxMeetings; }
-    public void setMaxMeetings(Integer maxMeetings) { this.maxMeetings = maxMeetings; }
+    public String getAddress() {
+        return address;
+    }
 
-    public SubscriptionTier getSubscriptionTier() { return subscriptionTier; }
-    public void setSubscriptionTier(SubscriptionTier subscriptionTier) { this.subscriptionTier = subscriptionTier; }
+    public void setAddress(String address) {
+        this.address = address;
+    }
 
-    public LocalDateTime getSubscriptionExpiresAt() { return subscriptionExpiresAt; }
-    public void setSubscriptionExpiresAt(LocalDateTime subscriptionExpiresAt) { this.subscriptionExpiresAt = subscriptionExpiresAt; }
+    public String getCity() {
+        return city;
+    }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setCity(String city) {
+        this.city = city;
+    }
 
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public String getState() {
+        return state;
+    }
 
-    public List<User> getUsers() { return users; }
-    public void setUsers(List<User> users) { this.users = users; }
+    public void setState(String state) {
+        this.state = state;
+    }
 
-    public List<Meeting> getMeetings() { return meetings; }
-    public void setMeetings(List<Meeting> meetings) { this.meetings = meetings; }
+    public String getZipCode() {
+        return zipCode;
+    }
 
-    public List<MeetingRoom> getMeetingRooms() { return meetingRooms; }
-    public void setMeetingRooms(List<MeetingRoom> meetingRooms) { this.meetingRooms = meetingRooms; }
+    public void setZipCode(String zipCode) {
+        this.zipCode = zipCode;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
+    public String getTimezone() {
+        return timezone;
+    }
+
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
+    }
+
+    public Boolean getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
+    }
+
+    public Integer getMaxUsers() {
+        return maxUsers;
+    }
+
+    public void setMaxUsers(Integer maxUsers) {
+        this.maxUsers = maxUsers;
+    }
+
+    public Integer getMaxMeetings() {
+        return maxMeetings;
+    }
+
+    public void setMaxMeetings(Integer maxMeetings) {
+        this.maxMeetings = maxMeetings;
+    }
+
+    public SubscriptionTier getSubscriptionTier() {
+        return subscriptionTier;
+    }
+
+    public void setSubscriptionTier(SubscriptionTier subscriptionTier) {
+        this.subscriptionTier = subscriptionTier;
+    }
+
+    public LocalDateTime getSubscriptionExpiresAt() {
+        return subscriptionExpiresAt;
+    }
+
+    public void setSubscriptionExpiresAt(LocalDateTime subscriptionExpiresAt) {
+        this.subscriptionExpiresAt = subscriptionExpiresAt;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public List<User> getUsers() {
+        return users;
+    }
+
+    public void setUsers(List<User> users) {
+        this.users = users;
+    }
+
+    public List<Meeting> getMeetings() {
+        return meetings;
+    }
+
+    public void setMeetings(List<Meeting> meetings) {
+        this.meetings = meetings;
+    }
+
+    public List<MeetingRoom> getMeetingRooms() {
+        return meetingRooms;
+    }
+
+    public void setMeetingRooms(List<MeetingRoom> meetingRooms) {
+        this.meetingRooms = meetingRooms;
+    }
 }
