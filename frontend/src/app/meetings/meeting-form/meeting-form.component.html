@@ -1,1 +1,197 @@
-<p>meeting-form works!</p>
+<div class="meeting-form-container max-w-4xl mx-auto p-6">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">
+            {{ isEdit ? 'Edit Meeting' : 'Create New Meeting' }}
+        </h1>
+        <p class="text-gray-600 mt-2">
+            {{ isEdit ? 'Update meeting details' : 'Schedule a new meeting with your team' }}
+        </p>
+    </div>
+
+    <!-- Form Card -->
+    <mat-card class="meeting-form-card">
+        <mat-card-content class="p-6">
+            <form #meetingForm="ngForm" (ngSubmit)="save()" class="space-y-6">
+
+                <!-- Basic Information Section -->
+                <div class="form-section">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Meeting Title -->
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Meeting Title</mat-label>
+                            <input matInput [(ngModel)]="meeting.title" name="title" placeholder="Enter meeting title"
+                                required>
+                            <mat-error>Meeting title is required</mat-error>
+                        </mat-form-field>
+
+                        <!-- Meeting Type -->
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Meeting Type</mat-label>
+                            <mat-select [(ngModel)]="meeting.type" name="type">
+                                <mat-option value="TEAM_MEETING">Team Meeting</mat-option>
+                                <mat-option value="CLIENT_CALL">Client Call</mat-option>
+                                <mat-option value="ONE_ON_ONE">One-on-One</mat-option>
+                                <mat-option value="PROJECT_REVIEW">Project Review</mat-option>
+                                <mat-option value="STANDUP">Standup</mat-option>
+                                <mat-option value="TRAINING">Training</mat-option>
+                                <mat-option value="INTERVIEW">Interview</mat-option>
+                                <mat-option value="OTHER">Other</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                    </div>
+
+                    <!-- Description -->
+                    <mat-form-field appearance="outline" class="w-full">
+                        <mat-label>Description</mat-label>
+                        <textarea matInput [(ngModel)]="meeting.description" name="description" rows="3"
+                            placeholder="Enter meeting description"></textarea>
+                    </mat-form-field>
+                </div>
+
+                <!-- Schedule Section -->
+                <div class="form-section">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Schedule</h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Start Date & Time -->
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Start Date & Time</mat-label>
+                            <input matInput type="datetime-local" [(ngModel)]="meeting.startTime" name="startTime"
+                                title="Start Date & Time" required>
+                            <mat-error>Start time is required</mat-error>
+                        </mat-form-field>
+                        <!-- End Date & Time -->
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>End Date & Time</mat-label>
+                            <input matInput type="datetime-local" [(ngModel)]="meeting.endTime" name="endTime"
+                                title="End Date & Time" required>
+                            <mat-error>End time is required</mat-error>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Priority -->
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Priority</mat-label>
+                            <mat-select [(ngModel)]="meeting.priority" name="priority">
+                                <mat-option value="LOW">Low</mat-option>
+                                <mat-option value="MEDIUM">Medium</mat-option>
+                                <mat-option value="HIGH">High</mat-option>
+                                <mat-option value="URGENT">Urgent</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <!-- Status -->
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Status</mat-label>
+                            <mat-select [(ngModel)]="meeting.status" name="status">
+                                <mat-option value="SCHEDULED">Scheduled</mat-option>
+                                <mat-option value="IN_PROGRESS">In Progress</mat-option>
+                                <mat-option value="COMPLETED">Completed</mat-option>
+                                <mat-option value="CANCELLED">Cancelled</mat-option>
+                                <mat-option value="POSTPONED">Postponed</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                    </div>
+                </div>
+
+                <!-- Location & Links Section -->
+                <div class="form-section">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Location & Links</h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Location -->
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Location</mat-label>
+                            <input matInput [(ngModel)]="meeting.location" name="location"
+                                placeholder="Conference Room A, Office Building">
+                            <mat-icon matSuffix>place</mat-icon>
+                        </mat-form-field>
+
+                        <!-- Meeting Link -->
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-label>Meeting Link</mat-label>
+                            <input matInput type="url" [(ngModel)]="meeting.meetingLink" name="meetingLink"
+                                placeholder="https://zoom.us/j/123456789">
+                            <mat-icon matSuffix>link</mat-icon>
+                        </mat-form-field>
+                    </div>
+                </div>
+
+                <!-- Agenda Section -->
+                <div class="form-section">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Agenda</h3>
+
+                    <mat-form-field appearance="outline" class="w-full">
+                        <mat-label>Meeting Agenda</mat-label>
+                        <textarea matInput [(ngModel)]="meeting.agenda" name="agenda" rows="5"
+                            placeholder="1. Welcome and introductions&#10;2. Project updates&#10;3. Next steps&#10;4. Q&A"></textarea>
+                    </mat-form-field>
+                </div>
+
+                <!-- Settings Section -->
+                <div class="form-section">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Meeting Settings</h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Recurring Meeting -->
+                        <mat-checkbox [(ngModel)]="meeting.isRecurring" name="isRecurring" color="primary">
+                            Recurring Meeting
+                        </mat-checkbox>
+
+                        <!-- Public Meeting -->
+                        <mat-checkbox [(ngModel)]="meeting.isPublic" name="isPublic" color="primary">
+                            Public Meeting
+                        </mat-checkbox>
+
+                        <!-- Requires Approval -->
+                        <mat-checkbox [(ngModel)]="meeting.requiresApproval" name="requiresApproval" color="primary">
+                            Requires Approval
+                        </mat-checkbox>
+
+                        <!-- Allow Recording -->
+                        <mat-checkbox [(ngModel)]="meeting.allowRecording" name="allowRecording" color="primary">
+                            Allow Recording
+                        </mat-checkbox>
+
+                        <!-- Auto Transcription -->
+                        <mat-checkbox [(ngModel)]="meeting.autoTranscription" name="autoTranscription" color="primary">
+                            Auto Transcription
+                        </mat-checkbox>
+
+                        <!-- AI Analysis -->
+                        <mat-checkbox [(ngModel)]="meeting.aiAnalysisEnabled" name="aiAnalysisEnabled" color="primary">
+                            AI Analysis
+                        </mat-checkbox>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center justify-between pt-6 border-t border-gray-200">
+                    <button type="button" mat-button color="warn" (click)="router.navigate(['/meetings'])"
+                        class="cancel-button">
+                        <mat-icon>close</mat-icon>
+                        Cancel
+                    </button>
+
+                    <div class="flex space-x-3">
+                        <button type="button" mat-outlined-button color="accent" [disabled]="!meetingForm.valid"
+                            class="draft-button">
+                            <mat-icon>save</mat-icon>
+                            Save as Draft
+                        </button>
+
+                        <button type="submit" mat-raised-button color="primary" [disabled]="!meetingForm.valid"
+                            class="save-button">
+                            <mat-icon>{{ isEdit ? 'update' : 'add' }}</mat-icon>
+                            {{ isEdit ? 'Update Meeting' : 'Create Meeting' }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </mat-card-content>
+    </mat-card>
+</div>

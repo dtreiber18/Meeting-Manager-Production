@@ -152,11 +152,12 @@ module frontend './modules/container-app.bicep' = {
     location: location
     containerAppsEnvironmentId: containerAppsEnvironment.outputs.id
     containerRegistryName: containerRegistry.outputs.name
+    containerImage: '${containerRegistry.outputs.name}.azurecr.io/meeting-manager-frontend:latest'
     tags: tags
     env: [
       {
         name: 'API_URL'
-        value: 'https://${abbrs.appContainerApps}backend-${resourceToken}.${containerAppsEnvironment.outputs.defaultDomain}/api'
+        value: '${backend.outputs.uri}/api'
       }
     ]
   }
@@ -171,6 +172,7 @@ module backend './modules/container-app.bicep' = {
     location: location
     containerAppsEnvironmentId: containerAppsEnvironment.outputs.id
     containerRegistryName: containerRegistry.outputs.name
+    containerImage: '${containerRegistry.outputs.name}.azurecr.io/meeting-manager-backend:latest'
     tags: tags
     env: [
       {
@@ -183,7 +185,7 @@ module backend './modules/container-app.bicep' = {
       }
       {
         name: 'MONGODB_URI'
-        value: 'mongodb://${cosmosDb.outputs.accountName}.mongo.cosmos.azure.com:10255/?ssl=true'
+        value: 'mongodb://${cosmosDb.outputs.accountName}.mongo.cosmos.azure.com:10255/?ssl=true&retrywrites=false'
       }
       {
         name: 'AZURE_OPENAI_ENDPOINT'

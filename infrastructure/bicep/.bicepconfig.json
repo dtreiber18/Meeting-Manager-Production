@@ -1,0 +1,21 @@
+{
+  "analyzers": {
+    "core": {
+      "enabled": true,
+      "verbose": false,
+      "rules": {
+        "no-unused-params": {
+          "level": "warning"
+        },
+        "no-unused-vars": {
+          "level": "warning"
+        }
+      }
+    }
+  },
+  "formatting": {
+    "indentKind": "Space",
+    "indentSize": 2,
+    "insertFinalNewline": true
+  }
+}

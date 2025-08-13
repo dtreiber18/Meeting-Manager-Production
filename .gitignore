@@ -145,7 +145,10 @@ out/
 /.nb-gradle/
 
 # VS Code
-.vscode/
+.vscode/settings.json.bak
+# Keep workspace configuration files
+# .vscode/settings.json
+# .vscode/tasks.json
 
 # Secrets and config
 secrets.json

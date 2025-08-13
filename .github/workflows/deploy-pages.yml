@@ -49,7 +49,7 @@ jobs:
         echo "Checking build output:"
         find dist -type f -name "*.html" | head -10
         
-        # Find the correct index.html location
+        # Find the correct index.html location and set environment variable
         if [ -f "dist/frontend/browser/index.html" ]; then
           BUILD_DIR="dist/frontend/browser"
         elif [ -f "dist/frontend/index.html" ]; then
@@ -63,6 +63,7 @@ jobs:
         fi
         
         echo "Using build directory: $BUILD_DIR"
+        echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_ENV
         
         # Create 404.html for client-side routing
         cp "$BUILD_DIR/index.html" "$BUILD_DIR/404.html"
@@ -77,9 +78,6 @@ jobs:
         
         Sitemap: https://dtreiber18.github.io/Meeting-Manager-Production/sitemap.xml
         EOF
-        
-        # Store the build directory for the next step
-        echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_ENV
     
     - name: Setup Pages
       uses: actions/configure-pages@v4
@@ -87,7 +85,7 @@ jobs:
     - name: Upload Pages artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: frontend/${{ env.BUILD_DIR }}
+        path: frontend/dist
     
     - name: Deploy to GitHub Pages
       id: deployment

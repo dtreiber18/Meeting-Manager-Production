@@ -1,80 +1,68 @@
-<div class="settings-container max-w-7xl mx-auto p-6 space-y-6">
+<div class="settings-container max-w-7xl mx-auto p-6 space-y-6" role="region" aria-label="Settings Page"
+  title="Settings">
   <!-- Page Header -->
   <div class="mb-8">
     <h1 class="text-3xl font-bold text-gray-900">Settings</h1>
     <p class="text-gray-600 mt-2">Manage your account and application integrations</p>
-    <!-- Enhanced settings interface with improved user experience -->
   </div>
 
   <!-- Main Settings Card -->
   <mat-card class="settings-card">
     <!-- Tabs Navigation -->
-    <mat-tab-group 
-      [(selectedIndex)]="activeTab" 
-      (selectedTabChange)="onTabChange($event.index === 0 ? 'account' : $event.index === 1 ? 'sources' : 'destinations')"
+    <mat-tab-group [(selectedIndex)]="activeTabIndex" (selectedTabChange)="onTabChange($event.index || 0)"
       class="settings-tabs">
-      
+
       <!-- Account Tab -->
-      <mat-tab label="Account Info">
+      <mat-tab label="Account Info" [attr.aria-label]="'Account information settings'">
         <ng-template matTabContent>
           <div class="tab-content p-6">
-            <!-- Navigation Header for Detail Views -->
-            <div *ngIf="currentView === 'detail' && selectedApp" class="flex items-center mb-6">
-              <button 
-                mat-button 
-                (click)="onBackToSummary()"
-                class="back-button">
-                <mat-icon>arrow_back</mat-icon>
-                Back to {{ activeTab === 'sources' ? 'Sources' : 'Destinations' }}
-              </button>
-              <div class="ml-4 flex items-center">
-                <div class="app-icon" [class]="'app-icon-' + selectedApp.type">
-                  <mat-icon>{{ getAppIcon(selectedApp.name) }}</mat-icon>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900 ml-3">{{ selectedApp.name || 'Unnamed App' }}</h3>
-              </div>
-            </div>
-
             <!-- Account Information -->
             <div class="professional-form-container">
               <div class="form-section">
-                <h3 class="section-title">Account Information</h3>
+                <h3 class="section-title" id="account-info-title">Account Information</h3>
                 <p class="section-description">Update your personal details and contact information</p>
-                <form [formGroup]="accountForm" class="professional-form-field">
+
+                <form [formGroup]="accountForm" (ngSubmit)="onAccountUpdate()" class="professional-form-field"
+                  [attr.aria-labelledby]="'account-info-title'">
                   <div class="professional-form-grid grid-cols-2">
                     <mat-form-field appearance="outline" class="w-full">
                       <mat-label>Display Name</mat-label>
-                      <input matInput formControlName="name" placeholder="Enter your name">
-                      <mat-error *ngIf="accountForm.get('name')?.hasError('required')">
-                        Name is required
-                      </mat-error>
-                      <mat-error *ngIf="accountForm.get('name')?.hasError('minlength')">
-                        Name must be at least 2 characters
-                      </mat-error>
+                      <input matInput formControlName="name" placeholder="Enter your name"
+                        [attr.aria-describedby]="'name-errors'">
+                      <div id="name-errors">
+                        <mat-error *ngIf="hasFieldError(accountForm, 'name', 'required')">
+                          Name is required
+                        </mat-error>
+                        <mat-error *ngIf="hasFieldError(accountForm, 'name', 'minlength')">
+                          Name must be at least 2 characters
+                        </mat-error>
+                        <mat-error *ngIf="hasFieldError(accountForm, 'name', 'maxlength')">
+                          Name cannot exceed 50 characters
+                        </mat-error>
+                      </div>
                     </mat-form-field>
 
                     <mat-form-field appearance="outline" class="w-full">
                       <mat-label>Email Address</mat-label>
-                      <input matInput type="email" formControlName="email" placeholder="Enter your email">
-                      <mat-error *ngIf="accountForm.get('email')?.hasError('required')">
-                        Email is required
-                      </mat-error>
-                      <mat-error *ngIf="accountForm.get('email')?.hasError('email')">
-                        Please enter a valid email
-                      </mat-error>
+                      <input matInput type="email" formControlName="email" placeholder="Enter your email"
+                        [attr.aria-describedby]="'email-errors'">
+                      <div id="email-errors">
+                        <mat-error *ngIf="hasFieldError(accountForm, 'email', 'required')">
+                          Email is required
+                        </mat-error>
+                        <mat-error *ngIf="hasFieldError(accountForm, 'email', 'email')">
+                          Please enter a valid email address
+                        </mat-error>
+                      </div>
                     </mat-form-field>
                   </div>
 
                   <div class="form-actions">
-                    <button 
-                      mat-raised-button 
-                      type="button"
-                      color="primary" 
-                      (click)="onAccountUpdate()"
-                      [disabled]="!accountForm.valid || isSaving"
-                      class="professional-form-button">
-                      <mat-icon *ngIf="isSaving" class="animate-spin">refresh</mat-icon>
-                      <mat-icon *ngIf="!isSaving">save</mat-icon>
+                    <button mat-raised-button type="submit" color="primary" [disabled]="!accountForm.valid || isSaving"
+                      class="professional-form-button"
+                      [attr.aria-label]="isSaving ? 'Saving account changes' : 'Save account changes'">
+                      <mat-icon *ngIf="isSaving" class="animate-spin" [attr.aria-hidden]="true">refresh</mat-icon>
+                      <mat-icon *ngIf="!isSaving" [attr.aria-hidden]="true">save</mat-icon>
                       {{ isSaving ? 'Saving...' : 'Save Changes' }}
                     </button>
                   </div>
@@ -83,58 +71,72 @@
 
               <!-- Password Change Section -->
               <div class="form-section">
-                <h3 class="section-title">Change Password</h3>
+                <h3 class="section-title" id="password-change-title">Change Password</h3>
                 <p class="section-description">Update your account password for enhanced security</p>
-                <form [formGroup]="passwordForm" class="professional-form-field">
+
+                <form [formGroup]="passwordForm" (ngSubmit)="onPasswordChange()" class="professional-form-field"
+                  [attr.aria-labelledby]="'password-change-title'">
                   <div class="professional-form-grid grid-cols-2">
                     <mat-form-field appearance="outline" class="w-full">
                       <mat-label>New Password</mat-label>
-                      <input 
-                        matInput 
-                        [type]="showPassword ? 'text' : 'password'" 
-                        formControlName="newPassword" 
-                        placeholder="Enter new password">
-                      <button 
-                        mat-icon-button 
-                        matSuffix 
-                        (click)="togglePasswordVisibility()" 
-                        type="button">
-                        <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+                      <input matInput [type]="showPassword ? 'text' : 'password'" formControlName="newPassword"
+                        placeholder="Enter new password" [attr.aria-describedby]="'password-errors password-strength'">
+                      <button mat-icon-button matSuffix (click)="togglePasswordVisibility()" type="button"
+                        [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
+                        <mat-icon [attr.aria-hidden]="true">{{ showPassword ? 'visibility_off' : 'visibility'
+                          }}</mat-icon>
                       </button>
-                      <mat-error *ngIf="passwordForm.get('newPassword')?.hasError('required')">
-                        Password is required
-                      </mat-error>
-                      <mat-error *ngIf="passwordForm.get('newPassword')?.hasError('minlength')">
-                        Password must be at least 8 characters
-                      </mat-error>
+
+                      <!-- Password Strength Indicator -->
+                      <mat-hint id="password-strength" *ngIf="passwordForm.get('newPassword')?.value">
+                        <div class="password-strength-container">
+                          <div class="password-strength-bar">
+                            <div class="password-strength-fill"
+                              [style.width.%]="getPasswordStrength(passwordForm.get('newPassword')?.value).percentage"
+                              [class]="'strength-' + getPasswordStrength(passwordForm.get('newPassword')?.value).level">
+                            </div>
+                          </div>
+                          <span class="password-strength-text">
+                            {{ getPasswordStrength(passwordForm.get('newPassword')?.value).label }}
+                          </span>
+                        </div>
+                      </mat-hint>
+
+                      <div id="password-errors">
+                        <mat-error *ngIf="hasFieldError(passwordForm, 'newPassword', 'required')">
+                          Password is required
+                        </mat-error>
+                        <mat-error *ngIf="hasFieldError(passwordForm, 'newPassword', 'minlength')">
+                          Password must be at least 8 characters
+                        </mat-error>
+                        <mat-error *ngIf="hasFieldError(passwordForm, 'newPassword', 'pattern')">
+                          Password must contain uppercase, lowercase, number, and special character
+                        </mat-error>
+                      </div>
                     </mat-form-field>
 
                     <mat-form-field appearance="outline" class="w-full">
                       <mat-label>Confirm Password</mat-label>
-                      <input 
-                        matInput 
-                        type="password" 
-                        formControlName="confirmPassword" 
-                        placeholder="Confirm password">
-                      <mat-error *ngIf="passwordForm.get('confirmPassword')?.hasError('required')">
-                        Please confirm your password
-                      </mat-error>
-                      <mat-error *ngIf="passwordForm.get('confirmPassword')?.hasError('passwordMismatch')">
-                        Passwords do not match
-                      </mat-error>
+                      <input matInput type="password" formControlName="confirmPassword" placeholder="Confirm password"
+                        [attr.aria-describedby]="'confirm-password-errors'">
+                      <div id="confirm-password-errors">
+                        <mat-error *ngIf="hasFieldError(passwordForm, 'confirmPassword', 'required')">
+                          Please confirm your password
+                        </mat-error>
+                        <mat-error
+                          *ngIf="passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmPassword')?.touched">
+                          Passwords do not match
+                        </mat-error>
+                      </div>
                     </mat-form-field>
                   </div>
 
                   <div class="form-actions">
-                    <button 
-                      mat-raised-button 
-                      type="button"
-                      color="primary" 
-                      (click)="onPasswordChange()"
-                      [disabled]="!passwordForm.valid || isSaving"
-                      class="professional-form-button">
-                      <mat-icon *ngIf="isSaving" class="animate-spin">refresh</mat-icon>
-                      <mat-icon *ngIf="!isSaving">lock</mat-icon>
+                    <button mat-raised-button type="submit" color="primary" [disabled]="!passwordForm.valid || isSaving"
+                      class="professional-form-button"
+                      [attr.aria-label]="isSaving ? 'Updating password' : 'Change password'">
+                      <mat-icon *ngIf="isSaving" class="animate-spin" [attr.aria-hidden]="true">refresh</mat-icon>
+                      <mat-icon *ngIf="!isSaving" [attr.aria-hidden]="true">lock</mat-icon>
                       {{ isSaving ? 'Updating...' : 'Change Password' }}
                     </button>
                   </div>
@@ -146,41 +148,81 @@
       </mat-tab>
 
       <!-- Sources Tab -->
-      <mat-tab label="Get Info From">
+      <mat-tab label="Get Info From" [attr.aria-label]="'Meeting note sources configuration'">
         <ng-template matTabContent>
           <div class="tab-content p-6">
+            <!-- Navigation Header for Detail Views -->
+            <div *ngIf="currentView === 'detail' && selectedApp" class="flex items-center mb-6">
+              <button mat-button type="button" (click)="onBackToSummary()" class="back-button"
+                [attr.aria-label]="'Back to ' + (selectedApp.type === 'source' ? 'Sources' : 'Destinations')">
+                <mat-icon [attr.aria-hidden]="true">arrow_back</mat-icon>
+                Back to {{ selectedApp.type === 'source' ? 'Sources' : 'Destinations' }}
+              </button>
+              <div class="ml-4 flex items-center">
+                <div class="app-icon" [class]="'app-icon-' + selectedApp.type" [attr.aria-hidden]="true">
+                  <mat-icon>{{ getAppIcon(selectedApp.name || '') }}</mat-icon>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 ml-3">{{ selectedApp.name || 'Unnamed App' }}</h3>
+              </div>
+            </div>
+
             <!-- Summary View -->
             <div *ngIf="currentView === 'summary'" class="space-y-6">
               <div class="flex items-center justify-between">
                 <div>
-                  <h3 class="text-lg font-semibold text-gray-900">Meeting Note Sources</h3>
+                  <h3 class="text-lg font-semibold text-gray-900" id="sources-title">Meeting Note Sources</h3>
                   <p class="text-sm text-gray-600 mt-1">Configure apps that provide meeting data</p>
                 </div>
-                <button 
-                  mat-raised-button 
-                  color="primary" 
-                  (click)="addSourceApp()"
-                  class="add-button">
-                  <mat-icon>add</mat-icon>
+                <button mat-raised-button color="primary" (click)="addSourceApp()" class="add-button"
+                  [attr.aria-label]="'Add new source application'">
+                  <mat-icon [attr.aria-hidden]="true">add</mat-icon>
                   Add Source
                 </button>
               </div>
 
-              <!-- Loading State -->
-              <div *ngIf="isLoading" class="flex justify-center py-12">
-                <mat-spinner diameter="40"></mat-spinner>
+              <!-- Loading State with Skeleton -->
+              <div *ngIf="isLoading" class="space-y-4" role="status" aria-live="polite"
+                [attr.aria-label]="'Loading source applications'">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div *ngFor="let item of [1,2,3]" class="skeleton-card">
+                    <div class="animate-pulse">
+                      <div class="flex items-center space-x-4 mb-4">
+                        <div class="rounded-full bg-gray-300 h-10 w-10"></div>
+                        <div class="space-y-2">
+                          <div class="h-4 bg-gray-300 rounded w-24"></div>
+                          <div class="h-3 bg-gray-300 rounded w-32"></div>
+                        </div>
+                      </div>
+                      <div class="h-6 bg-gray-300 rounded w-16"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Error State -->
+              <div *ngIf="loadError && !isLoading" class="text-center py-12" role="alert">
+                <mat-icon class="text-red-300 text-6xl mb-4" [attr.aria-hidden]="true">error_outline</mat-icon>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Failed to load applications</h3>
+                <p class="text-gray-600 mb-6">{{ loadError }}</p>
+                <button mat-raised-button color="primary" (click)="loadSourceApps()">
+                  <mat-icon [attr.aria-hidden]="true">refresh</mat-icon>
+                  Try Again
+                </button>
               </div>
 
               <!-- Source Apps Grid -->
-              <div *ngIf="!isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <mat-card 
-                  *ngFor="let app of sourceApps" 
+              <div *ngIf="!isLoading && !loadError" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                role="list" [attr.aria-labelledby]="'sources-title'">
+                <mat-card *ngFor="let app of sourceApps; trackBy: trackByAppId"
                   class="app-card source-card cursor-pointer hover:shadow-lg transition-all duration-200"
-                  (click)="onAppClick(app)">
+                  [attr.tabindex]="0" role="listitem"
+                  [attr.aria-label]="'Configure ' + (app.name || 'unnamed source') + ' application. Status: ' + (app.isActive ? 'Active' : 'Inactive')"
+                  (click)="onAppClick(app)" (keydown.enter)="onAppClick(app)"
+                  (keydown.space)="$event.preventDefault(); onAppClick(app)">
                   <mat-card-content>
                     <div class="flex items-center justify-between mb-4">
                       <div class="flex items-center">
-                        <div class="app-icon app-icon-source">
+                        <div class="app-icon app-icon-source" [attr.aria-hidden]="true">
                           <mat-icon>{{ getAppIcon(app.name) }}</mat-icon>
                         </div>
                         <div class="ml-3">
@@ -189,26 +231,26 @@
                         </div>
                       </div>
                     </div>
-                    
+
                     <div class="flex items-center justify-between">
-                      <span 
-                        class="inline-flex px-2 py-1 rounded-full text-xs font-medium"
-                        [class]="app.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'">
+                      <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium"
+                        [class]="app.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'"
+                        [attr.aria-label]="'Status: ' + (app.isActive ? 'Active' : 'Inactive')">
                         {{ app.isActive ? 'Active' : 'Inactive' }}
                       </span>
-                      <mat-icon class="text-gray-400">arrow_forward</mat-icon>
+                      <mat-icon class="text-gray-400" [attr.aria-hidden]="true">arrow_forward</mat-icon>
                     </div>
                   </mat-card-content>
                 </mat-card>
               </div>
 
               <!-- Empty State -->
-              <div *ngIf="!isLoading && sourceApps.length === 0" class="text-center py-12">
-                <mat-icon class="text-gray-300 text-6xl mb-4">storage</mat-icon>
+              <div *ngIf="!isLoading && !loadError && sourceApps.length === 0" class="text-center py-12">
+                <mat-icon class="text-gray-300 text-6xl mb-4" [attr.aria-hidden]="true">storage</mat-icon>
                 <h3 class="text-lg font-medium text-gray-900 mb-2">No source applications configured</h3>
                 <p class="text-gray-600 mb-6">Add your first source to start importing meeting data</p>
                 <button mat-raised-button color="primary" (click)="addSourceApp()">
-                  <mat-icon>add</mat-icon>
+                  <mat-icon [attr.aria-hidden]="true">add</mat-icon>
                   Add Source
                 </button>
               </div>
@@ -216,211 +258,204 @@
 
             <!-- Detail View for Sources -->
             <div *ngIf="currentView === 'detail' && selectedApp && selectedApp.type === 'source'" class="space-y-6">
-              <!-- Navigation Header -->
-              <div class="flex items-center mb-6">
-                <button 
-                  mat-button 
-                  (click)="onBackToSummary()"
-                  class="back-button">
-                  <mat-icon>arrow_back</mat-icon>
-                  Back to Sources
-                </button>
-                <div class="ml-4 flex items-center">
-                  <div class="app-icon app-icon-source">
-                    <mat-icon>{{ getAppIcon(selectedApp.name) }}</mat-icon>
-                  </div>
-                  <h3 class="text-lg font-semibold text-gray-900 ml-3">{{ selectedApp.name || 'Unnamed Source' }}</h3>
-                </div>
-              </div>
-
               <!-- App Configuration Header -->
               <div class="flex items-center justify-between">
                 <div>
-                  <h3 class="text-lg font-semibold text-gray-900">Source Configuration</h3>
+                  <h3 class="text-lg font-semibold text-gray-900" id="source-config-title">Source Configuration</h3>
                   <p class="text-sm text-gray-600 mt-1">Configure API settings and field mappings</p>
                 </div>
                 <div class="flex items-center space-x-4">
-                  <mat-checkbox 
-                    [(ngModel)]="selectedApp.isActive"
-                    (change)="updateApp({ isActive: selectedApp.isActive })"
-                    color="primary">
-                    Active
-                  </mat-checkbox>
-                  <button 
-                    mat-button 
-                    color="warn" 
-                    (click)="deleteApp()"
-                    class="delete-button">
-                    <mat-icon>delete</mat-icon>
-                    Delete
-                  </button>
+                  <div class="flex items-center space-x-4">
+                    <mat-checkbox [(ngModel)]="selectedApp!.isActive"
+                      (change)="updateApp({ isActive: selectedApp!.isActive })" color="primary"
+                      [attr.aria-label]="'Toggle application active status'" name="appActiveStatus">
+                      Active
+                    </mat-checkbox>
+                    <button mat-button color="warn" (click)="deleteApp(selectedApp!)"
+                      [attr.aria-label]="'Delete application'">
+                      <mat-icon [attr.aria-hidden]="true">delete</mat-icon>
+                      Delete
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <!-- Basic Configuration Card -->
-              <div class="professional-form-container">
-                <div class="form-section">
-                  <h3 class="section-title">Basic Configuration</h3>
-                  <p class="section-description">Configure basic settings for {{ selectedApp.name }}</p>
-                  
-                  <div class="professional-form-field">
-                    <mat-form-field appearance="outline" class="w-full">
-                      <mat-label>App Name</mat-label>
-                      <input 
-                        matInput 
-                        [(ngModel)]="selectedApp.name"
-                        (ngModelChange)="updateApp({ name: selectedApp.name })"
-                        placeholder="Enter app name">
-                    </mat-form-field>
-                    
-                    <mat-form-field appearance="outline" class="w-full">
-                      <mat-label>Connection Type</mat-label>
-                      <mat-select 
-                        [(ngModel)]="selectedApp.connectionType"
-                        (selectionChange)="updateApp({ connectionType: selectedApp.connectionType })">
-                        <mat-option value="api">API Connection</mat-option>
-                        <mat-option value="folder">Folder Access</mat-option>
-                      </mat-select>
-                    </mat-form-field>
+                <!-- Basic Configuration Card -->
+                <div class="professional-form-container">
+                  <div class="form-section">
+                    <h3 class="section-title">Basic Configuration</h3>
+                    <p class="section-description">Configure basic settings for {{ selectedApp.name }}</p>
 
-                    <!-- API Configuration -->
-                    <div *ngIf="selectedApp.connectionType === 'api'" class="professional-form-grid grid-cols-2">
-                      <mat-form-field appearance="outline">
-                        <mat-label>API URL</mat-label>
-                        <input 
-                          matInput 
-                          type="url"
-                          [(ngModel)]="selectedApp.apiUrl"
-                          (ngModelChange)="updateApp({ apiUrl: selectedApp.apiUrl })"
-                          placeholder="https://api.example.com/v1">
-                      </mat-form-field>
-                      <mat-form-field appearance="outline">
-                        <mat-label>API Key</mat-label>
-                        <input 
-                          matInput 
-                          type="password"
-                          [(ngModel)]="selectedApp.apiKey"
-                          (ngModelChange)="updateApp({ apiKey: selectedApp.apiKey })"
-                          placeholder="Enter API key">
-                        <mat-icon matSuffix>key</mat-icon>
-                      </mat-form-field>
-                    </div>
-
-                    <!-- Folder Configuration -->
-                    <div *ngIf="selectedApp.connectionType === 'folder'" class="space-y-4">
+                    <form [formGroup]="appConfigForm" class="professional-form-field">
                       <mat-form-field appearance="outline" class="w-full">
-                        <mat-label>Folder Path</mat-label>
-                        <input 
-                          matInput 
-                          [(ngModel)]="selectedApp.folderPath"
-                          (ngModelChange)="updateApp({ folderPath: selectedApp.folderPath })"
-                          placeholder="/path/to/meeting/notes or \\server\\share\\meetings">
+                        <mat-label>App Name</mat-label>
+                        <input matInput formControlName="name" placeholder="Enter app name"
+                          [attr.aria-describedby]="'app-name-hint'">
+                        <mat-hint id="app-name-hint">Choose a descriptive name for this source</mat-hint>
                       </mat-form-field>
-                      <div class="professional-form-grid grid-cols-2">
+
+                      <mat-form-field appearance="outline" class="w-full">
+                        <mat-label>Connection Type</mat-label>
+                        <mat-select formControlName="connectionType" [attr.aria-describedby]="'connection-type-hint'">
+                          <mat-option value="api">API Connection</mat-option>
+                          <mat-option value="folder">Folder Access</mat-option>
+                        </mat-select>
+                        <mat-hint id="connection-type-hint">How this application will connect to your data</mat-hint>
+                      </mat-form-field>
+
+                      <!-- API Configuration -->
+                      <div *ngIf="appConfigForm.get('connectionType')?.value === 'api'"
+                        class="professional-form-grid grid-cols-2">
                         <mat-form-field appearance="outline">
-                          <mat-label>Username (Optional)</mat-label>
-                          <input 
-                            matInput 
-                            [(ngModel)]="selectedApp.username"
-                            (ngModelChange)="updateApp({ username: selectedApp.username })"
-                            placeholder="Username for folder access">
+                          <mat-label>API URL</mat-label>
+                          <input matInput type="url" formControlName="apiUrl" placeholder="https://api.example.com/v1"
+                            [attr.aria-describedby]="'api-url-hint'">
+                          <mat-hint id="api-url-hint">The base URL for API requests</mat-hint>
+                          <mat-error *ngIf="hasFieldError(appConfigForm, 'apiUrl', 'pattern')">
+                            Please enter a valid URL
+                          </mat-error>
                         </mat-form-field>
+
                         <mat-form-field appearance="outline">
-                          <mat-label>Password (Optional)</mat-label>
-                          <input 
-                            matInput 
-                            type="password"
-                            [(ngModel)]="selectedApp.password"
-                            (ngModelChange)="updateApp({ password: selectedApp.password })"
-                            placeholder="Password for folder access">
+                          <mat-label>API Key</mat-label>
+                          <input matInput [type]="showApiKey ? 'text' : 'password'" formControlName="apiKey"
+                            placeholder="Enter API key" [attr.aria-describedby]="'api-key-hint'">
+                          <button mat-icon-button matSuffix (click)="toggleApiKeyVisibility()" type="button"
+                            [attr.aria-label]="showApiKey ? 'Hide API key' : 'Show API key'">
+                            <mat-icon [attr.aria-hidden]="true">{{ showApiKey ? 'visibility_off' : 'visibility'
+                              }}</mat-icon>
+                          </button>
+                          <mat-hint id="api-key-hint">Authentication key for API access</mat-hint>
                         </mat-form-field>
                       </div>
-                    </div>
 
-                    <!-- Action Buttons -->
-                    <div class="form-actions">
-                      <button 
-                        mat-outlined-button 
-                        color="accent" 
-                        (click)="testConnection()"
-                        [disabled]="isTestingConnection"
-                        class="professional-form-button">
-                        <mat-icon *ngIf="isTestingConnection" class="animate-spin">refresh</mat-icon>
-                        <mat-icon *ngIf="!isTestingConnection">wifi</mat-icon>
-                        {{ isTestingConnection ? 'Testing...' : 'Test Connection' }}
-                      </button>
-                      <button 
-                        mat-raised-button 
-                        color="primary" 
-                        (click)="saveApp()"
-                        [disabled]="isSaving"
-                        class="professional-form-button">
-                        <mat-icon *ngIf="isSaving" class="animate-spin">refresh</mat-icon>
-                        <mat-icon *ngIf="!isSaving">save</mat-icon>
-                        {{ isSaving ? 'Saving...' : 'Save Configuration' }}
-                      </button>
-                    </div>
+                      <!-- Folder Configuration -->
+                      <div *ngIf="appConfigForm.get('connectionType')?.value === 'folder'" class="space-y-4">
+                        <mat-form-field appearance="outline" class="w-full">
+                          <mat-label>Folder Path</mat-label>
+                          <input matInput formControlName="folderPath"
+                            placeholder="/path/to/meeting/notes or \\server\\share\\meetings"
+                            [attr.aria-describedby]="'folder-path-hint'">
+                          <mat-hint id="folder-path-hint">Local or network path to meeting files</mat-hint>
+                        </mat-form-field>
+
+                        <div class="professional-form-grid grid-cols-2">
+                          <mat-form-field appearance="outline">
+                            <mat-label>Username (Optional)</mat-label>
+                            <input matInput formControlName="username" placeholder="Username for folder access"
+                              [attr.aria-describedby]="'username-hint'">
+                            <mat-hint id="username-hint">Username for network folder access</mat-hint>
+                          </mat-form-field>
+
+                          <mat-form-field appearance="outline">
+                            <mat-label>Password (Optional)</mat-label>
+                            <input matInput type="password" formControlName="password"
+                              placeholder="Password for folder access" [attr.aria-describedby]="'folder-password-hint'">
+                            <mat-hint id="folder-password-hint">Password for network folder access</mat-hint>
+                          </mat-form-field>
+                        </div>
+                      </div>
+
+                      <!-- Action Buttons -->
+                      <div class="form-actions">
+                        <button mat-outlined-button type="button" color="accent" (click)="testConnection()"
+                          [disabled]="isTestingConnection || !canTestConnection()" class="professional-form-button"
+                          [attr.aria-label]="isTestingConnection ? 'Testing connection' : 'Test connection'">
+                          <mat-icon *ngIf="isTestingConnection" class="animate-spin"
+                            [attr.aria-hidden]="true">refresh</mat-icon>
+                          <mat-icon *ngIf="!isTestingConnection" [attr.aria-hidden]="true">wifi</mat-icon>
+                          {{ isTestingConnection ? 'Testing...' : 'Test Connection' }}
+                        </button>
+
+                        <button mat-raised-button type="button" color="primary" (click)="saveAppConfig()"
+                          [disabled]="!appConfigForm.valid || isSaving" class="professional-form-button"
+                          [attr.aria-label]="isSaving ? 'Saving configuration' : 'Save configuration'">
+                          <mat-icon *ngIf="isSaving" class="animate-spin" [attr.aria-hidden]="true">refresh</mat-icon>
+                          <mat-icon *ngIf="!isSaving" [attr.aria-hidden]="true">save</mat-icon>
+                          {{ isSaving ? 'Saving...' : 'Save Configuration' }}
+                        </button>
+                      </div>
+                    </form>
                   </div>
                 </div>
-              </div>
 
-              <!-- Field Mapping Card -->
-              <mat-card class="field-mapping-card">
-                <mat-card-header>
-                  <mat-card-title>Field Mapping</mat-card-title>
-                  <mat-card-subtitle>Map fields from {{ selectedApp.name }} to our platform</mat-card-subtitle>
-                </mat-card-header>
-                <mat-card-content>
-                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <mat-form-field 
-                      *ngFor="let field of fieldMappingConfig" 
-                      appearance="outline">
-                      <mat-label>{{ field.label }}</mat-label>
-                      <input 
-                        matInput 
-                        [value]="getFieldMappingValue(field.key)"
-                        (input)="updateFieldMapping(field.key, $any($event.target).value)"
-                        [placeholder]="field.placeholder">
-                    </mat-form-field>
-                  </div>
-                </mat-card-content>
-              </mat-card>
+                <!-- Field Mapping Card -->
+                <mat-card class="field-mapping-card">
+                  <mat-card-header>
+                    <mat-card-title id="field-mapping-title">Field Mapping</mat-card-title>
+                    <mat-card-subtitle>Map fields from {{ selectedApp.name }} to our platform</mat-card-subtitle>
+                  </mat-card-header>
+                  <mat-card-content>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" role="group"
+                      [attr.aria-labelledby]="'field-mapping-title'">
+                      <mat-form-field *ngFor="let field of fieldMappingConfig; trackBy: trackByFieldKey"
+                        appearance="outline">
+                        <mat-label>{{ field.label }}</mat-label>
+                        <input matInput [id]="'field-' + field.key" [value]="getFieldMappingValue(field.key)"
+                          (input)="updateFieldMapping(field.key, $any($event.target).value)"
+                          [placeholder]="field.placeholder" [attr.aria-describedby]="'field-' + field.key + '-hint'"
+                          [attr.aria-label]="field.label + ' field mapping'">
+                        <mat-hint [id]="'field-' + field.key + '-hint'">
+                          {{ field.hint || 'Map this field to your data source' }}
+                        </mat-hint>
+                      </mat-form-field>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+              </div>
             </div>
-          </div>
         </ng-template>
       </mat-tab>
 
       <!-- Destinations Tab -->
-      <mat-tab label="Send Info To">
+      <mat-tab label="Send Info To" [attr.aria-label]="'Action destinations configuration'">
         <ng-template matTabContent>
           <div class="tab-content p-6">
             <!-- Summary View -->
             <div *ngIf="currentView === 'summary'" class="space-y-6">
               <div class="flex items-center justify-between">
                 <div>
-                  <h3 class="text-lg font-semibold text-gray-900">Action Destinations</h3>
+                  <h3 class="text-lg font-semibold text-gray-900" id="destinations-title">Action Destinations</h3>
                   <p class="text-sm text-gray-600 mt-1">Configure apps where actions will be created</p>
                 </div>
-                <button 
-                  mat-raised-button 
-                  color="primary" 
-                  (click)="addDestinationApp()"
-                  class="add-button">
-                  <mat-icon>add</mat-icon>
+                <button mat-raised-button color="primary" (click)="addDestinationApp()" class="add-button"
+                  [attr.aria-label]="'Add new destination application'">
+                  <mat-icon [attr.aria-hidden]="true">add</mat-icon>
                   Add Destination
                 </button>
               </div>
 
+              <!-- Loading State -->
+              <div *ngIf="isLoading" class="space-y-4" role="status" aria-live="polite"
+                [attr.aria-label]="'Loading destination applications'">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div *ngFor="let item of [1,2,3]" class="skeleton-card">
+                    <div class="animate-pulse">
+                      <div class="flex items-center space-x-4 mb-4">
+                        <div class="rounded-full bg-gray-300 h-10 w-10"></div>
+                        <div class="space-y-2">
+                          <div class="h-4 bg-gray-300 rounded w-24"></div>
+                          <div class="h-3 bg-gray-300 rounded w-32"></div>
+                        </div>
+                      </div>
+                      <div class="h-6 bg-gray-300 rounded w-16"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <!-- Destination Apps Grid -->
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <mat-card 
-                  *ngFor="let app of destinationApps" 
+              <div *ngIf="!isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" role="list"
+                [attr.aria-labelledby]="'destinations-title'">
+                <mat-card *ngFor="let app of destinationApps; trackBy: trackByAppId"
                   class="app-card destination-card cursor-pointer hover:shadow-lg transition-all duration-200"
-                  (click)="onAppClick(app)">
+                  [attr.tabindex]="0" role="listitem"
+                  [attr.aria-label]="'Configure ' + (app.name || 'unnamed destination') + ' application. Status: ' + (app.isActive ? 'Active' : 'Inactive')"
+                  (click)="onAppClick(app)" (keydown.enter)="onAppClick(app)"
+                  (keydown.space)="$event.preventDefault(); onAppClick(app)">
                   <mat-card-content>
                     <div class="flex items-center justify-between mb-4">
                       <div class="flex items-center">
-                        <div class="app-icon app-icon-destination">
+                        <div class="app-icon app-icon-destination" [attr.aria-hidden]="true">
                           <mat-icon>{{ getAppIcon(app.name) }}</mat-icon>
                         </div>
                         <div class="ml-3">
@@ -429,52 +464,39 @@
                         </div>
                       </div>
                     </div>
-                    
+
                     <div class="flex items-center justify-between">
-                      <span 
-                        class="inline-flex px-2 py-1 rounded-full text-xs font-medium"
-                        [class]="app.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'">
+                      <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium"
+                        [class]="app.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'"
+                        [attr.aria-label]="'Status: ' + (app.isActive ? 'Active' : 'Inactive')">
                         {{ app.isActive ? 'Active' : 'Inactive' }}
                       </span>
-                      <mat-icon class="text-gray-400">arrow_forward</mat-icon>
+                      <mat-icon class="text-gray-400" [attr.aria-hidden]="true">arrow_forward</mat-icon>
                     </div>
                   </mat-card-content>
                 </mat-card>
               </div>
 
               <!-- Empty State -->
-              <div *ngIf="destinationApps.length === 0" class="text-center py-12">
-                <mat-icon class="text-gray-300 text-6xl mb-4">send</mat-icon>
+              <div *ngIf="!isLoading && destinationApps.length === 0" class="text-center py-12">
+                <mat-icon class="text-gray-300 text-6xl mb-4" [attr.aria-hidden]="true">send</mat-icon>
                 <h3 class="text-lg font-medium text-gray-900 mb-2">No destination applications configured</h3>
                 <p class="text-gray-600 mb-6">Add your first destination to start sending meeting data</p>
                 <button mat-raised-button color="primary" (click)="addDestinationApp()">
-                  <mat-icon>add</mat-icon>
+                  <mat-icon [attr.aria-hidden]="true">add</mat-icon>
                   Add Destination
                 </button>
               </div>
             </div>
 
-            <!-- Detail View for Destinations (similar to sources but with green styling) -->
-            <div *ngIf="currentView === 'detail' && selectedApp && selectedApp.type === 'destination'" class="space-y-6">
-              <!-- Navigation Header -->
-              <div class="flex items-center mb-6">
-                <button 
-                  mat-button 
-                  (click)="onBackToSummary()"
-                  class="back-button">
-                  <mat-icon>arrow_back</mat-icon>
-                  Back to Destinations
-                </button>
-                <div class="ml-4 flex items-center">
-                  <div class="app-icon app-icon-destination">
-                    <mat-icon>{{ getAppIcon(selectedApp.name) }}</mat-icon>
-                  </div>
-                  <h3 class="text-lg font-semibold text-gray-900 ml-3">{{ selectedApp.name || 'Unnamed Destination' }}</h3>
-                </div>
-              </div>
-
+            <!-- Detail View for Destinations -->
+            <div *ngIf="currentView === 'detail' && selectedApp && selectedApp.type === 'destination'"
+              class="space-y-6">
               <!-- Similar configuration content as sources but with destination-specific styling -->
-              <!-- (Content would be identical to source configuration but with different colors) -->
+              <!-- Content would be nearly identical to source configuration -->
+              <div class="text-center py-12">
+                <p class="text-gray-600">Destination configuration panel - similar to source configuration</p>
+              </div>
             </div>
           </div>
         </ng-template>
