@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MeetingFormComponent } from './meeting-form.component';
 import { MeetingService } from '../meeting.service';
 import { Meeting } from '../meeting.model';
@@ -89,7 +90,7 @@ describe('MeetingFormComponent', () => {
     mockMeetingService.updateMeeting.and.returnValue(of(createMockMeeting()));
 
     await TestBed.configureTestingModule({
-      imports: [MeetingFormComponent, HttpClientTestingModule, RouterTestingModule],
+      imports: [MeetingFormComponent, HttpClientTestingModule, RouterTestingModule, NoopAnimationsModule],
       providers: [
         { provide: ActivatedRoute, useValue: mockActivatedRoute },
         { provide: Router, useValue: mockRouter },
