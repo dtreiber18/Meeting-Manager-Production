@@ -1,5 +1,7 @@
-<div class="settings-container max-w-7xl mx-auto p-6 space-y-6" role="region" aria-label="Settings Page"
-  title="Settings">
+<!-- eslint-disable @angular-eslint/template/accessibility-label-for -->
+<div class="settings-container max-w-7xl mx-auto p-6 space-y-6" role="main" aria-label="Settings Page"
+  title="Application Settings" aria-describedby="settings-description">
+  <div id="settings-description" class="sr-only">Application settings and configuration page</div>
   <!-- Page Header -->
   <div class="mb-8">
     <h1 class="text-3xl font-bold text-gray-900">Settings</h1>
@@ -27,7 +29,7 @@
                   <div class="professional-form-grid grid-cols-2">
                     <mat-form-field appearance="outline" class="w-full">
                       <mat-label>Display Name</mat-label>
-                      <input matInput formControlName="name" placeholder="Enter your name"
+                      <input matInput formControlName="name" placeholder="Enter your name" title="Display Name"
                         [attr.aria-describedby]="'name-errors'">
                       <div id="name-errors">
                         <mat-error *ngIf="hasFieldError(accountForm, 'name', 'required')">
@@ -44,7 +46,7 @@
 
                     <mat-form-field appearance="outline" class="w-full">
                       <mat-label>Email Address</mat-label>
-                      <input matInput type="email" formControlName="email" placeholder="Enter your email"
+                      <input matInput type="email" formControlName="email" placeholder="Enter your email" title="Email Address"
                         [attr.aria-describedby]="'email-errors'">
                       <div id="email-errors">
                         <mat-error *ngIf="hasFieldError(accountForm, 'email', 'required')">
@@ -80,7 +82,7 @@
                     <mat-form-field appearance="outline" class="w-full">
                       <mat-label>New Password</mat-label>
                       <input matInput [type]="showPassword ? 'text' : 'password'" formControlName="newPassword"
-                        placeholder="Enter new password" [attr.aria-describedby]="'password-errors password-strength'">
+                        placeholder="Enter new password" title="New Password" [attr.aria-describedby]="'password-errors password-strength'">
                       <button mat-icon-button matSuffix (click)="togglePasswordVisibility()" type="button"
                         [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
                         <mat-icon [attr.aria-hidden]="true">{{ showPassword ? 'visibility_off' : 'visibility'
@@ -117,7 +119,7 @@
 
                     <mat-form-field appearance="outline" class="w-full">
                       <mat-label>Confirm Password</mat-label>
-                      <input matInput type="password" formControlName="confirmPassword" placeholder="Confirm password"
+                      <input matInput type="password" formControlName="confirmPassword" placeholder="Confirm password" title="Confirm Password"
                         [attr.aria-describedby]="'confirm-password-errors'">
                       <div id="confirm-password-errors">
                         <mat-error *ngIf="hasFieldError(passwordForm, 'confirmPassword', 'required')">
@@ -264,26 +266,26 @@
                   <h3 class="text-lg font-semibold text-gray-900" id="source-config-title">Source Configuration</h3>
                   <p class="text-sm text-gray-600 mt-1">Configure API settings and field mappings</p>
                 </div>
-                <div class="flex items-center space-x-4">
                   <div class="flex items-center space-x-4">
                     <mat-checkbox [(ngModel)]="selectedApp!.isActive"
                       (change)="updateApp({ isActive: selectedApp!.isActive })" color="primary"
                       [attr.aria-label]="'Toggle application active status'" name="appActiveStatus">
                       Active
                     </mat-checkbox>
-                    <button mat-button color="warn" (click)="deleteApp(selectedApp!)"
+                    <button mat-button color="warn" type="button" (click)="confirmDeleteApp()"
                       [attr.aria-label]="'Delete application'">
                       <mat-icon [attr.aria-hidden]="true">delete</mat-icon>
                       Delete
                     </button>
                   </div>
                 </div>
+              </div>
 
                 <!-- Basic Configuration Card -->
                 <div class="professional-form-container">
                   <div class="form-section">
                     <h3 class="section-title">Basic Configuration</h3>
-                    <p class="section-description">Configure basic settings for {{ selectedApp.name }}</p>
+                    <p class="section-description">Configure basic settings for {{ selectedApp?.name || 'this application' }}</p>
 
                     <form [formGroup]="appConfigForm" class="professional-form-field">
                       <mat-form-field appearance="outline" class="w-full">
@@ -382,7 +384,7 @@
                 <mat-card class="field-mapping-card">
                   <mat-card-header>
                     <mat-card-title id="field-mapping-title">Field Mapping</mat-card-title>
-                    <mat-card-subtitle>Map fields from {{ selectedApp.name }} to our platform</mat-card-subtitle>
+                    <mat-card-subtitle>Map fields from {{ selectedApp?.name || 'this application' }} to our platform</mat-card-subtitle>
                   </mat-card-header>
                   <mat-card-content>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" role="group"
@@ -401,7 +403,6 @@
                     </div>
                   </mat-card-content>
                 </mat-card>
-              </div>
             </div>
         </ng-template>
       </mat-tab>
