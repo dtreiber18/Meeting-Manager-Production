@@ -101,7 +101,7 @@ export class AppComponent {
       next: data => {
         this.meetings = data;
       },
-      error: err => {
+      error: _err => {
         // handle error if needed
       }
     });
@@ -112,7 +112,7 @@ export class AppComponent {
     // Example: this.router.navigate(['/meetings']);
   }
 
-  onMeetingSelect(meeting: Meeting) {
+  onMeetingSelect(_meeting: Meeting) {
     // Navigate to meeting details or handle as needed
     // Example: this.router.navigate(['/meetings', meeting.id]);
   }
