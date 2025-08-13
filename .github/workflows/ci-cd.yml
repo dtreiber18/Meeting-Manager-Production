@@ -272,11 +272,12 @@ jobs:
   build-and-push-images:
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    if: false  # Temporarily disabled until Azure Container Registry credentials are set up
     
     steps:
     - uses: actions/checkout@v4
     
+    # TODO: Set up AZURE_REGISTRY_USERNAME and AZURE_REGISTRY_PASSWORD secrets
     - name: Log in to Azure Container Registry
       uses: docker/login-action@v3
       with:
@@ -299,7 +300,7 @@ jobs:
   deploy-to-azure:
     needs: build-and-push-images
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: false  # Temporarily disabled until Azure Container Registry is set up
     
     steps:
     - uses: actions/checkout@v4
