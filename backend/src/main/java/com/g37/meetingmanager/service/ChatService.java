@@ -21,14 +21,37 @@ public class ChatService {
             @Value("${azure.openai.deployment-name}") String deploymentName) {
         
         this.deploymentName = deploymentName;
-        this.client = new OpenAIClientBuilder()
-                .endpoint(endpoint)
-                .credential(new AzureKeyCredential(apiKey))
-                .buildClient();
+        
+        try {
+            // Check if all required configuration is present
+            if (endpoint == null || endpoint.equals("https://your-openai.openai.azure.com/") || 
+                apiKey == null || apiKey.equals("your-api-key") ||
+                deploymentName == null || deploymentName.equals("gpt-4")) {
+                
+                System.out.println("Azure OpenAI not properly configured, using fallback mode");
+                this.client = null;
+                return;
+            }
+            
+            this.client = new OpenAIClientBuilder()
+                    .endpoint(endpoint)
+                    .credential(new AzureKeyCredential(apiKey))
+                    .buildClient();
+                    
+            System.out.println("Azure OpenAI client initialized successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to initialize Azure OpenAI client: " + e.getMessage());
+            this.client = null;
+        }
     }
     
     public String generateResponse(String userMessage, String pageContext) {
         try {
+            // If OpenAI client is not available, use fallback response
+            if (client == null) {
+                return getFallbackResponse(userMessage, pageContext);
+            }
+            
             List<ChatRequestMessage> chatMessages = new ArrayList<>();
             
             // Add system message with context
@@ -51,9 +74,27 @@ public class ChatService {
             return "I'm sorry, I couldn't generate a response at the moment. Please try again.";
             
         } catch (Exception e) {
-            e.printStackTrace();
-            return "I'm experiencing technical difficulties. Please try again later.";
+            System.err.println("Error calling Azure OpenAI: " + e.getMessage());
+            return getFallbackResponse(userMessage, pageContext);
         }
+    }
+    
+    private String getFallbackResponse(String userMessage, String pageContext) {
+        String lowerMessage = userMessage.toLowerCase();
+        
+        if (lowerMessage.contains("meeting") || lowerMessage.contains("create")) {
+            return "To create a new meeting, click the 'Create Meeting' button on the dashboard. You can set the title, description, date, time, and various settings like recording options.";
+        }
+        
+        if (lowerMessage.contains("search") || lowerMessage.contains("find")) {
+            return "You can search for meetings using the search bar at the top. It searches through meeting titles, descriptions, participants, and action items.";
+        }
+        
+        if (lowerMessage.contains("filter")) {
+            return "Use the Filter button to narrow down meetings by date range, type, participants, or other criteria.";
+        }
+        
+        return "Hello! I'm here to help you with the Meeting Manager application. You can ask me about creating meetings, searching, filtering, or any other features you'd like to learn about.";
     }
     
     private String buildSystemPrompt(String pageContext) {
