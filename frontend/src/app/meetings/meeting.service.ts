@@ -16,8 +16,8 @@ export class MeetingService {
   ) {
     // In production, check if we need to use a different backend URL
     if (window.location.hostname.includes('azurecontainerapps.io')) {
-      // Use the backend container app URL in production
-      this.apiUrl = 'https://ca-backend-jq7rzfkj24zqy.mangoriver-904fd974.eastus.azurecontainerapps.io/meetings';
+      // Use the backend container app URL in production with /api prefix
+      this.apiUrl = 'https://ca-backend-jq7rzfkj24zqy.mangoriver-904fd974.eastus.azurecontainerapps.io/api/meetings';
     }
   }
 
