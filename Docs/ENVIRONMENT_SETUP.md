@@ -12,7 +12,16 @@ Complete development environment setup for Meeting Manager - Enterprise Applicat
 - [ ] Install MongoDB 7.0 (or use Docker)
 - [ ] Clone repository and install dependencies
 - [ ] Configure database connections
-- [ ] Start development environment
+- [ ] Start developmen3. **Review API Documentation**
+   - Check `docs/API_DOCUMENTATION.md`
+   - Test API endpoints with curl or Postman
+   - Explore document upload API endpoints
+
+4. **Start Development**
+   - Review component architecture in `docs/PREVIOUS_MEETINGS.md`
+   - Explore document system in `docs/DOCUMENT_UPLOAD_SYSTEM.md`
+   - Explore the codebase structure
+   - Begin implementing new featuresnment
 
 ## 🛠 Required Tools and Versions
 
@@ -377,6 +386,80 @@ lsof -ti:4200 | xargs kill -9
 - **Frontend Logs**: Browser console and terminal output from `ng serve`
 - **Docker Logs**: `docker-compose logs -f [service-name]`
 
+## ☁️ Cloud Storage Configuration
+
+The document upload system supports OneDrive and Google Drive integration. Configure these services for full functionality.
+
+### OneDrive Configuration
+
+1. **Azure App Registration**
+   ```bash
+   # Set environment variables in backend
+   ONEDRIVE_CLIENT_ID=your-client-id
+   ONEDRIVE_CLIENT_SECRET=your-client-secret
+   ONEDRIVE_REDIRECT_URI=http://localhost:8080/auth/onedrive/callback
+   ```
+
+2. **Required Permissions**
+   - `Files.ReadWrite`
+   - `Files.ReadWrite.All`
+   - `offline_access`
+
+3. **Configuration Properties**
+   ```yaml
+   # backend/src/main/resources/application.yml
+   cloud-storage:
+     onedrive:
+       client-id: ${ONEDRIVE_CLIENT_ID}
+       client-secret: ${ONEDRIVE_CLIENT_SECRET}
+       redirect-uri: ${ONEDRIVE_REDIRECT_URI}
+       scope: "Files.ReadWrite Files.ReadWrite.All offline_access"
+   ```
+
+### Google Drive Configuration
+
+1. **Google Cloud Console Setup**
+   ```bash
+   # Set environment variables in backend
+   GOOGLE_DRIVE_CLIENT_ID=your-client-id
+   GOOGLE_DRIVE_CLIENT_SECRET=your-client-secret
+   GOOGLE_DRIVE_REDIRECT_URI=http://localhost:8080/auth/googledrive/callback
+   ```
+
+2. **Required Scopes**
+   - `https://www.googleapis.com/auth/drive.file`
+   - `https://www.googleapis.com/auth/drive`
+
+3. **Configuration Properties**
+   ```yaml
+   # backend/src/main/resources/application.yml
+   cloud-storage:
+     googledrive:
+       client-id: ${GOOGLE_DRIVE_CLIENT_ID}
+       client-secret: ${GOOGLE_DRIVE_CLIENT_SECRET}
+       redirect-uri: ${GOOGLE_DRIVE_REDIRECT_URI}
+       scope: "https://www.googleapis.com/auth/drive.file"
+   ```
+
+### Environment Variables Setup
+
+```bash
+# Create .env file in backend directory
+cd backend
+cat > .env << EOF
+ONEDRIVE_CLIENT_ID=your-onedrive-client-id
+ONEDRIVE_CLIENT_SECRET=your-onedrive-client-secret
+ONEDRIVE_REDIRECT_URI=http://localhost:8080/auth/onedrive/callback
+
+GOOGLE_DRIVE_CLIENT_ID=your-google-client-id
+GOOGLE_DRIVE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_DRIVE_REDIRECT_URI=http://localhost:8080/auth/googledrive/callback
+EOF
+
+# Load environment variables
+source .env
+```
+
 ## 🚀 Next Steps
 
 After successful environment setup:
@@ -386,7 +469,13 @@ After successful environment setup:
    - Test search functionality
    - Try different filter combinations
 
-2. **Review API Documentation**
+2. **Test Document Upload System**
+   - Navigate to `http://localhost:4200/meetings/previous`
+   - Click "Upload Documents" button
+   - Test file upload functionality
+   - Verify document listing and search
+
+3. **Review API Documentation**
    - Check `docs/API_DOCUMENTATION.md`
    - Test API endpoints with curl or Postman
 

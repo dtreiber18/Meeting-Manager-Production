@@ -108,6 +108,139 @@ Content-Type: application/json
 DELETE /api/meetings/{id}
 ```
 
+### Documents API
+
+#### Upload Document
+```http
+POST /api/documents/upload
+Content-Type: multipart/form-data
+Authorization: Bearer {jwt-token}
+```
+
+**Form Data Parameters**:
+- `file` (file): The document file to upload
+- `title` (string): Document title (required)
+- `description` (string): Document description (optional)
+- `documentType` (string): Document type (AGENDA, MINUTES, PRESENTATION, HANDOUT, ATTACHMENT, OTHER)
+- `storageProvider` (string): Storage provider (ONEDRIVE, GOOGLEDRIVE, LOCAL)
+- `accessPermissions` (string): Access level (PUBLIC, PRIVATE, RESTRICTED)
+- `meetingId` (integer): Associated meeting ID (optional)
+- `tags` (string): Comma-separated tags (optional)
+
+**Example Response**:
+```json
+{
+  "id": 1,
+  "title": "Q1 Planning Agenda",
+  "description": "Quarterly planning meeting agenda",
+  "fileName": "q1-agenda.pdf",
+  "fileSize": 245760,
+  "mimeType": "application/pdf",
+  "documentType": "AGENDA",
+  "storageProvider": "ONEDRIVE",
+  "cloudFileId": "b!abc123...",
+  "accessPermissions": "PRIVATE",
+  "meetingId": 5,
+  "createdBy": "user@example.com",
+  "createdAt": "2025-08-14T10:30:00Z",
+  "tags": ["planning", "q1", "agenda"],
+  "aiIndexed": false
+}
+```
+
+#### Get All Documents
+```http
+GET /api/documents
+Authorization: Bearer {jwt-token}
+```
+
+**Query Parameters**:
+- `page` (integer): Page number (default: 0)
+- `size` (integer): Page size (default: 20)
+- `sortBy` (string): Sort field (default: createdAt)
+- `sortDir` (string): Sort direction (asc/desc, default: desc)
+
+#### Get Document by ID
+```http
+GET /api/documents/{id}
+Authorization: Bearer {jwt-token}
+```
+
+#### Get Documents by Meeting
+```http
+GET /api/documents/meeting/{meetingId}
+Authorization: Bearer {jwt-token}
+```
+
+#### Search Documents
+```http
+GET /api/documents/search
+Authorization: Bearer {jwt-token}
+```
+
+**Query Parameters**:
+- `query` (string): Search term for title, description, or content
+- `type` (string): Filter by document type
+- `provider` (string): Filter by storage provider
+- `tags` (string): Filter by tags (comma-separated)
+- `meetingId` (integer): Filter by meeting association
+- `startDate` (string): Filter by creation date (ISO format)
+- `endDate` (string): Filter by creation date (ISO format)
+
+**Example Response**:
+```json
+{
+  "content": [
+    {
+      "id": 1,
+      "title": "Q1 Planning Agenda",
+      "description": "Quarterly planning meeting agenda",
+      "documentType": "AGENDA",
+      "storageProvider": "ONEDRIVE",
+      "meetingId": 5,
+      "createdAt": "2025-08-14T10:30:00Z",
+      "tags": ["planning", "q1", "agenda"]
+    }
+  ],
+  "totalElements": 1,
+  "totalPages": 1,
+  "size": 20,
+  "number": 0
+}
+```
+
+#### Download Document
+```http
+GET /api/documents/{id}/download
+Authorization: Bearer {jwt-token}
+```
+
+**Response**: Binary file data with appropriate Content-Type header
+
+#### Update Document Metadata
+```http
+PUT /api/documents/{id}
+Content-Type: application/json
+Authorization: Bearer {jwt-token}
+```
+
+**Request Body**:
+```json
+{
+  "title": "Updated Document Title",
+  "description": "Updated description",
+  "documentType": "MINUTES",
+  "accessPermissions": "PUBLIC",
+  "tags": ["updated", "tags"]
+}
+```
+
+#### Delete Document
+```http
+DELETE /api/documents/{id}
+Authorization: Bearer {jwt-token}
+```
+
 ## 📊 Data Models
 
 ### Meeting Entity
@@ -148,6 +281,35 @@ interface ActionItem {
   dueDate: string;
   priority?: 'high' | 'medium' | 'low';
   status?: 'pending' | 'in-progress' | 'completed';
+}
+```
+
+### Document
+```typescript
+interface Document {
+  id?: number;
+  fileName: string;
+  originalFileName: string;
+  fileSize: number;
+  fileType: string;
+  description?: string;
+  tags?: string[];
+  uploadDate: string;
+  storageType: 'onedrive' | 'googledrive';
+  storageId: string;
+  storagePath: string;
+  meetingId?: number;
+  isPublic: boolean;
+  aiProcessed: boolean;
+  aiMetadata?: {
+    extractedText?: string;
+    summary?: string;
+    keywords?: string[];
+    documentType?: string;
+    confidence?: number;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 ```
 
@@ -197,6 +359,30 @@ CREATE TABLE action_items (
   status ENUM('pending', 'in-progress', 'completed') DEFAULT 'pending',
   meeting_id BIGINT,
   FOREIGN KEY (meeting_id) REFERENCES meetings(id) ON DELETE CASCADE
+);
+```
+
+#### documents
+```sql
+CREATE TABLE documents (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  file_name VARCHAR(255) NOT NULL,
+  original_file_name VARCHAR(255) NOT NULL,
+  file_size BIGINT NOT NULL,
+  file_type VARCHAR(100) NOT NULL,
+  description TEXT,
+  tags JSON,
+  upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  storage_type ENUM('onedrive', 'googledrive') NOT NULL,
+  storage_id VARCHAR(500) NOT NULL,
+  storage_path VARCHAR(1000) NOT NULL,
+  meeting_id BIGINT,
+  is_public BOOLEAN DEFAULT FALSE,
+  ai_processed BOOLEAN DEFAULT FALSE,
+  ai_metadata JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (meeting_id) REFERENCES meetings(id) ON DELETE SET NULL
 );
 ```
 
