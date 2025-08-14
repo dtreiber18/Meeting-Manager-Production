@@ -1,12 +1,31 @@
 import { Injectable } from '@angular/core';
-import { Observable, of, delay } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable, of, catchError } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Message, PageType } from '../models/chat.model';
+
+export interface ChatRequest {
+  message: string;
+  pageContext: string;
+}
+
+export interface ChatResponse {
+  response: string;
+  success: boolean;
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class ChatService {
-  constructor() {}
+  private apiUrl = '/api/chat';
+
+  constructor(private http: HttpClient) {
+    // In production, use the backend container app URL
+    if (window.location.hostname.includes('azurecontainerapps.io')) {
+      this.apiUrl = 'https://ca-backend-jq7rzfkj24zqy.mangoriver-904fd974.eastus.azurecontainerapps.io/api/chat';
+    }
+  }
 
   getContextualWelcome(pageType: PageType): string {
     switch (pageType) {
@@ -27,11 +46,18 @@ export class ChatService {
     userMessage: string,
     pageType: PageType
   ): Observable<string> {
-    // Simulate AI processing delay
-    const processingTime = 1000 + Math.random() * 2000;
+    const request: ChatRequest = {
+      message: userMessage,
+      pageContext: pageType
+    };
 
-    return of(this.getContextualResponse(userMessage, pageType)).pipe(
-      delay(processingTime)
+    return this.http.post<ChatResponse>(`${this.apiUrl}/message`, request).pipe(
+      map(response => response.response),
+      catchError(error => {
+        console.error('Chat API error:', error);
+        // Fallback to local response if API fails
+        return of(this.getContextualResponse(userMessage, pageType));
+      })
     );
   }
 
