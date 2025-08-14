@@ -21,8 +21,9 @@ export class ChatService {
   private apiUrl = '/api/chat';
 
   constructor(private http: HttpClient) {
-    // In production, use the backend container app URL
-    if (window.location.hostname.includes('azurecontainerapps.io')) {
+    // Use Azure backend URL in both development and production
+    if (window.location.hostname.includes('azurecontainerapps.io') || 
+        window.location.hostname === 'localhost') {
       this.apiUrl = 'https://ca-backend-jq7rzfkj24zqy.mangoriver-904fd974.eastus.azurecontainerapps.io/api/chat';
     }
   }
