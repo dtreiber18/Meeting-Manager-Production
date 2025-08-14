@@ -67,6 +67,22 @@ ng serve --proxy-config proxy.conf.json
 npm run build
 ```
 
+### Document Upload Operations
+```bash
+# Test document upload API
+curl -X POST http://localhost:8080/api/documents/upload \
+  -F "file=@example.pdf" \
+  -F "description=Test document" \
+  -F "meetingId=1" \
+  -F "storageType=onedrive"
+
+# Search documents
+curl "http://localhost:8080/api/documents/search?query=meeting&type=pdf"
+
+# List meeting documents
+curl "http://localhost:8080/api/documents/meeting/1"
+```
+
 ### Database Operations
 ```bash
 # Test MySQL connection
@@ -74,6 +90,9 @@ mysql -u meetingmanager -ppassword -D meeting_manager -e "SELECT 'Connected' as 
 
 # Check sample data
 curl -s http://localhost:8080/api/meetings | jq .
+
+# Verify document storage
+curl -s http://localhost:8080/api/documents | jq .
 
 # Reset database (Docker)
 docker-compose down -v && docker-compose up mysql mongodb -d
@@ -109,8 +128,23 @@ cat frontend/proxy.conf.json
 # Test API directly
 curl -s http://localhost:8080/api/meetings
 
+# Test document endpoints
+curl -s http://localhost:8080/api/documents
+
 # Test through proxy
 curl -s http://localhost:4200/api/meetings
+```
+
+### Document Upload Issues
+```bash
+# Check file upload directory permissions
+ls -la backend/uploads/
+
+# Verify cloud storage configuration
+grep -r "onedrive\|googledrive" backend/src/main/resources/
+
+# Test document service
+curl -X GET http://localhost:8080/api/documents/health
 ```
 
 ## 📱 Application URLs
@@ -118,7 +152,9 @@ curl -s http://localhost:4200/api/meetings
 - **Frontend**: http://localhost:4200
 - **Backend API**: http://localhost:8080/api
 - **Previous Meetings**: http://localhost:4200/meetings/previous
+- **Document Upload**: http://localhost:4200/meetings (via upload button)
 - **API Test**: http://localhost:8080/api/meetings
+- **Document API**: http://localhost:8080/api/documents
 
 ## 🔍 Verification Checklist
 
@@ -128,12 +164,16 @@ curl -s http://localhost:4200/api/meetings
 - [ ] API returns 3 sample meetings
 - [ ] Previous Meetings page loads
 - [ ] Search and filters work
+- [ ] Document upload button appears on dashboard
+- [ ] Document upload dialog opens and functions
+- [ ] Documents API returns empty list initially
 
 ## 📚 Documentation Quick Links
 
 - **Full Setup Guide**: [ENVIRONMENT_SETUP.md](./ENVIRONMENT_SETUP.md)
 - **Component Docs**: [PREVIOUS_MEETINGS.md](./PREVIOUS_MEETINGS.md)
 - **API Reference**: [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
+- **Document System**: [DOCUMENT_UPLOAD_SYSTEM.md](./DOCUMENT_UPLOAD_SYSTEM.md)
 - **Project Overview**: [README.md](../README.md)
 
 ---
