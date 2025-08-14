@@ -6,14 +6,44 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
+interface BackendMeeting {
+  id: number;
+  title: string;
+  description?: string;
+  startTime: string;
+  endTime?: string;
+  meetingType?: string;
+  status?: string;
+  participants?: Array<{
+    id: number;
+    name: string;
+    email: string;
+    attended?: boolean;
+  }>;
+  actionItems?: Array<{
+    id: number;
+    description: string;
+    assignedTo?: string;
+    dueDate: string;
+    priority?: string;
+    status?: string;
+  }>;
+  nextSteps?: string | string[];
+  summary?: string;
+  details?: string;
+  recordingUrl?: string;
+  [key: string]: unknown;
+}
+
 @Injectable({ providedIn: 'root' })
 export class MeetingService {
-  private apiUrl = '/api/meetings';
+  private apiUrl = 'https://ca-backend-jq7rzfkj24zqy.mangoriver-904fd974.eastus.azurecontainerapps.io/api/meetings';
 
   constructor(
     private http: HttpClient,
     private mapper: MeetingMapperService
   ) {
+    // For local development, we'll use the production backend directly
     // In production, check if we need to use a different backend URL
     if (window.location.hostname.includes('azurecontainerapps.io')) {
       // Use the backend container app URL in production with /api prefix
@@ -22,13 +52,24 @@ export class MeetingService {
   }
 
   getMeetings(): Observable<Meeting[]> {
-    return this.http.get<any[]>(this.apiUrl).pipe(
+    return this.http.get<BackendMeeting[]>(this.apiUrl).pipe(
       map(backendMeetings => this.mapper.transformMeetingsFromBackend(backendMeetings))
     );
   }
 
   getMeeting(id: string | number): Observable<Meeting> {
-    return this.http.get<Meeting>(`${this.apiUrl}/${id}`);
+    return this.http.get<BackendMeeting>(`${this.apiUrl}/${id}`, { 
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    }).pipe(
+      map(backendMeeting => {
+        const transformed = this.mapper.transformMeetingFromBackend(backendMeeting);
+        console.log('Meeting loaded successfully:', transformed.title);
+        return transformed;
+      })
+    );
   }
 
   createMeeting(meeting: Meeting): Observable<Meeting> {

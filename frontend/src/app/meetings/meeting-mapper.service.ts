@@ -42,10 +42,13 @@ export class MeetingMapperService {
       nextSteps = backendMeeting.nextSteps;
     }
 
-    return {
+    // Start with all backend properties
+    const transformedMeeting: Meeting = {
+      ...backendMeeting,
+      // Override with our transformed properties
       id: backendMeeting.id.toString(),
-      subject: backendMeeting.title,
-      title: backendMeeting.title,
+      subject: backendMeeting.title || backendMeeting.subject,
+      title: backendMeeting.title || backendMeeting.subject,
       date: dateStr,
       time: timeStr,
       summary: backendMeeting.summary || '',
@@ -56,11 +59,11 @@ export class MeetingMapperService {
       nextSteps,
       isJustCompleted: this.isRecentlyCompleted(backendMeeting),
       recordingUrl: backendMeeting.recordingUrl,
-      // Include all backend properties for detailed views
-      ...backendMeeting,
       // Ensure numeric id for backend compatibility
       numericId: backendMeeting.id,
     };
+
+    return transformedMeeting;
   }
 
   /**
