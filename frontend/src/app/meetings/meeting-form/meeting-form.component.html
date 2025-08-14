@@ -184,6 +184,12 @@
                             Save as Draft
                         </button>
 
+                        <button type="button" mat-stroked-button color="primary" (click)="onUploadDocument()"
+                            class="upload-button">
+                            <mat-icon>cloud_upload</mat-icon>
+                            Upload Document
+                        </button>
+
                         <button type="submit" mat-raised-button color="primary" [disabled]="!meetingForm.valid"
                             class="save-button">
                             <mat-icon>{{ isEdit ? 'update' : 'add' }}</mat-icon>

@@ -1,9 +1,14 @@
 // @ts-check
+/* eslint-env node */
+/* eslint-disable @typescript-eslint/no-require-imports */
 const eslint = require("@eslint/js");
 const tseslint = require("typescript-eslint");
 const angular = require("@angular-eslint/eslint-plugin");
 
 module.exports = [
+  {
+    ignores: ["eslint.config.js"]
+  },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {

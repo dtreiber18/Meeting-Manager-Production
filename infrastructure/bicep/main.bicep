@@ -192,14 +192,6 @@ module backend './modules/container-app.bicep' = {
         value: openAi.outputs.endpoint
       }
       {
-        name: 'AZURE_OPENAI_API_KEY'
-        value: listKeys(openAi.outputs.id, '2023-10-01-preview').key1
-      }
-      {
-        name: 'AZURE_OPENAI_DEPLOYMENT_NAME'
-        value: 'gpt-35-turbo'
-      }
-      {
         name: 'AZURE_TEXT_ANALYTICS_ENDPOINT'
         value: cognitiveServices.outputs.endpoint
       }
