@@ -51,10 +51,17 @@ export class ChatService {
       pageContext: pageType
     };
 
+    console.log('Chat service making request to:', `${this.apiUrl}/message`);
+    console.log('Request payload:', request);
+
     return this.http.post<ChatResponse>(`${this.apiUrl}/message`, request).pipe(
-      map(response => response.response),
+      map(response => {
+        console.log('Chat API response received:', response);
+        return response.response;
+      }),
       catchError(error => {
         console.error('Chat API error:', error);
+        console.log('Falling back to local response');
         // Fallback to local response if API fails
         return of(this.getContextualResponse(userMessage, pageType));
       })
