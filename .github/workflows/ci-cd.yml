@@ -272,18 +272,17 @@ jobs:
   build-and-push-images:
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: false  # Temporarily disabled until Azure Container Registry credentials are set up
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
     
     steps:
     - uses: actions/checkout@v4
     
-    # TODO: Set up AZURE_REGISTRY_USERNAME and AZURE_REGISTRY_PASSWORD secrets
     - name: Log in to Azure Container Registry
       uses: docker/login-action@v3
       with:
         registry: ${{ vars.AZURE_CONTAINER_REGISTRY }}
-        username: ${{ secrets.AZURE_REGISTRY_USERNAME }}
-        password: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
     
     - name: Build and push frontend image
       working-directory: frontend
@@ -300,7 +299,7 @@ jobs:
   deploy-to-azure:
     needs: build-and-push-images
     runs-on: ubuntu-latest
-    if: false  # Temporarily disabled until Azure Container Registry is set up
+    if: github.ref == 'refs/heads/main'
     
     steps:
     - uses: actions/checkout@v4
