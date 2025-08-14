@@ -87,8 +87,8 @@ export class MeetingFormComponent {
       this.meetingService.createMeeting(this.meeting as Meeting).subscribe({
         next: (created) => {
           console.log('Meeting created successfully:', created);
-          // Navigate back to dashboard after successful creation
-          this.router.navigate(['/dashboard']);
+          // Navigate back to home/dashboard after successful creation
+          this.router.navigate(['/']);
         },
         error: (error) => {
           console.error('Error creating meeting:', error);
