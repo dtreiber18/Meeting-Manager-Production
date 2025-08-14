@@ -1,14 +1,20 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { Meeting, FilterConfig, Participant, ActionItem } from '../meetings/meeting.model';
+import { MatDialog } from '@angular/material/dialog';
 
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatDialogModule } from '@angular/material/dialog';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
+
+// Import document-related components
+import { DocumentUploadDialogComponent } from '../shared/document-upload-dialog/document-upload-dialog.component';
+import { DocumentService } from '../services/document.service';
 
 @Component({
   selector: 'app-home-screen',
@@ -21,6 +27,7 @@ import { ButtonModule } from 'primeng/button';
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
+    MatDialogModule,
     ButtonModule
   ],
   templateUrl: './home-screen.component.html',
@@ -38,6 +45,11 @@ export class HomeScreenComponent implements OnInit {
   showFilters = false;
   expandedMeeting: string | null = null;
   localFilterConfig!: FilterConfig;
+
+  constructor(
+    private dialog: MatDialog,
+    private documentService: DocumentService
+  ) {}
 
   ngOnInit() {
     this.localFilterConfig = { ...this.filterConfig };
@@ -188,5 +200,29 @@ export class HomeScreenComponent implements OnInit {
 
   onViewAllMeetingsClick() {
     this.viewAllMeetings.emit();
+  }
+
+  // Document upload functionality
+  onUploadDocument() {
+    const dialogRef = this.dialog.open(DocumentUploadDialogComponent, {
+      width: '600px',
+      maxHeight: '90vh',
+      data: {
+        meetingId: null // For general document upload not tied to a specific meeting
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        console.log('Document uploaded successfully:', result);
+        // Could refresh document list or show success message
+      }
+    });
+  }
+
+  // Create meeting functionality
+  onCreateMeeting() {
+    // For now, just show an alert - this would navigate to create meeting form
+    alert('Create Meeting feature - this would navigate to the meeting creation form.');
   }
 }

@@ -10,8 +10,10 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MeetingService } from '../meeting.service';
 import { Meeting } from '../meeting.model';
+import { DocumentUploadDialogComponent } from '../../shared/document-upload-dialog/document-upload-dialog.component';
 
 @Component({
   selector: 'app-meeting-form',
@@ -26,7 +28,8 @@ import { Meeting } from '../meeting.model';
     MatSelectModule,
     MatCheckboxModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    MatDialogModule
   ],
   templateUrl: './meeting-form.component.html',
   styleUrl: './meeting-form.component.scss'
@@ -50,7 +53,8 @@ export class MeetingFormComponent {
   constructor(
     private route: ActivatedRoute,
     public router: Router,
-    private meetingService: MeetingService
+    private meetingService: MeetingService,
+    private dialog: MatDialog
   ) {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
@@ -96,5 +100,22 @@ export class MeetingFormComponent {
         }
       });
     }
+  }
+
+  onUploadDocument(): void {
+    const dialogRef = this.dialog.open(DocumentUploadDialogComponent, {
+      width: '600px',
+      maxHeight: '90vh',
+      data: {
+        meetingId: this.meeting.id || null // Pass the current meeting ID if editing
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        console.log('Document uploaded successfully:', result);
+        // Could show success message or refresh meeting documents
+      }
+    });
   }
 }

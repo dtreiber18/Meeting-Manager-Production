@@ -1,7 +1,6 @@
 import {
   Component,
   Input,
-  OnInit,
   OnDestroy,
   ViewChild,
   ElementRef,
@@ -18,7 +17,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Message, PageType, AIChatContext } from '../models/chat.model';
+import { Message, PageType } from '../models/chat.model';
 import { ChatService } from '../services/chat.service';
 import { Subject, takeUntil } from 'rxjs';
 
@@ -395,8 +394,8 @@ import { Subject, takeUntil } from 'rxjs';
     `,
   ],
 })
-export class AiChatComponent implements OnInit, OnDestroy, AfterViewChecked {
-  @Input() context: string = '';
+export class AiChatComponent implements OnDestroy, AfterViewChecked {
+  @Input() context = '';
   @Input() pageType: PageType = 'home';
 
   @ViewChild('messagesContainer') messagesContainer!: ElementRef;
@@ -412,10 +411,6 @@ export class AiChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     private chatService: ChatService,
     private cdr: ChangeDetectorRef
   ) {}
-
-  ngOnInit(): void {
-    // Component initialization
-  }
 
   ngOnDestroy(): void {
     this.destroy$.next();

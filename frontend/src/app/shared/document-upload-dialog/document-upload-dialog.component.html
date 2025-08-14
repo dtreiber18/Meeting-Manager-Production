@@ -1,0 +1,150 @@
+<div class="upload-dialog">
+  <div class="dialog-header">
+    <h2 mat-dialog-title>
+      <mat-icon>cloud_upload</mat-icon>
+      Upload Document
+    </h2>
+  </div>
+
+  <div mat-dialog-content class="dialog-content">
+    <form [formGroup]="uploadForm" class="upload-form">
+      
+      <!-- File Upload Section -->
+      <div class="file-upload-section">
+        <div class="file-drop-zone" 
+             (dragover)="onDragOver($event)"
+             (dragleave)="onDragLeave($event)"
+             (drop)="onDrop($event)"
+             [class.has-file]="selectedFile">
+          
+          <div *ngIf="!selectedFile" class="drop-zone-content">
+            <mat-icon class="upload-icon">cloud_upload</mat-icon>
+            <p class="drop-text">Drag & drop your file here</p>
+            <p class="or-text">or</p>
+            <button type="button" mat-raised-button color="primary" (click)="fileInput.click()">
+              Choose File
+            </button>
+            <input #fileInput type="file" style="display: none" (change)="onFileSelected($event)">
+          </div>
+
+          <div *ngIf="selectedFile" class="selected-file">
+            <div class="file-info">
+              <mat-icon class="file-icon">{{ getFileIcon() }}</mat-icon>
+              <div class="file-details">
+                <span class="file-name">{{ selectedFile.name }}</span>
+                <span class="file-size">{{ formatFileSize() }}</span>
+              </div>
+              <button type="button" mat-icon-button (click)="removeSelectedFile()" class="remove-file">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+            
+            <div *ngIf="isUploading" class="upload-progress">
+              <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+              <span class="progress-text">Uploading...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Fields -->
+      <div class="form-fields">
+        <!-- Meeting Selection -->
+        <mat-form-field class="full-width" appearance="outline">
+          <mat-label>Meeting (Optional)</mat-label>
+          <mat-select formControlName="meetingId">
+            <mat-option [value]="null">No meeting selected</mat-option>
+            <mat-option *ngFor="let meeting of meetings" [value]="meeting.id">
+              {{ meeting.subject }}
+              <span *ngIf="meeting.date" class="meeting-date"> - {{ meeting.date | date:'shortDate' }}</span>
+            </mat-option>
+          </mat-select>
+          <mat-icon matSuffix>event</mat-icon>
+        </mat-form-field>
+
+        <!-- Title -->
+        <mat-form-field class="full-width" appearance="outline">
+          <mat-label>Title *</mat-label>
+          <input matInput formControlName="title" placeholder="Enter document title">
+          <mat-icon matSuffix>title</mat-icon>
+          <mat-error *ngIf="uploadForm.get('title')?.errors">{{ titleError }}</mat-error>
+        </mat-form-field>
+
+        <!-- Description -->
+        <mat-form-field class="full-width" appearance="outline">
+          <mat-label>Description</mat-label>
+          <textarea matInput 
+                    formControlName="description" 
+                    placeholder="Enter document description" 
+                    rows="3"></textarea>
+          <mat-icon matSuffix>description</mat-icon>
+          <mat-error *ngIf="uploadForm.get('description')?.errors">{{ descriptionError }}</mat-error>
+        </mat-form-field>
+
+        <div class="form-row">
+          <!-- Document Type -->
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Document Type *</mat-label>
+            <mat-select formControlName="documentType">
+              <mat-option *ngFor="let type of documentTypes" [value]="type.value">
+                {{ type.label }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>category</mat-icon>
+          </mat-form-field>
+
+          <!-- Storage Provider -->
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Storage Provider *</mat-label>
+            <mat-select formControlName="storageProvider">
+              <mat-option *ngFor="let provider of storageProviders" [value]="provider.value">
+                <mat-icon>{{ provider.icon }}</mat-icon>
+                {{ provider.label }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>storage</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <!-- Access Permissions -->
+        <mat-form-field class="full-width" appearance="outline">
+          <mat-label>Access Permissions *</mat-label>
+          <mat-select formControlName="accessPermissions">
+            <mat-option *ngFor="let permission of accessPermissions" [value]="permission.value">
+              <div class="permission-option">
+                <span class="permission-label">{{ permission.label }}</span>
+                <span class="permission-description">{{ permission.description }}</span>
+              </div>
+            </mat-option>
+          </mat-select>
+          <mat-icon matSuffix>security</mat-icon>
+        </mat-form-field>
+
+        <!-- Tags -->
+        <mat-form-field class="full-width" appearance="outline">
+          <mat-label>Tags</mat-label>
+          <input matInput 
+                 formControlName="tags" 
+                 placeholder="Enter tags separated by commas">
+          <mat-icon matSuffix>local_offer</mat-icon>
+          <mat-hint>Separate multiple tags with commas</mat-hint>
+          <mat-error *ngIf="uploadForm.get('tags')?.errors">{{ tagsError }}</mat-error>
+        </mat-form-field>
+      </div>
+    </form>
+  </div>
+
+  <div mat-dialog-actions class="dialog-actions">
+    <button mat-button (click)="onCancel()" [disabled]="isUploading">
+      Cancel
+    </button>
+    <button mat-raised-button 
+            color="primary" 
+            (click)="onUpload()" 
+            [disabled]="!selectedFile || uploadForm.invalid || isUploading">
+      <mat-icon *ngIf="!isUploading">cloud_upload</mat-icon>
+      <mat-icon *ngIf="isUploading" class="spinning">refresh</mat-icon>
+      {{ isUploading ? 'Uploading...' : 'Upload Document' }}
+    </button>
+  </div>
+</div>

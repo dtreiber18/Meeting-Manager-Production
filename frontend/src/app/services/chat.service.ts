@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, catchError } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Message, PageType } from '../models/chat.model';
+import { PageType } from '../models/chat.model';
 
 export interface ChatRequest {
   message: string;

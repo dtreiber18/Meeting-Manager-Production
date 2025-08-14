@@ -1,0 +1,129 @@
+<div class="document-list-container">
+  <!-- Header with search and upload button -->
+  <div class="list-header">
+    <div class="search-section" *ngIf="showSearchFilter">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Search documents...</mat-label>
+        <input matInput 
+               [(ngModel)]="searchTerm" 
+               (keyup)="onSearch()" 
+               placeholder="Search by title, description, or tags">
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+
+    <div class="action-section" *ngIf="showUploadButton">
+      <button mat-raised-button color="primary" (click)="onUploadDocument()">
+        <mat-icon>cloud_upload</mat-icon>
+        Upload Document
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading documents...</p>
+  </div>
+
+  <!-- Documents list -->
+  <div *ngIf="!isLoading" class="documents-container" [style.max-height]="maxHeight">
+    <div *ngIf="filteredDocuments.length === 0" class="empty-state">
+      <mat-icon class="empty-icon">description</mat-icon>
+      <h3>No documents found</h3>
+      <p *ngIf="searchTerm">Try adjusting your search terms</p>
+      <p *ngIf="!searchTerm && meetingId">No documents have been uploaded for this meeting yet.</p>
+      <p *ngIf="!searchTerm && !meetingId">No documents have been uploaded yet.</p>
+      <button *ngIf="showUploadButton" mat-raised-button color="primary" (click)="onUploadDocument()">
+        <mat-icon>add</mat-icon>
+        Upload First Document
+      </button>
+    </div>
+
+    <div *ngIf="filteredDocuments.length > 0" class="documents-grid">
+      <mat-card *ngFor="let document of filteredDocuments" 
+                class="document-card" 
+                (click)="onDocumentClick(document)">
+        
+        <mat-card-header>
+          <div mat-card-avatar class="document-avatar">
+            <mat-icon>{{ getDocumentIcon(document) }}</mat-icon>
+          </div>
+          <mat-card-title class="document-title">{{ document.title }}</mat-card-title>
+          <mat-card-subtitle class="document-subtitle">
+            {{ getDocumentTypeDisplayName(document) }}
+            <span *ngIf="document.fileSize" class="file-size"> • {{ formatFileSize(document) }}</span>
+          </mat-card-subtitle>
+          
+          <div class="card-actions">
+            <button mat-icon-button 
+                    (click)="onDownload(document, $event)" 
+                    matTooltip="Download">
+              <mat-icon>download</mat-icon>
+            </button>
+            <button mat-icon-button 
+                    (click)="onDelete(document, $event)" 
+                    matTooltip="Delete"
+                    color="warn">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </mat-card-header>
+
+        <mat-card-content>
+          <p *ngIf="document.description" class="document-description">
+            {{ document.description }}
+          </p>
+          
+          <div class="document-metadata">
+            <div class="metadata-row">
+              <mat-icon class="metadata-icon">folder</mat-icon>
+              <span>{{ document.fileName }}</span>
+            </div>
+            
+            <div class="metadata-row" *ngIf="document.uploadDate">
+              <mat-icon class="metadata-icon">schedule</mat-icon>
+              <span>{{ formatDate(document.uploadDate) }}</span>
+            </div>
+            
+            <div class="metadata-row">
+              <mat-icon class="metadata-icon">{{ getStorageProviderIcon(document) }}</mat-icon>
+              <span>{{ document.storageProvider }}</span>
+            </div>
+            
+            <div class="metadata-row">
+              <mat-icon class="metadata-icon">security</mat-icon>
+              <span>{{ getAccessPermissionDisplayName(document) }}</span>
+            </div>
+          </div>
+
+          <div *ngIf="document.tags" class="document-tags">
+            <mat-chip-listbox>
+              <mat-chip *ngFor="let tag of document.tags.split(',')" 
+                        class="document-tag">
+                {{ tag.trim() }}
+              </mat-chip>
+            </mat-chip-listbox>
+          </div>
+
+          <div *ngIf="document.aiProcessed" class="ai-indicators">
+            <mat-icon class="ai-icon" matTooltip="AI Processed">psychology</mat-icon>
+            <mat-icon *ngIf="document.aiIndexed" class="ai-icon" matTooltip="AI Indexed">search</mat-icon>
+          </div>
+        </mat-card-content>
+
+        <mat-card-actions class="card-footer-actions">
+          <button mat-button (click)="onDocumentClick(document); $event.stopPropagation()">
+            <mat-icon>open_in_new</mat-icon>
+            View Details
+          </button>
+          <span class="spacer"></span>
+          <button mat-button (click)="onDownload(document, $event)">
+            <mat-icon>download</mat-icon>
+            Download
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+  </div>
+</div>

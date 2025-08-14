@@ -54,6 +54,13 @@ spring:
       allowed-methods: "*"
       allowed-headers: "*"
 
+  # File Upload Configuration
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+      enabled: true
+
 # Azure Configuration
 azure:
   keyvault:
@@ -67,6 +74,19 @@ azure:
     textanalytics:
       endpoint: ${AZURE_TEXT_ANALYTICS_ENDPOINT:https://your-textanalytics.cognitiveservices.azure.com/}
       api-key: ${AZURE_TEXT_ANALYTICS_API_KEY:your-api-key}
+
+# Cloud Storage Configuration
+onedrive:
+  client-id: ${ONEDRIVE_CLIENT_ID:#{null}}
+  client-secret: ${ONEDRIVE_CLIENT_SECRET:#{null}}
+  tenant-id: ${ONEDRIVE_TENANT_ID:#{null}}
+  access-token: ${ONEDRIVE_ACCESS_TOKEN:#{null}}
+
+googledrive:
+  client-id: ${GOOGLEDRIVE_CLIENT_ID:#{null}}
+  client-secret: ${GOOGLEDRIVE_CLIENT_SECRET:#{null}}
+  access-token: ${GOOGLEDRIVE_ACCESS_TOKEN:#{null}}
+  refresh-token: ${GOOGLEDRIVE_REFRESH_TOKEN:#{null}}
 
 # Application Configuration
 app:
