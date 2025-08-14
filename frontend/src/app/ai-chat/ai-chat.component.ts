@@ -7,6 +7,7 @@ import {
   ElementRef,
   AfterViewChecked,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -35,7 +36,7 @@ import { Subject, takeUntil } from 'rxjs';
     MatCardModule,
     MatProgressSpinnerModule,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  changeDetection: ChangeDetectionStrategy.Default,
   template: `
     <!-- Chat Toggle Button -->
     <button
@@ -407,7 +408,10 @@ export class AiChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   private destroy$ = new Subject<void>();
   private shouldScrollToBottom = false;
 
-  constructor(private chatService: ChatService) {}
+  constructor(
+    private chatService: ChatService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     // Component initialization
@@ -449,6 +453,7 @@ export class AiChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     };
 
     this.messages = [...this.messages, userMessage];
+    console.log('Messages array after adding user message:', this.messages);
     const messageText = this.inputText.trim();
     this.inputText = '';
     this.isLoading = true;
@@ -459,6 +464,7 @@ export class AiChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
+          console.log('Creating AI message with response:', response);
           const aiMessage: Message = {
             id: (Date.now() + 1).toString(),
             text: response,
@@ -466,8 +472,11 @@ export class AiChatComponent implements OnInit, OnDestroy, AfterViewChecked {
             timestamp: new Date(),
           };
           this.messages = [...this.messages, aiMessage];
+          console.log('Messages array after adding AI response:', this.messages);
           this.isLoading = false;
           this.shouldScrollToBottom = true;
+          this.cdr.detectChanges(); // Force change detection
+          console.log('Change detection triggered');
         },
         error: () => {
           const errorMessage: Message = {
