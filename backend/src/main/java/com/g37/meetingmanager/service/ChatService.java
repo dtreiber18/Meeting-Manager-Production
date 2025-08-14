@@ -21,7 +21,10 @@ public class ChatService {
             @Value("${azure.openai.deployment-name}") String deploymentName) {
         
         this.deploymentName = deploymentName;
-        
+        this.client = initializeClient(endpoint, apiKey, deploymentName);
+    }
+    
+    private OpenAIClient initializeClient(String endpoint, String apiKey, String deploymentName) {
         try {
             // Check if all required configuration is present
             if (endpoint == null || endpoint.equals("https://your-openai.openai.azure.com/") || 
@@ -29,19 +32,19 @@ public class ChatService {
                 deploymentName == null || deploymentName.equals("gpt-4")) {
                 
                 System.out.println("Azure OpenAI not properly configured, using fallback mode");
-                this.client = null;
-                return;
+                return null;
             }
             
-            this.client = new OpenAIClientBuilder()
+            OpenAIClient openAIClient = new OpenAIClientBuilder()
                     .endpoint(endpoint)
                     .credential(new AzureKeyCredential(apiKey))
                     .buildClient();
                     
             System.out.println("Azure OpenAI client initialized successfully");
+            return openAIClient;
         } catch (Exception e) {
             System.err.println("Failed to initialize Azure OpenAI client: " + e.getMessage());
-            this.client = null;
+            return null;
         }
     }
     
