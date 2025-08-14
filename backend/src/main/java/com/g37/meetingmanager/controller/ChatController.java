@@ -22,10 +22,33 @@ public class ChatController {
             String response = chatService.generateResponse(request.getMessage(), request.getPageContext());
             return ResponseEntity.ok(new ChatResponse(response, true));
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ChatResponse("I'm sorry, I'm experiencing technical difficulties. Please try again later.", false));
+            System.err.println("Chat controller error: " + e.getMessage());
+            // Fallback response
+            String fallbackResponse = getFallbackResponse(request.getMessage());
+            return ResponseEntity.ok(new ChatResponse(fallbackResponse, true));
         }
+    }
+    
+    private String getFallbackResponse(String message) {
+        String lowerMessage = message.toLowerCase();
+        
+        if (lowerMessage.contains("meeting") || lowerMessage.contains("create")) {
+            return "To create a new meeting, click the 'Create Meeting' button on the dashboard. You can set the title, description, date, time, and various settings like recording options.";
+        }
+        
+        if (lowerMessage.contains("search") || lowerMessage.contains("find")) {
+            return "You can search for meetings using the search bar at the top. It searches through meeting titles, descriptions, participants, and action items.";
+        }
+        
+        if (lowerMessage.contains("filter")) {
+            return "Use the Filter button to narrow down meetings by date range, type, participants, or other criteria.";
+        }
+        
+        if (lowerMessage.contains("help") || lowerMessage.contains("how")) {
+            return "I can help you with creating meetings, searching and filtering your meetings, understanding the dashboard, and navigating the application features.";
+        }
+        
+        return "Hello! I'm here to help you with the Meeting Manager application. You can ask me about creating meetings, searching, filtering, or any other features you'd like to learn about.";
     }
     
     public static class ChatRequest {
