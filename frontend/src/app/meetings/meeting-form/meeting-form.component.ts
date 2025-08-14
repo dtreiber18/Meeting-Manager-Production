@@ -70,14 +70,30 @@ export class MeetingFormComponent {
   }
 
   save() {
+    console.log('Saving meeting:', this.meeting);
+    
     if (this.isEdit && this.meeting.id) {
-      this.meetingService.updateMeeting(this.meeting.id, this.meeting as Meeting).subscribe(() => 
-        this.router.navigate(['/meetings', this.meeting.id])
-      );
+      this.meetingService.updateMeeting(this.meeting.id, this.meeting as Meeting).subscribe({
+        next: (result) => {
+          console.log('Meeting updated successfully:', result);
+          this.router.navigate(['/meetings', this.meeting.id]);
+        },
+        error: (error) => {
+          console.error('Error updating meeting:', error);
+          alert('Failed to update meeting. Please check the console for details.');
+        }
+      });
     } else {
-      this.meetingService.createMeeting(this.meeting as Meeting).subscribe((created) => 
-        this.router.navigate(['/meetings', created.id])
-      );
+      this.meetingService.createMeeting(this.meeting as Meeting).subscribe({
+        next: (created) => {
+          console.log('Meeting created successfully:', created);
+          this.router.navigate(['/meetings', created.id]);
+        },
+        error: (error) => {
+          console.error('Error creating meeting:', error);
+          alert('Failed to create meeting. Please check the console for details.');
+        }
+      });
     }
   }
 }
