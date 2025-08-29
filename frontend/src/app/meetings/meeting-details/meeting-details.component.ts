@@ -4,6 +4,7 @@ import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MeetingService } from '../meeting.service';
 import { Meeting } from '../meeting.model';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-meeting-details',
@@ -76,7 +77,7 @@ export class MeetingDetailsComponent implements OnInit {
     console.log('📞 Fetching n8n meeting details for ID:', this.meetingId);
     
     // First try to get individual meeting details
-    this.http.post<any>('https://g37-ventures1.app.n8n.cloud/webhook/operations', { 
+    this.http.post<any>(environment.n8nWebhookUrl, { 
       action: 'get_event_details', 
       event_id: this.meetingId 
     }).subscribe({
@@ -103,7 +104,7 @@ export class MeetingDetailsComponent implements OnInit {
   loadN8nMeetingFromList() {
     console.log('📞 Fetching n8n meeting from list API...');
     // Get all meetings and find the one we need
-    this.http.post<any>('https://g37-ventures1.app.n8n.cloud/webhook/operations', { 
+    this.http.post<any>(environment.n8nWebhookUrl, { 
       action: 'get_events'
     }).subscribe({
       next: (response) => {
