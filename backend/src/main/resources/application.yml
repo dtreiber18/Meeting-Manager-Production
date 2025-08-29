@@ -17,24 +17,29 @@ spring:
         secret:
           enabled: false
   
-  # Database Configuration
-  datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/meeting_manager?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
-    username: ${DB_USERNAME:meetingmanager}
-    password: ${DB_PASSWORD:password}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+  # Database Configuration - Using MongoDB only
+  # datasource:
+  #   url: ${DB_URL:jdbc:h2:mem:testdb}
+  #   username: ${DB_USERNAME:sa}
+  #   password: ${DB_PASSWORD:}
+  #   driver-class-name: org.h2.Driver
   
-  # JPA Configuration
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: false
-    database-platform: org.hibernate.dialect.MySQL8Dialect
-    properties:
-      hibernate:
-        format_sql: true
+  # JPA Configuration - Disabled for MongoDB-only setup
+  # jpa:
+  #   hibernate:
+  #     ddl-auto: create-drop
+  #   show-sql: false
+  #   database-platform: org.hibernate.dialect.H2Dialect
+  #   properties:
+  #     hibernate:
+  #       format_sql: true
   
-  # MongoDB Configuration
+  # H2 Console (for development)
+  # h2:
+  #   console:
+  #     enabled: true
+  
+  # MongoDB Configuration - Primary database
   data:
     mongodb:
       uri: ${MONGODB_URI:mongodb://localhost:27017/meeting_manager}

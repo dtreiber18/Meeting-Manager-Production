@@ -9,6 +9,7 @@ This directory contains comprehensive documentation for the Meeting Manager ente
 - **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - Essential commands and quick fixes for daily development
 - **[ENVIRONMENT_SETUP.md](./ENVIRONMENT_SETUP.md)** - Complete development environment setup guide
 - **[SETUP_COMPLETE.md](./SETUP_COMPLETE.md)** - Development environment verification and testing
+- **[N8N_INTEGRATION.md](./N8N_INTEGRATION.md)** - External workflow integration system documentation
 - **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)** - Backend API reference and examples
 - **[PREVIOUS_MEETINGS.md](./PREVIOUS_MEETINGS.md)** - Previous Meetings component implementation details
 
@@ -18,6 +19,7 @@ This directory contains comprehensive documentation for the Meeting Manager ente
 
 - [Quick Reference](./QUICK_REFERENCE.md) - Essential commands and troubleshooting
 - [Environment Setup](./ENVIRONMENT_SETUP.md) - Complete development environment installation guide
+- [n8n Integration](./N8N_INTEGRATION.md) - External workflow integration guide and API documentation
 - [Development Verification](./SETUP_COMPLETE.md#development-environment-ready--working)
 - [Component Architecture](./PREVIOUS_MEETINGS.md#architecture)
 

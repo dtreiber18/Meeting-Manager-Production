@@ -1,0 +1,1233 @@
+{
+  "name": "Tool: Operations",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "requestType"
+            },
+            {
+              "name": "data",
+              "type": "object"
+            },
+            {
+              "name": "eventInfo",
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -448,
+        -64
+      ],
+      "id": "d0459fae-518b-48ac-b1a1-0e87fb45f467",
+      "name": "Workflow Trigger"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "operations",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        -448,
+        192
+      ],
+      "id": "88e2a7bf-48bc-4eb7-978b-0993184b0065",
+      "name": "Webhook Trigger",
+      "webhookId": "operations-webhook"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "get_events",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "cb31243a-d559-4af3-b8c7-620bfcea16cf"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "e8c73291-7d91-40bb-8cc0-8a958f2ee5dd",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "get_pending",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "a89808ed-e0d1-470d-9b1b-3e875b7a274b",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "update_operation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "90fcf296-2bea-4ea3-9613-0b7cf8b00621",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "approve_operation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "3002ba17-e228-4152-a72f-3aefa3e837e4",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "reject_operation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        64,
+        160
+      ],
+      "id": "00f46262-6b5a-458a-abb4-5aceeedcedb2",
+      "name": "Route Webhook Action"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Set status to approved\nreturn {\n  operation_id: $json.operation_id,\n  status: 'approved',\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        288
+      ],
+      "id": "bd1c9f9d-601d-43f7-9267-b287356cd2fd",
+      "name": "Approve Operation"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Set status to rejected\nreturn {\n  operation_id: $json.operation_id,\n  status: 'rejected'\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        432
+      ],
+      "id": "994021fb-5dc3-478f-ab00-240c21114443",
+      "name": "Reject Operation"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        768,
+        144
+      ],
+      "id": "d6154076-e1b4-4129-9b1c-b85d414c966d",
+      "name": "Webhook Response"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{  $json.requestType }}",
+                    "rightValue": "batch_create_operation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "9a6fac47-3d54-43ab-b532-235a576596c4"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "a56b2a94-0960-42bb-ac06-a3b935fabcf7",
+                    "leftValue": "={{  $json.requestType }}",
+                    "rightValue": "batch_create_event",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "dbc2b28a-a44c-4627-a75a-a34898c5581c",
+                    "leftValue": "=",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        64,
+        -64
+      ],
+      "id": "f5052ecb-da56-46c9-8776-8fcd5f244d23",
+      "name": "Route Request"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "name": "message",
+              "value": "Batch operations processed successfully",
+              "type": "string"
+            },
+            {
+              "name": "event_id",
+              "value": "={{ $('Create Event').first().json.id }}",
+              "type": "string"
+            },
+            {
+              "name": "pending_count",
+              "value": "={{ $('Create Pending').all().length }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        768,
+        -224
+      ],
+      "id": "33c4c7b5-cb3e-4bd9-ab6c-d8a5bbcb645c",
+      "name": "Operation Response"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2c1779eb-8ce8-44da-b3a7-96ba44ba5ea1",
+              "name": "event_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "77d27174-6224-47da-ad29-7c890fc5f5a5",
+              "name": "event_title",
+              "value": "={{ $json.fields.event_title }}",
+              "type": "string"
+            },
+            {
+              "id": "8a272bdb-eb05-4da5-b2f1-1bf2d37a5640",
+              "name": "source_type",
+              "value": "={{ $json.fields.source_type }}",
+              "type": "string"
+            },
+            {
+              "id": "e9c1bbe6-1b8a-454d-a943-eb63f56ea96f",
+              "name": "source",
+              "value": "={{ $json.fields.source }}",
+              "type": "string"
+            },
+            {
+              "id": "f2060a95-0af0-4dd3-9038-11ae846882fd",
+              "name": "event_date",
+              "value": "={{ $json.fields.event_date }}",
+              "type": "string"
+            },
+            {
+              "id": "4b885199-fa24-473d-9f5b-4f0cb0d32b70",
+              "name": "status",
+              "value": "={{ $json.fields.status }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        768,
+        -64
+      ],
+      "id": "22ef6821-d733-4c55-a181-ef9653899243",
+      "name": "Event Response"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Fix stringified JSON objects\nconst input = $json;\n\n// Parse data and eventInfo if they're strings\nif (typeof input.data === 'string') {\n  try {\n    input.data = JSON.parse(input.data);\n  } catch (e) {\n    // If parsing fails, leave as string\n  }\n}\n\nif (typeof input.eventInfo === 'string') {\n  try {\n    input.eventInfo = JSON.parse(input.eventInfo);\n  } catch (e) {\n    // If parsing fails, leave as string\n  }\n}\n\nreturn input;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        -64
+      ],
+      "id": "dafa0355-a5a6-4106-ba5f-e4c3b2e846a3",
+      "name": "Parse JSON"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appzjpRTu9A8SHEf2",
+          "mode": "list",
+          "cachedResultName": "AIPrototype",
+          "cachedResultUrl": "https://airtable.com/appzjpRTu9A8SHEf2"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblZZAUUm1r1ktSy6",
+          "mode": "list",
+          "cachedResultName": "Events",
+          "cachedResultUrl": "https://airtable.com/appzjpRTu9A8SHEf2/tblZZAUUm1r1ktSy6"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        544,
+        144
+      ],
+      "id": "da6d29ec-03bd-4f45-802d-6ad8a828346d",
+      "name": "getEvents",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "wou9JnbELpd2Hf9l",
+          "name": "Airtable (G37)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Manual Trigger\nUse the Inject Debug Data \nnode to set incoming test \ndata within a JSON 'body'\nelement.",
+        "height": 240,
+        "width": 740,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -736,
+        352
+      ],
+      "id": "8cb2d9f5-06e1-4955-bbb9-eb8d465e4261",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle webhook requests\nconst action = $json.body.action || $json.query.action;\n\nswitch(action) {\n  case 'get_events':\n    return { action: 'get_events' };\n    \n  case 'get_pending':\n    return { \n      action: 'get_pending',\n      event_id: $json.body.event_id || $json.query.event_id\n    };\n    \n  case 'update_operation':\n    return {\n      action: 'update_operation',\n      operation_id: $json.body.operation_id,\n      operation: $json.body.operation,\n      status: $json.body.status || \"approved\"\n    };\n    \n  case 'approve_operation':\n    return {\n      action: 'approve_operation',\n      operation_id: $json.body.operation_id\n    };\n    \n  case 'reject_operation':\n    return {\n      action: 'reject_operation',\n      operation_id: $json.body.operation_id\n    };\n    \n  default:\n    throw new Error(`Unknown action: ${action}`);\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        192
+      ],
+      "id": "e1eae283-4e80-46d8-b65d-4d6624b7e49b",
+      "name": "Parse Request"
+    },
+    {
+      "parameters": {
+        "content": "## API Webhook Trigger\nThis is called by the GUI \nto operate on Operations",
+        "height": 200,
+        "width": 740
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -736,
+        128
+      ],
+      "id": "3135844c-afc4-4b5c-a031-6cde5c0dbd37",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{ \"body\": \n  {\n      \"action\": \"update_operation\",\n      \"operation_id\": \"recck3RYEcTXZTWzd\",\n      \"operation\": \"{\\\"FirstName\\\":\\\"Dave1\\\",\\\"LastName\\\":\\\"Johnson1\\\",\\\"Email\\\":\\\"djohnson@northstar.com1\\\",\\\"Phone\\\":null,\\\"Role\\\":null,\\\"Company\\\":\\\"Northstar Industries\\\",\\\"Address1\\\":null,\\\"Address2\\\":null,\\\"City\\\":null,\\\"State\\\":null,\\\"Zip\\\":null,\\\"LastMeeting\\\":\\\"2025-01-15\\\",\\\"LastMeetingType\\\":\\\"project\\\"}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -304,
+        400
+      ],
+      "id": "39a956cb-a116-4f8a-bc3a-4adcbbfc6d9b",
+      "name": "Inject Debug Data"
+    },
+    {
+      "parameters": {
+        "content": "## Workflow Trigger\nThis has been called \nby other workflows \nwithin N8N",
+        "height": 400,
+        "width": 740,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -736,
+        -304
+      ],
+      "id": "aa7b47e7-dd98-4e3c-a5b7-c60b68241e53",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -448,
+        400
+      ],
+      "id": "c5a01917-6eca-435f-9e31-9e447d30aaa5",
+      "name": "Manual Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appzjpRTu9A8SHEf2",
+          "mode": "list",
+          "cachedResultName": "AIPrototype",
+          "cachedResultUrl": "https://airtable.com/appzjpRTu9A8SHEf2"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblPending",
+          "mode": "list",
+          "cachedResultName": "Pending",
+          "cachedResultUrl": "https://airtable.com/appzjpRTu9A8SHEf2/tblPending"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "event_id": "={{ $json.event_id }}",
+            "operation_type": "={{ $json.operation_type }}",
+            "operation": "={{ $json.operation }}",
+            "status": "={{ $json.status }}",
+            "created_at": "={{ $json.created_at }}",
+            "updated_at": "={{ $json.updated_at }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "operation_type",
+              "displayName": "operation_type",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Contact",
+                  "value": "Contact"
+                },
+                {
+                  "name": "Schedule",
+                  "value": "Schedule"
+                },
+                {
+                  "name": "Task",
+                  "value": "Task"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "operation",
+              "displayName": "operation",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "new",
+                  "value": "new"
+                },
+                {
+                  "name": "approved",
+                  "value": "approved"
+                },
+                {
+                  "name": "rejected",
+                  "value": "rejected"
+                },
+                {
+                  "name": "completed",
+                  "value": "completed"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        544,
+        -224
+      ],
+      "id": "8639ea57-ce98-40f1-9da2-fdf7a1ac691a",
+      "name": "Create Pending",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "wou9JnbELpd2Hf9l",
+          "name": "Airtable (G37)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appzjpRTu9A8SHEf2",
+          "mode": "list",
+          "cachedResultName": "AIPrototype",
+          "cachedResultUrl": "https://airtable.com/appzjpRTu9A8SHEf2"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblZZAUUm1r1ktSy6",
+          "mode": "list",
+          "cachedResultName": "Events",
+          "cachedResultUrl": "https://airtable.com/appzjpRTu9A8SHEf2/tblZZAUUm1r1ktSy6"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "event_title": "={{ $json.eventInfo.title }}",
+            "source_type": "={{ $json.eventInfo.source_type }}",
+            "source": "={{ $json.eventInfo.source }}",
+            "event_date": "={{ \n  $json.eventInfo.event_date.includes('T') \n    ? new Date($json.eventInfo.event_date).toISOString()\n    : new Date($json.eventInfo.event_date + ' 00:00:00').toISOString() \n}}",
+            "status": "processing"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "event_title",
+              "displayName": "event_title",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "source_type",
+              "displayName": "source_type",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "event_date",
+              "displayName": "event_date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        544,
+        -64
+      ],
+      "id": "f4e20528-6bbf-413b-ac71-d2f6cf80c9b5",
+      "name": "Create Event",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "wou9JnbELpd2Hf9l",
+          "name": "Airtable (G37)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appzjpRTu9A8SHEf2",
+          "mode": "list",
+          "cachedResultName": "AIPrototype",
+          "cachedResultUrl": "https://airtable.com/appzjpRTu9A8SHEf2"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbleWwNYk9lepljtH",
+          "mode": "list",
+          "cachedResultName": "Pending",
+          "cachedResultUrl": "https://airtable.com/appzjpRTu9A8SHEf2/tbleWwNYk9lepljtH"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.operation_id }}",
+            "status": "={{ $json.status || $input.first().json.updates.status || $input.first().json.status }}",
+            "updated_at": "={{ new Date().toISOString() }}",
+            "operation": "={{ $input.first().json.operation || $input.first().json.operation }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "event_id",
+              "displayName": "event_id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "operation_type",
+              "displayName": "operation_type",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "operation",
+              "displayName": "operation",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        544,
+        432
+      ],
+      "id": "702effaf-ee5e-4fe2-94f7-f0f9b8a6c58c",
+      "name": "updatePending",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "wou9JnbELpd2Hf9l",
+          "name": "Airtable (G37)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Database",
+        "height": 880,
+        "width": 220,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        480,
+        -304
+      ],
+      "id": "b6f494ca-3ca0-42ce-9f07-4e91f8ae53ee",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Responses",
+        "height": 880,
+        "width": 180
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        720,
+        -304
+      ],
+      "id": "6afcb09e-a74c-4294-b5dd-eb0e4f5c28e0",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Routing",
+        "height": 880,
+        "width": 440,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        32,
+        -304
+      ],
+      "id": "4793f848-b546-423d-b728-d023021dc190",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appzjpRTu9A8SHEf2",
+          "mode": "list",
+          "cachedResultName": "AIPrototype",
+          "cachedResultUrl": "https://airtable.com/appzjpRTu9A8SHEf2"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbleWwNYk9lepljtH",
+          "mode": "list",
+          "cachedResultName": "Pending",
+          "cachedResultUrl": "https://airtable.com/appzjpRTu9A8SHEf2/tbleWwNYk9lepljtH"
+        },
+        "filterByFormula": "={event_id} = '{{ $json.event_id }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        544,
+        288
+      ],
+      "id": "72ecbe4d-1f25-455e-a4b3-c5a9ab86b7f0",
+      "name": "Search records",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "wou9JnbELpd2Hf9l",
+          "name": "Airtable (G37)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process batch operations and create pending records\nconst operations = $json.data.operations || [];\nconst eventInfo = $json.eventInfo\n\nconst pendingOperations = [];\n\noperations.forEach(op => {\n  pendingOperations.push({\n    event_id: eventInfo.id,\n    operation_type: op.type, // 'Contact', 'Schedule', 'Task'\n    operation: JSON.stringify(op.data),\n    status: 'new',\n    created_at: new Date().toISOString(),\n    updated_at: new Date().toISOString()\n  });\n});\n\nreturn pendingOperations;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        -224
+      ],
+      "id": "53f742fa-31bc-46f1-8b03-7d48bb7e6b19",
+      "name": "Process Operations"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Webhook Action": {
+      "main": [
+        [
+          {
+            "node": "getEvents",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Search records",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "updatePending",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Approve Operation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Operation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approve Operation": {
+      "main": [
+        [
+          {
+            "node": "updatePending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reject Operation": {
+      "main": [
+        [
+          {
+            "node": "updatePending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Request": {
+      "main": [
+        [
+          {
+            "node": "Process Operations",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Parse Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON": {
+      "main": [
+        [
+          {
+            "node": "Route Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getEvents": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Request": {
+      "main": [
+        [
+          {
+            "node": "Route Webhook Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inject Debug Data": {
+      "main": [
+        [
+          {
+            "node": "Parse Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Inject Debug Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Pending": {
+      "main": [
+        [
+          {
+            "node": "Operation Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Event": {
+      "main": [
+        [
+          {
+            "node": "Event Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "updatePending": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search records": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Operations": {
+      "main": [
+        [
+          {
+            "node": "Create Pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e7afbded-0f3f-4647-b4e4-b31b10e28672",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c028b11466d5e5475fda26f16fec0ec63f0826084874960f3086cda4767715b6"
+  },
+  "id": "BvShdYYVOgndHXTG",
+  "tags": []
+}
