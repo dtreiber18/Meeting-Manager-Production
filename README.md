@@ -160,7 +160,15 @@ The Meeting Manager includes a comprehensive dashboard and meeting management sy
 ## 🚀 Features
 
 ### Current Features (Implemented ✅)
-- **🔐 Authentication System** - Complete JWT-based authentication with RBAC
+- **� Dual-Source Meeting Integration** - External workflow integration system
+  - **n8n Webhook Integration**: Live connection to n8n workflows via secure webhook API (https://g37-ventures1.app.n8n.cloud/webhook/operations)
+  - **Unified Meeting Interface**: Seamless display of meetings from both Meeting Manager and n8n sources with visual distinction badges
+  - **Intelligent Data Retrieval**: Multi-tier fallback system (direct details API → list search → graceful error handling) ensuring real data display
+  - **Source-Aware Navigation**: Smart routing that handles different meeting sources appropriately with query parameter context
+  - **Real-Time Synchronization**: Independent parallel API calls to both Meeting Manager backend and n8n webhooks for optimal performance
+  - **Professional Error Handling**: Graceful degradation with meaningful error messages, no mock data generation
+  - **Data Integrity**: Only displays genuine meeting data from either source, maintains data authenticity throughout the user experience
+- **�🔐 Authentication System** - Complete JWT-based authentication with RBAC
   - **Frontend (Angular)**: AuthService (300+ lines), Professional Material Design login/register UI with enhanced styling (600+ lines), AuthGuard route protection, JWT interceptor
   - **Backend (Spring Boot)**: AuthController (400+ lines), JwtService (200+ lines), BCrypt password encryption
   - **Security Features**: JWT tokens, password hashing, role-based access control (USER/ADMIN), permission system

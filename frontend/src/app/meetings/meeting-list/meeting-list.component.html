@@ -1,11 +1,15 @@
 <div *ngIf="loading" class="p-4">Loading meetings...</div>
 <div *ngIf="error" class="p-4 text-red-600">{{ error }}</div>
 
+
 <table mat-table [dataSource]="meetings" class="mat-elevation-z8 w-full" *ngIf="!loading && !error">
 	<ng-container matColumnDef="title">
 		<th mat-header-cell *matHeaderCellDef>Title</th>
 		<td mat-cell *matCellDef="let meeting">
-			<a [routerLink]="['/meetings', meeting.id]">{{ meeting.title }}</a>
+			<div class="flex items-center gap-2">
+				<a [routerLink]="['/meetings', meeting.id]" [queryParams]="{ source: meeting.source }">{{ meeting.title }}</a>
+				<mat-chip *ngIf="meeting.source === 'mm'" color="primary" selected>Meeting Manager</mat-chip>
+			</div>
 		</td>
 	</ng-container>
 
@@ -17,7 +21,7 @@
 	<ng-container matColumnDef="actions">
 		<th mat-header-cell *matHeaderCellDef>Actions</th>
 		<td mat-cell *matCellDef="let meeting">
-			<a mat-button color="primary" [routerLink]="['/meetings', meeting.id, 'edit']">Edit</a>
+			<a mat-button color="primary" [routerLink]="['/meetings', meeting.id, 'edit']" *ngIf="meeting.source === 'mm'">Edit</a>
 		</td>
 	</ng-container>
 
