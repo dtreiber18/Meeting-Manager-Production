@@ -7,6 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MeetingService } from '../meeting.service';
 import { Meeting } from '../meeting.model';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-meeting-list',
@@ -64,8 +65,10 @@ export class MeetingListComponent {
     });
 
     // Call n8n API (independent of Meeting Manager)
-    console.log('📞 Calling n8n webhook...');
-    this.http.post<any[]>('https://g37-ventures1.app.n8n.cloud/webhook/operations', { action: 'get_events' }).subscribe({
+    // n8n API call - only if environment enables it
+    if (environment.enableN8nIntegration && environment.n8nWebhookUrl) {
+      console.log('📞 Calling n8n webhook...');
+      this.http.post<any[]>(environment.n8nWebhookUrl, { action: 'get_events' }).subscribe({
       next: (n8nData: any[]) => {
         console.log('✅ n8n response:', n8nData);
         // Map n8n meetings to Meeting model as best as possible
@@ -87,5 +90,10 @@ export class MeetingListComponent {
         finalizeMeetings();
       }
     });
+    } else {
+      console.log('⚠️ n8n integration disabled or URL not configured');
+      n8nCompleted = true;
+      finalizeMeetings();
+    }
   }
 }

@@ -79,6 +79,9 @@ describe('MeetingDetailsComponent', () => {
       snapshot: {
         paramMap: {
           get: jasmine.createSpy('get').and.returnValue('1')
+        },
+        queryParamMap: {
+          get: jasmine.createSpy('get').and.returnValue('meetingmanager')
         }
       }
     } as unknown as ActivatedRoute;
