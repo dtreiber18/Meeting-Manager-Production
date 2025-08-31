@@ -257,12 +257,24 @@ The Meeting Manager includes a comprehensive dashboard and meeting management sy
    cd meeting-manager
    ```
 
-2. **Start the databases**
+2. **Setup environment variables**
+   ```bash
+   # Copy the example environment file
+   cp .env.example .env
+   
+   # Edit .env with your Microsoft Graph API credentials
+   # Get these from Azure App Registration:
+   # - MICROSOFT_CLIENT_ID
+   # - MICROSOFT_CLIENT_SECRET  
+   # - MICROSOFT_TENANT_ID
+   ```
+
+3. **Start the databases**
    ```bash
    docker-compose up mysql mongodb -d
    ```
 
-3. **Run the backend**
+4. **Run the backend**
    ```bash
    cd backend
    mvn spring-boot:run
