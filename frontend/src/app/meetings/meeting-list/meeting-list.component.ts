@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MeetingService } from '../meeting.service';
 import { Meeting } from '../meeting.model';
 import { environment } from '../../../environments/environment';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-meeting-list',
@@ -16,14 +17,31 @@ import { environment } from '../../../environments/environment';
   templateUrl: './meeting-list.component.html',
   styleUrl: './meeting-list.component.scss'
 })
-export class MeetingListComponent {
+export class MeetingListComponent implements OnDestroy {
   meetings: (Meeting & { source?: 'mm' | 'n8n' })[] = [];
   loading = true;
   error = '';
   displayedColumns = ['title', 'date', 'actions'];
 
+  private destroy$ = new Subject<void>();
+
   constructor(private meetingService: MeetingService, private http: HttpClient) {
     this.loadMeetings();
+    
+    // Subscribe to meeting updates
+    this.meetingService.meetingsUpdated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((updated) => {
+        if (updated) {
+          console.log('Meetings updated, refreshing meeting list...');
+          this.loadMeetings();
+        }
+      });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadMeetings() {

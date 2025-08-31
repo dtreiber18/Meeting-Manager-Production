@@ -51,6 +51,16 @@ export class PreviousMeetingsComponent implements OnInit, OnDestroy {
       this.searchQuery = query;
       this.applyFilters();
     });
+    
+    // Subscribe to meeting updates
+    this.meetingService.meetingsUpdated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((updated) => {
+        if (updated) {
+          console.log('Meetings updated, refreshing previous meetings list...');
+          this.loadMeetings();
+        }
+      });
   }
 
   ngOnInit(): void {

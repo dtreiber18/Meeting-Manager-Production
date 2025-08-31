@@ -57,6 +57,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
       ]
     },
     {
+      icon: 'event_available',
+      label: 'Calendar',
+      route: '/calendar-setup',
+      tooltip: 'Connect your Outlook calendar'
+    },
+    {
       icon: 'settings',
       label: 'Settings',
       route: '/settings',
@@ -70,13 +76,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
   ) {
     this.currentUser$ = this.authService.currentUser$;
     this.isAuthenticated$ = this.authService.isAuthenticated$;
-    
-    // Initialize with a default user for development if no user is present
-    this.authService.currentUser$.subscribe(user => {
-      if (!user) {
-        console.log('No user authenticated - showing login state');
-      }
-    });
   }
 
   ngOnInit(): void {

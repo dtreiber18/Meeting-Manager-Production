@@ -7,10 +7,14 @@ import com.g37.meetingmanager.model.User;
 import com.g37.meetingmanager.repository.mysql.MeetingRepository;
 import com.g37.meetingmanager.repository.mysql.OrganizationRepository;
 import com.g37.meetingmanager.repository.mysql.UserRepository;
+import com.g37.meetingmanager.service.CalendarIntegrationService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -19,9 +23,14 @@ import java.util.Optional;
 @RequestMapping("/meetings")
 @CrossOrigin(origins = "*")
 public class MeetingController {
+    private static final Logger logger = LoggerFactory.getLogger(MeetingController.class);
+    
     private final MeetingRepository meetingRepository;
     private final UserRepository userRepository;
     private final OrganizationRepository organizationRepository;
+    
+    @Autowired
+    private CalendarIntegrationService calendarIntegrationService;
 
     public MeetingController(MeetingRepository meetingRepository, 
                            UserRepository userRepository,
@@ -46,7 +55,8 @@ public class MeetingController {
 
     @PostMapping
     @Transactional
-    public ResponseEntity<Meeting> createMeeting(@RequestBody CreateMeetingRequest request) {
+    public ResponseEntity<Meeting> createMeeting(@RequestBody CreateMeetingRequest request,
+                                               @RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
             // Create a new meeting from the request
             Meeting meeting = new Meeting();
@@ -92,9 +102,30 @@ public class MeetingController {
                 meeting.setOrganization(defaultOrg);
             }
             
+            // Save the meeting to the database first
             Meeting savedMeeting = meetingRepository.save(meeting);
+            logger.info("Meeting saved to database: {}", savedMeeting.getTitle());
+            
+            // Attempt to create Outlook calendar event using the organizer's Graph token
+            User organizer = savedMeeting.getOrganizer();
+            if (organizer != null && organizer.getGraphAccessToken() != null) {
+                boolean calendarEventCreated = calendarIntegrationService.createOutlookCalendarEvent(
+                    savedMeeting, 
+                    organizer.getGraphAccessToken()
+                );
+                
+                if (calendarEventCreated) {
+                    logger.info("Successfully created Outlook calendar event for meeting: {}", savedMeeting.getTitle());
+                } else {
+                    logger.warn("Failed to create Outlook calendar event for meeting: {}", savedMeeting.getTitle());
+                }
+            } else {
+                logger.info("No Microsoft Graph access token available for organizer. Meeting created locally only: {}", savedMeeting.getTitle());
+            }
+            
             return ResponseEntity.status(HttpStatus.CREATED).body(savedMeeting);
         } catch (Exception e) {
+            logger.error("Error creating meeting", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -170,5 +201,19 @@ public class MeetingController {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();
+    }
+    
+    /**
+     * Get the OAuth authorization URL for Microsoft Graph calendar access
+     */
+    @GetMapping("/calendar/auth-url")
+    public ResponseEntity<String> getCalendarAuthUrl() {
+        try {
+            String authUrl = calendarIntegrationService.getAuthUrl();
+            return ResponseEntity.ok(authUrl);
+        } catch (Exception e) {
+            logger.error("Error generating calendar auth URL", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

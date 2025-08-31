@@ -4,26 +4,37 @@ import com.g37.meetingmanager.dto.UserDTO;
 import com.g37.meetingmanager.model.User;
 import com.g37.meetingmanager.service.AuthService;
 import com.g37.meetingmanager.service.JwtService;
+import com.g37.meetingmanager.service.MicrosoftGraphOAuthService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.Map;
 
-@Slf4j
 @RestController
 @RequestMapping("/auth")
 @CrossOrigin(origins = "*")
-@RequiredArgsConstructor
 public class AuthController {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
     private final AuthService authService;
     private final JwtService jwtService;
+    private final MicrosoftGraphOAuthService microsoftGraphOAuthService;
+
+    @Autowired
+    public AuthController(AuthService authService, 
+                         JwtService jwtService, 
+                         MicrosoftGraphOAuthService microsoftGraphOAuthService) {
+        this.authService = authService;
+        this.jwtService = jwtService;
+        this.microsoftGraphOAuthService = microsoftGraphOAuthService;
+    }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
@@ -44,6 +55,7 @@ public class AuthController {
                     .token(token)
                     .refreshToken(refreshToken)
                     .expiresIn(jwtService.getExpirationTime())
+                    .calendarAuthUrl(microsoftGraphOAuthService.getAuthorizationUrl())
                     .build();
 
             log.info("Login successful for user: {}", user.getEmail());
@@ -263,6 +275,7 @@ public class AuthController {
         private String token;
         private String refreshToken;
         private long expiresIn;
+        private String calendarAuthUrl;
 
         public static AuthResponseBuilder builder() {
             return new AuthResponseBuilder();
@@ -277,17 +290,21 @@ public class AuthController {
         public void setRefreshToken(String refreshToken) { this.refreshToken = refreshToken; }
         public long getExpiresIn() { return expiresIn; }
         public void setExpiresIn(long expiresIn) { this.expiresIn = expiresIn; }
+        public String getCalendarAuthUrl() { return calendarAuthUrl; }
+        public void setCalendarAuthUrl(String calendarAuthUrl) { this.calendarAuthUrl = calendarAuthUrl; }
 
         public static class AuthResponseBuilder {
             private UserDTO user;
             private String token;
             private String refreshToken;
             private long expiresIn;
+            private String calendarAuthUrl;
 
             public AuthResponseBuilder user(UserDTO user) { this.user = user; return this; }
             public AuthResponseBuilder token(String token) { this.token = token; return this; }
             public AuthResponseBuilder refreshToken(String refreshToken) { this.refreshToken = refreshToken; return this; }
             public AuthResponseBuilder expiresIn(long expiresIn) { this.expiresIn = expiresIn; return this; }
+            public AuthResponseBuilder calendarAuthUrl(String calendarAuthUrl) { this.calendarAuthUrl = calendarAuthUrl; return this; }
 
             public AuthResponse build() {
                 AuthResponse response = new AuthResponse();
@@ -295,6 +312,7 @@ public class AuthController {
                 response.setToken(token);
                 response.setRefreshToken(refreshToken);
                 response.setExpiresIn(expiresIn);
+                response.setCalendarAuthUrl(calendarAuthUrl);
                 return response;
             }
         }
@@ -334,5 +352,67 @@ public class AuthController {
                 return response;
             }
         }
+    }
+
+    @GetMapping("/calendar/auth-url")
+    public ResponseEntity<?> getCalendarAuthUrl() {
+        try {
+            String authUrl = microsoftGraphOAuthService.getAuthorizationUrl();
+            if (authUrl != null) {
+                return ResponseEntity.ok(Map.of("authUrl", authUrl));
+            } else {
+                return ResponseEntity.ok(Map.of("message", "Calendar integration not available"));
+            }
+        } catch (Exception e) {
+            log.error("Error generating calendar auth URL", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Failed to generate calendar authorization URL"));
+        }
+    }
+
+    @PostMapping("/calendar/callback")
+    public ResponseEntity<?> calendarCallback(@RequestBody CalendarCallbackRequest request,
+                                             @RequestHeader("Authorization") String authHeader) {
+        try {
+            String token = authHeader.replace("Bearer ", "");
+            String email = jwtService.getEmailFromToken(token);
+            User user = authService.findUserByEmail(email);
+
+            if (user == null || !user.getIsActive()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("message", "User not found or inactive"));
+            }
+
+            Map<String, Object> tokenResponse = microsoftGraphOAuthService.exchangeCodeForToken(request.getCode());
+            
+            if (tokenResponse != null) {
+                // Store the access token and refresh token for the user
+                // You might want to add these fields to your User entity
+                String accessToken = (String) tokenResponse.get("access_token");
+                String refreshToken = (String) tokenResponse.get("refresh_token");
+                
+                log.info("Calendar authorization successful for user: {}", user.getEmail());
+                return ResponseEntity.ok(Map.of(
+                    "message", "Calendar authorization successful",
+                    "accessToken", accessToken,
+                    "refreshToken", refreshToken
+                ));
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("message", "Failed to exchange authorization code"));
+            }
+
+        } catch (Exception e) {
+            log.error("Calendar callback error", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Calendar authorization failed"));
+        }
+    }
+
+    public static class CalendarCallbackRequest {
+        private String code;
+        
+        public String getCode() { return code; }
+        public void setCode(String code) { this.code = code; }
     }
 }

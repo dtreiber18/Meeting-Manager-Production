@@ -1,8 +1,8 @@
-# Meeting Minutes AI - Product Specifications
+# Meeting Manager - Product Specification
 
 ## Overview
 
-The Meeting Minutes AI is a comprehensive N8N-based automation system that processes meeting notes from various sources, extracts structured information using Claude AI, and automatically manages the resulting tasks, contacts, and calendar items through specialized sub-workflows.
+The Meeting Manager is a modern, enterprise-grade meeting management application designed for comprehensive meeting lifecycle management. Built with Angular 17+ frontend and Spring Boot 3.x backend, it provides professional meeting management capabilities with AI-powered features and external system integrations.
 
 ## System Architecture
 
@@ -10,95 +10,57 @@ The Meeting Minutes AI is a comprehensive N8N-based automation system that proce
 
 ```
 ┌─────────────────┐    ┌──────────────────────┐    ┌─────────────────┐
-│ Input Triggers  │───▶│ Meeting Notes        │───▶│ Sub-Workflows   │
-│                 │    │ Manager (Core)       │    │                 │
+│ Meeting Manager │───▶│ Calendar Integration │───▶│ External        │
+│ Frontend        │    │ (Microsoft Graph)    │    │ Workflows       │
 ├─────────────────┤    └──────────────────────┘    ├─────────────────┤
-│ • Google Drive  │                                │ • Task Manager  │
-│ • Email Monitor │                                │ • Contact Mgr   │
-│ • Manual Input  │                                │ • Schedule Mgr  │
-└─────────────────┘                                └─────────────────┘
-                                                               │
-                                                               ▼
-                                                    ┌─────────────────┐
-                                                    │ Executive       │
-                                                    │ Assistant Chat  │
-                                                    └─────────────────┘
+│ • Angular 17+   │                                │ • n8n Webhooks  │
+│ • Material UI   │    ┌──────────────────────┐    │ • AI Processing │
+│ • PWA Ready     │───▶│ Spring Boot Backend  │───▶│ • Cloud Storage │
+└─────────────────┘    │ (Java 17+)          │    └─────────────────┘
+                       └──────────────────────┘
+                                  │
+                                  ▼
+                       ┌──────────────────────┐
+                       │ Database Layer       │
+                       │ • MySQL (structured) │
+                       │ • MongoDB (documents)│
+                       └──────────────────────┘
 ```
 
-## 1. Meeting Notes Manager (Core Workflow)
+## 1. Microsoft Calendar Integration
 
-**Workflow ID:** `0TJ3ij6ZEFG1cBur`
+**Feature:** Professional Outlook calendar integration with OAuth2 authentication
 
 ### Purpose
-Central processing engine that analyzes meeting content and routes extracted information to appropriate sub-workflows.
+Seamless integration with Microsoft Outlook calendars for automatic meeting synchronization and enhanced productivity.
 
-### Input Format
-```json
-{
-  "data": {
-    "textContent": "# Meeting content in markdown format..."
-  }
-}
+### Technical Implementation
+
+#### 1.1 OAuth2 Authentication Flow
+- **Provider:** Microsoft Graph API
+- **Authentication:** OAuth2 with PKCE flow
+- **Scope:** Calendar.ReadWrite, User.Read
+- **Token Storage:** Secure database storage with 5000-character capacity
+
+#### 1.2 Settings Integration
+- **Location:** Professional Calendar Integration tab in Settings
+- **Features:** Connect/disconnect, status monitoring, error handling
+- **UI Design:** Material Design with professional styling
+
+#### 1.3 Database Schema Enhancement
+```sql
+-- Enhanced User entity with calendar integration
+ALTER TABLE users 
+MODIFY COLUMN graph_access_token VARCHAR(5000),
+MODIFY COLUMN graph_refresh_token VARCHAR(5000);
 ```
 
-### Processing Pipeline
-
-#### 1.1 AI Analysis Node
-- **Model:** Claude Sonnet 4 (claude-sonnet-4-20250514)
-- **Max Tokens:** 8192 (configurable)
-- **Function:** Extracts structured data from unstructured meeting text
-
-#### 1.2 Parse & Validate Analysis Node
-- **Function:** Cleans AI response, handles markdown formatting, validates JSON
-- **Error Handling:** Robust JSON parsing with fallback mechanisms
-- **Output:** Structured meeting data object
-
-#### 1.3 Conditional Routing
-Three parallel branches based on extracted content:
-- **Has Contact Info** → Routes to Contact Manager
-- **Has Calendar Items** → Routes to Schedule Manager  
-- **Has Tasks** → Routes to Task Manager
-
-### Output Schema
-```json
-{
-  "meetingType": "project|sales|standup|client_onboarding|vendor_evaluation|other",
-  "meetingMetadata": {
-    "date": "2025-01-15",
-    "time": "2:00 PM - 3:30 PM CST",
-    "duration": "1.5 hours"
-  },
-  "attendees": [
-    {
-      "FirstName": "string",
-      "LastName": "string", 
-      "Email": "string",
-      "Phone": "string|null",
-      "Role": "string",
-      "Company": "string",
-      "type": "internal|external"
-    }
-  ],
-  "actionItems": [
-    {
-      "owner": "email@company.com",
-      "deadline": "2025-01-19|null",
-      "priority": "high|medium|low",
-      "description": "string",
-      "status": "new"
-    }
-  ],
-  "followupMeetings": [
-    {
-      "title": "string",
-      "date": "2025-01-23|null",
-      "time": "2:00 PM",
-      "status": "scheduled|needs_scheduling|tentative"
-    }
-  ],
-  "contactInformation": [...],
-  "stakeholders": [...],
-  "keyDecisions": [...]
+### Integration Features
+- ✅ **Microsoft Graph OAuth2**: Production-ready authorization flow
+- ✅ **Settings UI**: Professional calendar management interface
+- ✅ **Token Management**: Secure storage with enhanced field sizes
+- ✅ **Real-time Status**: Connection monitoring with user verification
+- ✅ **Error Handling**: Graceful authentication failure management
 }
 ```
 

@@ -9,13 +9,13 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialogModule } from '@angular/material/dialog';
 import { FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { InjectionToken } from '@angular/core';
+import { CalendarService } from '../services/calendar.service';
 
 // Interfaces
 export interface App {
@@ -111,6 +111,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
   sourceApps: App[] = [];
   destinationApps: App[] = [];
 
+  // Calendar Integration
+  calendarStatus: any = null;
+  isLoadingCalendar = false;
+
   // Field Mapping Configuration
   fieldMappingConfig: FieldMappingConfig[] = [
     { key: 'title', label: 'Meeting Title', placeholder: 'title', hint: 'Field containing meeting title' },
@@ -129,6 +133,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
+    private calendarService: CalendarService,
     @Inject(SETTINGS_SERVICE_TOKEN) private settingsService: SettingsService
   ) {
     this.initializeForms();
@@ -260,7 +265,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
       await Promise.all([
         this.loadAccountInfo(),
         this.loadSourceApps(),
-        this.loadDestinationApps()
+        this.loadDestinationApps(),
+        this.loadCalendarStatus()
       ]);
     } catch (error) {
       this.loadError = 'Failed to load settings data';
@@ -297,6 +303,25 @@ export class SettingsComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Calendar Status Loading
+  private async loadCalendarStatus(): Promise<void> {
+    try {
+      this.isLoadingCalendar = true;
+      this.calendarStatus = await this.calendarService.getCalendarStatus().toPromise();
+    } catch (error: any) {
+      console.error('Error checking calendar status:', error);
+      
+      // Handle authentication errors gracefully
+      if (error.status === 404 || (error.error && error.error.error === 'User not found')) {
+        this.calendarStatus = { isConnected: false, userEmail: '', isExpired: false };
+      } else {
+        this.calendarStatus = { isConnected: false, userEmail: '', isExpired: false };
+      }
+    } finally {
+      this.isLoadingCalendar = false;
+    }
+  }
+
   // Tab Management
   onTabChange(index: number): void {
     this.activeTabIndex = index;
@@ -308,6 +333,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
       this.loadSourceApps();
     } else if (index === 2 && this.destinationApps.length === 0) {
       this.loadDestinationApps();
+    } else if (index === 3 && !this.calendarStatus) {
+      this.loadCalendarStatus();
     }
   }
 
@@ -602,4 +629,33 @@ export class SettingsComponent implements OnInit, OnDestroy {
   get af() { return this.accountForm.controls; }
   get pf() { return this.passwordForm.controls; }
   get cf() { return this.appConfigForm.controls; }
+
+  // Calendar Integration Methods
+  async connectCalendar(): Promise<void> {
+    try {
+      const authUrl = await this.calendarService.getAuthUrl().toPromise();
+      if (authUrl && authUrl.authUrl) {
+        // Redirect current window to Microsoft OAuth (no popup)
+        window.location.href = authUrl.authUrl;
+      }
+    } catch (error) {
+      console.error('Error getting auth URL:', error);
+      this.showErrorMessage('Error connecting to calendar');
+    }
+  }
+
+  async disconnectCalendar(): Promise<void> {
+    try {
+      await this.calendarService.disconnectCalendar().toPromise();
+      this.calendarStatus = { isConnected: false, userEmail: '', isExpired: false };
+      this.showSuccessMessage('Calendar disconnected successfully');
+    } catch (error) {
+      console.error('Error disconnecting calendar:', error);
+      this.showErrorMessage('Error disconnecting calendar');
+    }
+  }
+
+  async refreshCalendarStatus(): Promise<void> {
+    await this.loadCalendarStatus();
+  }
 }

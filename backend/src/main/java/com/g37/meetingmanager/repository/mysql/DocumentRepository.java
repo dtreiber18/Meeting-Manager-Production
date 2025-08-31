@@ -1,4 +1,4 @@
-package com.g37.meetingmanager.repository;
+package com.g37.meetingmanager.repository.mysql;
 
 import com.g37.meetingmanager.model.Document;
 import com.g37.meetingmanager.model.Document.DocumentType;

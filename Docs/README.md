@@ -9,6 +9,7 @@ This directory contains comprehensive documentation for the Meeting Manager ente
 - **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - Essential commands and quick fixes for daily development
 - **[ENVIRONMENT_SETUP.md](./ENVIRONMENT_SETUP.md)** - Complete development environment setup guide
 - **[SETUP_COMPLETE.md](./SETUP_COMPLETE.md)** - Development environment verification and testing
+- **[FEATURE_SUMMARY_N8N.md](./FEATURE_SUMMARY_N8N.md)** - Latest features including Microsoft Calendar Integration and n8n workflow integration
 - **[N8N_INTEGRATION.md](./N8N_INTEGRATION.md)** - External workflow integration system documentation
 - **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)** - Backend API reference and examples
 - **[PREVIOUS_MEETINGS.md](./PREVIOUS_MEETINGS.md)** - Previous Meetings component implementation details
@@ -19,6 +20,7 @@ This directory contains comprehensive documentation for the Meeting Manager ente
 
 - [Quick Reference](./QUICK_REFERENCE.md) - Essential commands and troubleshooting
 - [Environment Setup](./ENVIRONMENT_SETUP.md) - Complete development environment installation guide
+- [Feature Summary](./FEATURE_SUMMARY_N8N.md) - Latest features including Microsoft Calendar Integration
 - [n8n Integration](./N8N_INTEGRATION.md) - External workflow integration guide and API documentation
 - [Development Verification](./SETUP_COMPLETE.md#development-environment-ready--working)
 - [Component Architecture](./PREVIOUS_MEETINGS.md#architecture)
@@ -38,10 +40,12 @@ This directory contains comprehensive documentation for the Meeting Manager ente
 ### ✅ Completed Features
 - **Backend API**: Complete Spring Boot application with MySQL database
 - **Frontend Framework**: Angular 17+ with Material Design and PrimeNG
+- **Microsoft Calendar Integration**: Complete OAuth2 integration with Microsoft Graph API in Settings
 - **Document Upload System**: Cloud storage integration with OneDrive/Google Drive support
 - **Previous Meetings**: Advanced search and filtering component
 - **Authentication System**: JWT-based authentication with RBAC
 - **Database Integration**: Working MySQL with sample data including document management
+- **Dual-Source Meeting Integration**: n8n workflow integration with unified meeting display
 - **CORS Configuration**: Development-ready API access
 - **Git Repository**: Initialized with comprehensive commit history
 

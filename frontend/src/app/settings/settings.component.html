@@ -502,6 +502,133 @@
           </div>
         </ng-template>
       </mat-tab>
+
+      <!-- Calendar Integration Tab -->
+      <mat-tab label="Calendar Integration" [attr.aria-label]="'Calendar integration settings'">
+        <ng-template matTabContent>
+          <div class="tab-content p-6">
+            <div class="professional-form-container">
+              <div class="form-section">
+                <h3 class="section-title" id="calendar-integration-title">Microsoft Outlook Calendar</h3>
+                <p class="section-description">Connect your Outlook calendar to automatically sync meetings and events</p>
+
+                <!-- Loading State -->
+                <div *ngIf="isLoadingCalendar" class="flex items-center justify-center py-12" role="status" aria-live="polite">
+                  <mat-icon class="animate-spin text-4xl text-blue-500 mr-4" [attr.aria-hidden]="true">refresh</mat-icon>
+                  <span class="text-lg text-gray-600">Checking calendar status...</span>
+                </div>
+
+                <!-- Calendar Status Display -->
+                <div *ngIf="!isLoadingCalendar && calendarStatus" class="space-y-6">
+                  <!-- Connected Status -->
+                  <div *ngIf="calendarStatus.isConnected" class="bg-green-50 border border-green-200 rounded-lg p-6">
+                    <div class="flex items-center">
+                      <div class="flex-shrink-0">
+                        <mat-icon class="text-green-600 text-4xl" [attr.aria-hidden]="true">check_circle</mat-icon>
+                      </div>
+                      <div class="ml-4 flex-1">
+                        <h4 class="text-lg font-semibold text-green-900">Calendar Connected</h4>
+                        <p class="text-green-700 mt-1">
+                          Your Outlook calendar is successfully connected. 
+                          <span *ngIf="calendarStatus.userEmail" class="font-medium">{{ calendarStatus.userEmail }}</span>
+                        </p>
+                        <p class="text-green-600 text-sm mt-2">
+                          Meetings will automatically sync with your calendar.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="mt-6 flex items-center space-x-4">
+                      <button mat-raised-button color="accent" (click)="refreshCalendarStatus()" class="professional-form-button">
+                        <mat-icon [attr.aria-hidden]="true">refresh</mat-icon>
+                        Refresh Status
+                      </button>
+                      <button mat-raised-button color="warn" (click)="disconnectCalendar()" class="professional-form-button">
+                        <mat-icon [attr.aria-hidden]="true">link_off</mat-icon>
+                        Disconnect Calendar
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Disconnected Status -->
+                  <div *ngIf="!calendarStatus.isConnected" class="bg-orange-50 border border-orange-200 rounded-lg p-6">
+                    <div class="flex items-center">
+                      <div class="flex-shrink-0">
+                        <mat-icon class="text-orange-600 text-4xl" [attr.aria-hidden]="true">warning</mat-icon>
+                      </div>
+                      <div class="ml-4 flex-1">
+                        <h4 class="text-lg font-semibold text-orange-900">Calendar Not Connected</h4>
+                        <p class="text-orange-700 mt-1" *ngIf="calendarStatus.userEmail">
+                          Connect your Outlook calendar to automatically schedule and sync meetings.
+                        </p>
+                        <p class="text-orange-700 mt-1" *ngIf="!calendarStatus.userEmail">
+                          Please ensure you are logged in to connect your Outlook calendar.
+                        </p>
+                        <p class="text-orange-600 text-sm mt-2">
+                          Calendar integration allows automatic meeting creation and synchronization.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="mt-6 flex items-center space-x-4">
+                      <button mat-raised-button color="primary" (click)="connectCalendar()" 
+                              [disabled]="!calendarStatus.userEmail" class="professional-form-button">
+                        <mat-icon [attr.aria-hidden]="true">link</mat-icon>
+                        Connect Outlook Calendar
+                      </button>
+                      <button mat-raised-button color="accent" (click)="refreshCalendarStatus()" class="professional-form-button">
+                        <mat-icon [attr.aria-hidden]="true">refresh</mat-icon>
+                        Refresh Status
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Calendar Features Info -->
+                  <mat-card class="bg-blue-50 border-blue-200">
+                    <mat-card-header>
+                      <mat-card-title class="text-blue-900">
+                        <mat-icon class="text-blue-600 mr-2" [attr.aria-hidden]="true">info</mat-icon>
+                        Calendar Integration Features
+                      </mat-card-title>
+                    </mat-card-header>
+                    <mat-card-content class="text-blue-800">
+                      <ul class="space-y-2">
+                        <li class="flex items-center">
+                          <mat-icon class="text-blue-600 mr-2 text-sm" [attr.aria-hidden]="true">check</mat-icon>
+                          Automatic meeting creation in Outlook
+                        </li>
+                        <li class="flex items-center">
+                          <mat-icon class="text-blue-600 mr-2 text-sm" [attr.aria-hidden]="true">check</mat-icon>
+                          Sync meeting attendees and details
+                        </li>
+                        <li class="flex items-center">
+                          <mat-icon class="text-blue-600 mr-2 text-sm" [attr.aria-hidden]="true">check</mat-icon>
+                          Real-time calendar updates
+                        </li>
+                        <li class="flex items-center">
+                          <mat-icon class="text-blue-600 mr-2 text-sm" [attr.aria-hidden]="true">check</mat-icon>
+                          Meeting reminders and notifications
+                        </li>
+                      </ul>
+                    </mat-card-content>
+                  </mat-card>
+                </div>
+
+                <!-- Error State -->
+                <div *ngIf="!isLoadingCalendar && !calendarStatus" class="text-center py-12" role="alert">
+                  <mat-icon class="text-red-300 text-6xl mb-4" [attr.aria-hidden]="true">error_outline</mat-icon>
+                  <h3 class="text-lg font-medium text-gray-900 mb-2">Unable to load calendar status</h3>
+                  <p class="text-gray-600 mb-6">There was an error loading your calendar integration status.</p>
+                  <button mat-raised-button color="primary" (click)="refreshCalendarStatus()">
+                    <mat-icon [attr.aria-hidden]="true">refresh</mat-icon>
+                    Try Again
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </mat-tab>
     </mat-tab-group>
   </mat-card>
 </div>

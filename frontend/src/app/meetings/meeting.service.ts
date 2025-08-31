@@ -3,8 +3,8 @@ import { Meeting } from './meeting.model';
 import { MeetingMapperService } from './meeting-mapper.service';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
 
 interface BackendMeeting {
   id: number;
@@ -37,17 +37,24 @@ interface BackendMeeting {
 
 @Injectable({ providedIn: 'root' })
 export class MeetingService {
-  private apiUrl = 'https://ca-backend-jq7rzfkj24zqy.mangoriver-904fd974.eastus.azurecontainerapps.io/api/meetings';
+  private apiUrl = '/api/meetings';
+  private _meetingsUpdated = new BehaviorSubject<boolean>(false);
+  
+  // Observable that components can subscribe to for meeting updates
+  public meetingsUpdated$ = this._meetingsUpdated.asObservable();
 
   constructor(
     private http: HttpClient,
     private mapper: MeetingMapperService
   ) {
-    // For local development, we'll use the production backend directly
-    // In production, check if we need to use a different backend URL
+    // Use local backend for development (proxied through angular dev server)
+    // Use production backend for deployed environments
     if (window.location.hostname.includes('azurecontainerapps.io')) {
       // Use the backend container app URL in production with /api prefix
       this.apiUrl = 'https://ca-backend-jq7rzfkj24zqy.mangoriver-904fd974.eastus.azurecontainerapps.io/api/meetings';
+    } else {
+      // Use local backend through Angular proxy for development
+      this.apiUrl = '/api/meetings';
     }
   }
 
@@ -73,14 +80,34 @@ export class MeetingService {
   }
 
   createMeeting(meeting: Meeting): Observable<Meeting> {
-    return this.http.post<Meeting>(this.apiUrl, meeting);
+    return this.http.post<Meeting>(this.apiUrl, meeting).pipe(
+      tap(() => {
+        // Notify subscribers that meetings have been updated
+        this._meetingsUpdated.next(true);
+      })
+    );
   }
 
   updateMeeting(id: string | number, meeting: Meeting): Observable<Meeting> {
-    return this.http.put<Meeting>(`${this.apiUrl}/${id}`, meeting);
+    return this.http.put<Meeting>(`${this.apiUrl}/${id}`, meeting).pipe(
+      tap(() => {
+        // Notify subscribers that meetings have been updated
+        this._meetingsUpdated.next(true);
+      })
+    );
   }
 
   deleteMeeting(id: string | number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+      tap(() => {
+        // Notify subscribers that meetings have been updated
+        this._meetingsUpdated.next(true);
+      })
+    );
+  }
+
+  // Method to manually trigger refresh
+  notifyMeetingsUpdated(): void {
+    this._meetingsUpdated.next(true);
   }
 }

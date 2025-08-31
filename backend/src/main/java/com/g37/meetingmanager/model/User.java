@@ -78,6 +78,18 @@ public class User {
     @Column(unique = true)
     private String azureAdObjectId;
 
+    // Microsoft Graph Calendar Integration
+    @Size(max = 5000)
+    @Column(name = "graph_access_token", length = 5000)
+    private String graphAccessToken;
+
+    @Size(max = 5000)
+    @Column(name = "graph_refresh_token", length = 5000)
+    private String graphRefreshToken;
+
+    @Column(name = "graph_token_expires_at")
+    private LocalDateTime graphTokenExpiresAt;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -335,5 +347,30 @@ public class User {
 
     public void setAssignedActionItems(List<ActionItem> assignedActionItems) {
         this.assignedActionItems = assignedActionItems;
+    }
+
+    // Microsoft Graph Token getters and setters
+    public String getGraphAccessToken() {
+        return graphAccessToken;
+    }
+
+    public void setGraphAccessToken(String graphAccessToken) {
+        this.graphAccessToken = graphAccessToken;
+    }
+
+    public String getGraphRefreshToken() {
+        return graphRefreshToken;
+    }
+
+    public void setGraphRefreshToken(String graphRefreshToken) {
+        this.graphRefreshToken = graphRefreshToken;
+    }
+
+    public LocalDateTime getGraphTokenExpiresAt() {
+        return graphTokenExpiresAt;
+    }
+
+    public void setGraphTokenExpiresAt(LocalDateTime graphTokenExpiresAt) {
+        this.graphTokenExpiresAt = graphTokenExpiresAt;
     }
 }

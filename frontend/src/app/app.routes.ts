@@ -7,10 +7,16 @@ import { MeetingFormComponent } from './meetings/meeting-form/meeting-form.compo
 import { PreviousMeetingsComponent } from './meetings/previous-meetings/previous-meetings.component';
 import { SimpleSettingsComponent } from './simple-settings/simple-settings.component';
 import { AuthComponent } from './auth/auth.component';
+import { AuthTestComponent } from './testing/auth-test.component';
+import { CalendarAuthComponent } from './calendar-auth/calendar-auth.component';
+import { AuthCallbackComponent } from './auth-callback/auth-callback.component';
 import { AuthGuard, GuestGuard } from './auth/auth.guard';
 
 export const routes: Routes = [
 	{ path: 'auth', component: AuthComponent, canActivate: [GuestGuard] },
+	{ path: 'auth/callback', component: AuthCallbackComponent },
+	{ path: 'auth-test', component: AuthTestComponent }, // No guard for testing
+	{ path: 'calendar-setup', component: CalendarAuthComponent, canActivate: [AuthGuard] },
 	{ path: '', component: HomeContainerComponent, canActivate: [AuthGuard] },
 	{ path: 'dashboard', redirectTo: '', pathMatch: 'full' },
 	{ path: 'meetings', component: MeetingListComponent, canActivate: [AuthGuard] },

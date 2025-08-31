@@ -1,6 +1,6 @@
 
 
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { RouterOutlet } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -14,7 +14,8 @@ import { HeaderComponent } from './shared/header/header.component';
 import { MeetingService } from './meetings/meeting.service';
 import { Meeting, FilterConfig } from './meetings/meeting.model';
 import { PageType } from './models/chat.model';
-import { filter } from 'rxjs/operators';
+import { filter, takeUntil } from 'rxjs/operators';
+import { Subject } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -33,7 +34,7 @@ import { filter } from 'rxjs/operators';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent {
+export class AppComponent implements OnDestroy {
   title = 'Meeting Manager - Enterprise Application';
   currentPageType: PageType = 'home';
 
@@ -47,9 +48,26 @@ export class AppComponent {
     hasRecording: false
   };
 
+  private destroy$ = new Subject<void>();
+
   constructor(private meetingService: MeetingService, private router: Router) {
     this.loadMeetings();
     this.setupRouterTracking();
+    
+    // Subscribe to meeting updates
+    this.meetingService.meetingsUpdated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((updated) => {
+        if (updated) {
+          console.log('Meetings updated, refreshing app component meetings...');
+          this.loadMeetings();
+        }
+      });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private setupRouterTracking(): void {

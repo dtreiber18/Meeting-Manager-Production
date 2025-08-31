@@ -1,0 +1,142 @@
+# Changelog
+
+All notable changes to the Meeting Manager project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.3.0] - 2024-12-20
+
+### Added
+- **Microsoft Calendar Integration** - Complete OAuth2 integration with Microsoft Graph API
+  - Full Microsoft Graph OAuth2 authorization flow with secure token management
+  - Professional calendar management interface integrated into Settings module
+  - Real-time connection status display with user email verification
+  - Enhanced database schema to support 5000-character OAuth tokens
+  - Seamless browser-based authentication with JWT-secured backend integration
+  - Calendar connection/disconnection functionality with professional error handling
+  - Production-ready Microsoft Graph integration with proper scope management
+
+### Enhanced
+- **Settings Component** - Enhanced with new Calendar Integration tab
+  - Professional 4-tab interface (Account, Sources, Destinations, Calendar Integration)
+  - Real-time calendar status monitoring with loading states
+  - Professional UI design matching existing Settings system
+  - Enhanced error handling for authentication failures
+  - Mobile-responsive design with consistent Material Design styling
+
+### Fixed
+- **Database Schema** - Resolved OAuth token storage limitations
+  - Increased `graph_access_token` column size from 2000 to 5000 characters
+  - Increased `graph_refresh_token` column size from 2000 to 5000 characters
+  - Proper handling of Microsoft's longer OAuth tokens
+
+## [1.2.0] - 2024-12-19
+
+### Added
+- **Dual-Source Meeting Integration** - External workflow integration system
+  - n8n Webhook Integration with live connection to external workflows
+  - Unified Meeting Interface displaying meetings from both Meeting Manager and n8n sources
+  - Professional visual distinction with "Meeting Manager" badges for internal meetings
+  - Source-aware navigation with smart routing and query parameter context
+  - Real-time synchronization with independent parallel API calls for optimal performance
+  - Professional error handling with graceful degradation and meaningful user feedback
+  - Data integrity maintenance - only displays genuine meeting data from either source
+
+### Enhanced
+- **Meeting Display System** - Enhanced meeting visualization
+  - Multi-tier fallback system for reliable data retrieval
+  - Intelligent data mapping between n8n and Meeting Manager formats
+  - Professional styling consistency across both meeting types
+  - Mobile-responsive design for all device sizes
+
+## [1.1.0] - 2024-12-18
+
+### Added
+- **Professional Enterprise UI System** - Complete Material Design + Tailwind CSS integration
+  - Enterprise Header Component with blue gradient and glass morphism effects
+  - Global Form Enhancement System with 400+ lines of professional styling
+  - Professional form fields with floating labels and enhanced validation
+  - Consistent enterprise color scheme and responsive design system
+  - Advanced animations, hover effects, and loading states
+  - Accessibility compliance with ARIA labels and keyboard navigation
+
+### Enhanced
+- **Authentication System** - Complete JWT-based authentication with RBAC
+  - Professional Material Design login/register UI with enhanced styling
+  - JWT token management with automatic refresh and route protection
+  - Role-based access control (USER/ADMIN) with fine-grained permissions
+  - Azure AD B2C integration ready for enterprise SSO
+  - Enhanced User model with password hashing and security features
+
+## [1.0.0] - 2024-12-17
+
+### Added
+- **Initial Release** - Enterprise Meeting Manager application
+  - Angular 17+ frontend with TypeScript and Material Design
+  - Spring Boot 3.x backend with Java 17+ and dual database support
+  - MySQL database for structured data (users, meetings metadata)
+  - MongoDB integration for document data (meeting content, AI analysis)
+  - Azure Container Apps deployment configuration with Bicep templates
+  - Docker Compose development environment
+  - CI/CD pipeline with GitHub Actions
+  - Progressive Web App (PWA) capabilities
+
+### Features
+- **AI Chat Assistant** - Intelligent contextual assistant
+  - Context-aware responses based on current page/route
+  - Floating chat interface with Material Design components
+  - Real-time messaging with typing indicators
+  - Mobile-responsive design with smooth animations
+
+- **Dashboard & Meeting Management** - Professional meeting interface
+  - Home Dashboard with clean card-based layout
+  - Meeting Details with comprehensive participant management
+  - Previous Meetings browser with advanced filtering and search
+  - Grid/list toggle views with performance optimization
+  - Professional responsive design with Tailwind CSS
+
+- **Enterprise Database Schema** - Complete enterprise-grade data model
+  - 10 comprehensive entity models with multi-tenancy support
+  - RBAC system with role-based access control
+  - Advanced meeting management with types, priorities, and recurrence
+  - Professional participant management with invitation tracking
+  - Enhanced action items with sub-tasks and progress tracking
+  - Meeting resource management with room booking
+  - Document management with file attachments and access controls
+
+### Infrastructure
+- **Azure Cloud Integration** - Production-ready deployment
+  - Azure Container Apps for scalable hosting
+  - Azure Container Registry for Docker images
+  - Azure Key Vault for secrets management
+  - Application Insights for monitoring and telemetry
+  - Azure OpenAI integration for AI features
+  - Azure Cognitive Services for text analysis
+
+### Security
+- **Enterprise Security Features**
+  - JWT token authentication with secure token generation
+  - BCrypt password hashing with salt
+  - CORS configuration for frontend-backend communication
+  - Route protection with authentication guards
+  - Automatic token injection for API calls
+  - Security headers and HTTPS enforcement
+
+---
+
+## Version Numbering
+
+- **Major version** (X.0.0): Breaking changes or major feature additions
+- **Minor version** (X.Y.0): New features, enhancements, or significant improvements
+- **Patch version** (X.Y.Z): Bug fixes, security updates, or minor improvements
+
+## Release Categories
+
+- **Added**: New features or capabilities
+- **Enhanced**: Improvements to existing features
+- **Fixed**: Bug fixes and issue resolutions
+- **Changed**: Changes in existing functionality
+- **Deprecated**: Features that will be removed in future versions
+- **Removed**: Features that have been removed
+- **Security**: Security-related improvements or fixes

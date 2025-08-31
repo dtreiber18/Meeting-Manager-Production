@@ -4,7 +4,7 @@ import com.g37.meetingmanager.model.Document;
 import com.g37.meetingmanager.model.Document.DocumentType;
 import com.g37.meetingmanager.model.Document.AccessPermission;
 import com.g37.meetingmanager.model.Document.StorageProvider;
-import com.g37.meetingmanager.repository.DocumentRepository;
+import com.g37.meetingmanager.repository.mysql.DocumentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

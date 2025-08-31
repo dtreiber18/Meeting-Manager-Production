@@ -35,6 +35,7 @@ export interface AuthResponse {
   token: string;
   refreshToken: string;
   expiresIn: number;
+  calendarAuthUrl?: string;
 }
 
 export interface TokenRefreshResponse {
@@ -60,6 +61,7 @@ export class AuthService {
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
   private tokenRefreshTimer: any;
+  private isLoginInProgress = false;
 
   constructor(private http: HttpClient, private router: Router) {
     this.initializeAuthState();
@@ -73,7 +75,14 @@ export class AuthService {
       this.currentUserSubject.next(user);
       this.isAuthenticatedSubject.next(true);
       this.scheduleTokenRefresh();
-    } else {
+      
+      console.log('🔄 Authentication restored from storage:', {
+        email: user.email,
+        name: `${user.firstName} ${user.lastName}`,
+        tokenExpiry: this.getTokenExpiry(token)
+      });
+    } else if (!this.isLoginInProgress) {
+      console.log('🔒 No valid authentication found, redirecting to login');
       this.logout();
     }
   }
@@ -82,15 +91,19 @@ export class AuthService {
    * Login with email and password
    */
   login(credentials: LoginRequest): Observable<AuthResponse> {
+    this.isLoginInProgress = true;
+    
     return this.http
       .post<AuthResponse>(`${this.API_URL}/auth/login`, credentials)
       .pipe(
         map((response) => {
           this.handleAuthResponse(response);
+          this.isLoginInProgress = false;
           return response;
         }),
         catchError((error) => {
           console.error('Login error:', error);
+          this.isLoginInProgress = false;
           return throwError(() => error);
         })
       );
@@ -150,9 +163,12 @@ export class AuthService {
     const refreshToken = this.getStoredRefreshToken();
 
     if (!refreshToken) {
+      console.log('🔒 No refresh token available, logging out');
       this.logout();
       return throwError(() => new Error('No refresh token available'));
     }
+
+    console.log('🔄 Refreshing authentication token...');
 
     return this.http
       .post<TokenRefreshResponse>(`${this.API_URL}/auth/refresh`, {
@@ -162,10 +178,11 @@ export class AuthService {
         map((response) => {
           this.storeTokens(response.token, response.refreshToken);
           this.scheduleTokenRefresh();
+          console.log('✅ Token refreshed successfully');
           return response;
         }),
         catchError((error) => {
-          console.error('Token refresh error:', error);
+          console.error('❌ Token refresh failed:', error);
           this.logout();
           return throwError(() => error);
         })
@@ -176,10 +193,13 @@ export class AuthService {
    * Logout user
    */
   logout(): void {
+    const currentUser = this.getCurrentUser();
+    
     // Clear stored data
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
+    localStorage.removeItem('mm_calendar_auth_url');
 
     // Clear subjects
     this.currentUserSubject.next(null);
@@ -189,6 +209,11 @@ export class AuthService {
     if (this.tokenRefreshTimer) {
       clearTimeout(this.tokenRefreshTimer);
     }
+
+    console.log('🔓 User logged out:', currentUser ? {
+      email: currentUser.email,
+      name: `${currentUser.firstName} ${currentUser.lastName}`
+    } : 'No user was authenticated');
 
     // Redirect to login
     this.router.navigate(['/auth']);
@@ -240,6 +265,13 @@ export class AuthService {
     return user?.organizationId === organizationId;
   }
 
+  /**
+   * Get calendar authorization URL for Microsoft Graph integration
+   */
+  getCalendarAuthUrl(): string | null {
+    return localStorage.getItem('mm_calendar_auth_url');
+  }
+
   // Private helper methods
 
   private handleAuthResponse(response: AuthResponse): void {
@@ -248,6 +280,19 @@ export class AuthService {
     this.currentUserSubject.next(response.user);
     this.isAuthenticatedSubject.next(true);
     this.scheduleTokenRefresh();
+    
+    console.log('✅ User authenticated:', {
+      email: response.user.email,
+      name: `${response.user.firstName} ${response.user.lastName}`,
+      roles: response.user.roles,
+      organizationId: response.user.organizationId
+    });
+
+    // Store calendar auth URL if available
+    if (response.calendarAuthUrl) {
+      localStorage.setItem('mm_calendar_auth_url', response.calendarAuthUrl);
+      console.log('📅 Calendar authorization URL available for Outlook integration');
+    }
   }
 
   private storeTokens(token: string, refreshToken: string): void {
@@ -274,11 +319,38 @@ export class AuthService {
 
   private isTokenExpired(token: string): boolean {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        return true;
+      }
+
+      const payload = JSON.parse(atob(parts[1]));
+      if (!payload.exp) {
+        return true;
+      }
+
       const currentTime = Math.floor(Date.now() / 1000);
       return payload.exp < currentTime;
     } catch (error) {
       return true;
+    }
+  }
+
+  private getTokenExpiry(token: string): string {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        return 'Invalid token';
+      }
+
+      const payload = JSON.parse(atob(parts[1]));
+      if (!payload.exp) {
+        return 'No expiry';
+      }
+
+      return new Date(payload.exp * 1000).toLocaleString();
+    } catch (error) {
+      return 'Error parsing expiry';
     }
   }
 
@@ -287,7 +359,18 @@ export class AuthService {
     if (!token) return;
 
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        console.warn('Invalid JWT token format');
+        return;
+      }
+
+      const payload = JSON.parse(atob(parts[1]));
+      if (!payload.exp) {
+        console.warn('Token missing expiration claim');
+        return;
+      }
+
       const expiryTime = payload.exp * 1000;
       const currentTime = Date.now();
       const refreshTime = expiryTime - currentTime - 5 * 60 * 1000; // Refresh 5 minutes before expiry
@@ -299,6 +382,8 @@ export class AuthService {
       }
     } catch (error) {
       console.error('Error parsing token for refresh scheduling:', error);
+      // Clear invalid token
+      this.logout();
     }
   }
 }
