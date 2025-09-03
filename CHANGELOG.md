@@ -5,6 +5,32 @@ All notable changes to the Meeting Manager project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2024-12-20
+
+### Security
+- **Environment Variable Security** - Comprehensive security improvements for Microsoft Graph integration
+  - Removed all hardcoded secrets from codebase and Git history
+  - Implemented environment-based configuration for all sensitive values
+  - Enhanced application.yml with comprehensive environment variable support
+  - GitHub push protection compliance - no secrets in repository
+  - Production-ready secret management with .env.example documentation
+  - Git history cleanup to remove any trace of hardcoded credentials
+
+### Enhanced
+- **Configuration Management** - Enhanced application configuration system
+  - Comprehensive environment variable configuration for all services
+  - Enhanced CORS configuration with environment-based origins
+  - Improved database connection configuration with full environment support
+  - Redis caching configuration with environment variables
+  - File upload configuration with environment-based limits
+  - OAuth2 and JWT configuration with secure defaults
+
+### Fixed
+- **Git Security** - Resolved GitHub push protection violations
+  - Cleaned Git history using git filter-branch to remove sensitive data
+  - Implemented proper secret management practices
+  - Enhanced .gitignore to protect local environment files
+
 ## [1.3.0] - 2024-12-20
 
 ### Added
