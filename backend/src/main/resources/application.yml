@@ -5,12 +5,12 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
   
-  # Database Configuration - H2 for development testing
+  # Database Configuration - MySQL for production
   datasource:
-    url: ${DB_URL:jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
-    username: ${DB_USERNAME:sa}
-    password: ${DB_PASSWORD:}
-    driver-class-name: org.h2.Driver
+    url: ${DB_URL:jdbc:mysql://localhost:3306/meeting_manager?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USERNAME:meetingmanager}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
@@ -21,26 +21,20 @@ spring:
   # JPA Configuration
   jpa:
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:create-drop}
-    database-platform: org.hibernate.dialect.H2Dialect
-    show-sql: ${JPA_SHOW_SQL:true}
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    database-platform: org.hibernate.dialect.MySQLDialect
+    show-sql: ${JPA_SHOW_SQL:false}
     properties:
       hibernate:
         format_sql: true
         use_sql_comments: true
         generate_statistics: false
   
-  # H2 Console Configuration (for development)
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-  
-  # MongoDB Configuration (disabled for development)
-  # data:
-  #   mongodb:
-  #     uri: ${MONGODB_URI:mongodb://localhost:27017/meeting_manager}
-  #     auto-index-creation: true
+  # MongoDB Configuration
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/meeting_manager}
+      auto-index-creation: true
   
   # Security Configuration
   security:
@@ -88,7 +82,7 @@ app:
   
   # JWT Configuration
   jwt:
-    secret: ${JWT_SECRET:changeme-in-production}
+    secret: ${JWT_SECRET:C8oebVYJ6beuAlXwAX0Vf6llLgnHN/6NbnN0p6fGR0I=}
     expiration: ${JWT_EXPIRATION:86400000} # 24 hours
   frontend-url: ${FRONTEND_URL:http://localhost:4200}
   microsoft:
@@ -111,7 +105,7 @@ azure:
   
 # JWT Configuration (for backward compatibility)
 jwt:
-  secret: ${JWT_SECRET:changeme-in-production}
+  secret: ${JWT_SECRET:C8oebVYJ6beuAlXwAX0Vf6llLgnHN/6NbnN0p6fGR0I=}
   expiration: 86400000 # 24 hours
   
 # Management Endpoints
