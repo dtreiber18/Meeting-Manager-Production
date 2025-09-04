@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MeetingDetailsComponent } from './meeting-details.component';
 import { MeetingService } from '../meeting.service';
 import { Meeting } from '../meeting.model';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 
 describe('MeetingDetailsComponent', () => {
   let component: MeetingDetailsComponent;
@@ -89,6 +89,9 @@ describe('MeetingDetailsComponent', () => {
     mockMeetingService = jasmine.createSpyObj('MeetingService', ['getMeeting', 'deleteMeeting']);
     mockMeetingService.getMeeting.and.returnValue(of(createMockMeeting()));
     mockMeetingService.deleteMeeting.and.returnValue(of(undefined));
+    
+    // Add the meetingsUpdated$ observable that components subscribe to
+    mockMeetingService.meetingsUpdated$ = new Subject<boolean>().asObservable();
 
     await TestBed.configureTestingModule({
       imports: [MeetingDetailsComponent, HttpClientTestingModule, RouterTestingModule],

@@ -6,7 +6,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MeetingFormComponent } from './meeting-form.component';
 import { MeetingService } from '../meeting.service';
 import { Meeting } from '../meeting.model';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 
 describe('MeetingFormComponent', () => {
   let component: MeetingFormComponent;
@@ -88,6 +88,9 @@ describe('MeetingFormComponent', () => {
     mockMeetingService.getMeeting.and.returnValue(of(createMockMeeting()));
     mockMeetingService.createMeeting.and.returnValue(of(createMockMeeting()));
     mockMeetingService.updateMeeting.and.returnValue(of(createMockMeeting()));
+    
+    // Add the meetingsUpdated$ observable that components subscribe to
+    mockMeetingService.meetingsUpdated$ = new Subject<boolean>().asObservable();
 
     await TestBed.configureTestingModule({
       imports: [MeetingFormComponent, HttpClientTestingModule, RouterTestingModule, NoopAnimationsModule],
