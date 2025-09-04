@@ -7,11 +7,52 @@
 body .mat-toolbar.app-header,
 body mat-toolbar.app-header,
 body .app-header.mat-toolbar,
-html body .mat-toolbar.app-header {
+html body .mat-toolbar.app-header,
+.mat-toolbar.app-header,
+mat-toolbar.app-header {
   background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%) !important;
   color: white !important;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  height: 70px !important;
+}
+
+/* Force brand styling */
+body .app-header .header-brand,
+.app-header .header-brand {
+  color: white !important;
+}
+
+body .app-header .brand-container,
+.app-header .brand-container {
+  display: flex !important;
+  align-items: center !important;
+}
+
+body .app-header .brand-icon,
+.app-header .brand-icon {
+  font-size: 36px !important;
+  width: 36px !important;
+  height: 36px !important;
+  margin-right: 16px !important;
+  color: white !important;
+}
+
+body .app-header .app-title,
+.app-header .app-title {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  color: white !important;
+  letter-spacing: -0.5px !important;
+}
+
+body .app-header .app-subtitle,
+.app-header .app-subtitle {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  letter-spacing: 1.2px !important;
+  text-transform: uppercase !important;
 }
 
 /* Force all text elements to be white */

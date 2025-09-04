@@ -2,9 +2,12 @@
   <!-- Logo/Brand Section -->
     <!-- Logo and Brand -->
     <div class="header-brand" routerLink="/">
-      <mat-icon class="brand-icon">event_note</mat-icon>
-      <div class="brand-text">
-        <span class="brand-title">Meeting Manager</span>
+      <div class="brand-container">
+        <mat-icon class="brand-icon">event_note</mat-icon>
+        <div class="brand-text">
+          <div class="app-title">Meeting Manager</div>
+          <div class="app-subtitle">Enterprise Solution</div>
+        </div>
       </div>
     </div>  <!-- Navigation Menu (only show when authenticated) -->
   <nav class="header-nav" *ngIf="isAuthenticated$ | async">
@@ -75,10 +78,26 @@
     <!-- Settings -->
     <button 
       mat-icon-button 
-      routerLink="/settings"
+      [matMenuTriggerFor]="settingsMenu"
       class="action-btn">
       <mat-icon>settings</mat-icon>
     </button>
+
+    <!-- Settings dropdown menu -->
+    <mat-menu #settingsMenu="matMenu" class="settings-dropdown-menu">
+      <button mat-menu-item routerLink="/settings">
+        <mat-icon>settings</mat-icon>
+        <span>General Settings</span>
+      </button>
+      <button mat-menu-item routerLink="/settings/calendar">
+        <mat-icon>calendar_month</mat-icon>
+        <span>Calendar</span>
+      </button>
+      <button mat-menu-item routerLink="/settings/preferences">
+        <mat-icon>person_outline</mat-icon>
+        <span>User Preferences</span>
+      </button>
+    </mat-menu>
 
     <!-- User Profile -->
     <button 

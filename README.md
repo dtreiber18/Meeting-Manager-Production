@@ -2,13 +2,30 @@
 
 A modern, enterprise-grade meeting management application built with Angular 17+ frontend and Spring Boot 3.x backend, designed for Azure deployment with AI-powered features.
 
-## � Live Demo
+## 🌟 Live Demo
 
 **🚀 Try the application now: [https://dtreiber18.github.io/Meeting-Manager-Production/](https://dtreiber18.github.io/Meeting-Manager-Production/)**
 
 *Experience the professional enterprise UI, Material Design components, comprehensive meeting management features, and NEW: AI-powered meeting creation through natural language chat!*
 
-## �🏗️ Architecture
+## 🔧 Recent Updates (September 2025)
+
+### ✅ System Fixes & Improvements
+- **Backend API Connectivity**: Fixed server port configuration (8080 → 8081) and proxy routing
+- **Navigation Structure**: Cleaned up duplicate Settings navigation, moved Calendar to Settings dropdown
+- **Settings Organization**: Enhanced Settings page with route-based tab navigation:
+  - General Settings (`/settings`)
+  - Calendar Settings (`/settings/calendar`) 
+  - User Preferences (`/settings/preferences`)
+- **Professional Header**: Consistent dropdown menus for both center and right Settings
+- **Database Integration**: Confirmed MySQL and MongoDB connections with proper data seeding
+
+### 🚀 Performance & Reliability
+- **API Endpoint Testing**: All `/api/meetings` calls returning proper data (3 sample meetings with full details)
+- **Proxy Configuration**: Frontend-to-backend routing working correctly through Angular proxy
+- **Background Services**: Backend running stable on port 8081 with nohup for continuous operation
+
+## 🏗️ Architecture
 
 ### Frontend
 - **Angular 17+** with TypeScript

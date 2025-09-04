@@ -25,6 +25,8 @@ export const routes: Routes = [
 	{ path: 'meetings/:id', component: MeetingDetailsComponent, canActivate: [AuthGuard] },
 	{ path: 'meetings/:id/edit', component: MeetingFormComponent, canActivate: [AuthGuard] },
 	{ path: 'settings', component: SimpleSettingsComponent, canActivate: [AuthGuard] },
+	{ path: 'settings/calendar', component: SimpleSettingsComponent, canActivate: [AuthGuard] },
+	{ path: 'settings/preferences', component: SimpleSettingsComponent, canActivate: [AuthGuard] },
 	{ path: 'unauthorized', redirectTo: '/auth', pathMatch: 'full' },
 	{ path: '**', redirectTo: '', pathMatch: 'full' }
 ];

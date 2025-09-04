@@ -55,18 +55,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
         { label: 'Previous Meetings', route: '/meetings/previous', icon: 'history' },
         { label: 'New Meeting', route: '/meetings/new', icon: 'add' }
       ]
-    },
-    {
-      icon: 'event_available',
-      label: 'Calendar',
-      route: '/calendar-setup',
-      tooltip: 'Connect your Outlook calendar'
-    },
-    {
-      icon: 'settings',
-      label: 'Settings',
-      route: '/settings',
-      tooltip: 'Application settings'
     }
   ];
 

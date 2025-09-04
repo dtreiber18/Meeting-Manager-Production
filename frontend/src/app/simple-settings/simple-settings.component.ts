@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -28,9 +29,9 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
   ],
   template: `
     <div class="settings-container">
-      <mat-tab-group>
-        <!-- Account Info Tab -->
-        <mat-tab label="Account Info">
+      <mat-tab-group [selectedIndex]="selectedTabIndex" (selectedTabChange)="onTabChange($event)">
+        <!-- General Settings Tab -->
+        <mat-tab label="General Settings">
           <mat-card class="settings-card">
             <mat-card-header>
               <mat-card-title>Account Information</mat-card-title>
@@ -67,8 +68,134 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
           </mat-card>
         </mat-tab>
 
-        <!-- Get Info From Tab -->
-        <mat-tab label="Get Info From">
+        <!-- Calendar Tab -->
+        <mat-tab label="Calendar">
+          <mat-card class="settings-card">
+            <mat-card-header>
+              <mat-card-title>Calendar Settings</mat-card-title>
+              <mat-card-subtitle>Configure calendar integration and preferences</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="form-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Default Calendar</mat-label>
+                  <mat-select [(ngModel)]="calendarSettings.defaultCalendar">
+                    <mat-option value="primary">Primary Calendar</mat-option>
+                    <mat-option value="work">Work Calendar</mat-option>
+                    <mat-option value="personal">Personal Calendar</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                
+                <mat-form-field appearance="outline">
+                  <mat-label>Time Zone</mat-label>
+                  <mat-select [(ngModel)]="calendarSettings.timezone">
+                    <mat-option value="America/New_York">Eastern Time</mat-option>
+                    <mat-option value="America/Chicago">Central Time</mat-option>
+                    <mat-option value="America/Denver">Mountain Time</mat-option>
+                    <mat-option value="America/Los_Angeles">Pacific Time</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                
+                <mat-form-field appearance="outline">
+                  <mat-label>Default Meeting Duration (minutes)</mat-label>
+                  <input matInput type="number" [(ngModel)]="calendarSettings.defaultDuration" placeholder="60">
+                </mat-form-field>
+              </div>
+              
+              <div class="toggle-options">
+                <div class="toggle-item">
+                  <mat-slide-toggle [(ngModel)]="calendarSettings.autoSync">
+                    Auto-sync with calendar
+                  </mat-slide-toggle>
+                </div>
+                <div class="toggle-item">
+                  <mat-slide-toggle [(ngModel)]="calendarSettings.showWeekends">
+                    Show weekends
+                  </mat-slide-toggle>
+                </div>
+                <div class="toggle-item">
+                  <mat-slide-toggle [(ngModel)]="calendarSettings.enableReminders">
+                    Enable meeting reminders
+                  </mat-slide-toggle>
+                </div>
+              </div>
+              
+              <div class="actions">
+                <button mat-raised-button color="primary" (click)="saveCalendarSettings()">
+                  Save Calendar Settings
+                </button>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </mat-tab>
+
+        <!-- User Preferences Tab -->
+        <mat-tab label="User Preferences">
+          <mat-card class="settings-card">
+            <mat-card-header>
+              <mat-card-title>User Preferences</mat-card-title>
+              <mat-card-subtitle>Customize your experience</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="form-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Language</mat-label>
+                  <mat-select [(ngModel)]="preferences.language">
+                    <mat-option value="en">English</mat-option>
+                    <mat-option value="es">Spanish</mat-option>
+                    <mat-option value="fr">French</mat-option>
+                    <mat-option value="de">German</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                
+                <mat-form-field appearance="outline">
+                  <mat-label>Theme</mat-label>
+                  <mat-select [(ngModel)]="preferences.theme">
+                    <mat-option value="light">Light</mat-option>
+                    <mat-option value="dark">Dark</mat-option>
+                    <mat-option value="auto">Auto</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                
+                <mat-form-field appearance="outline">
+                  <mat-label>Date Format</mat-label>
+                  <mat-select [(ngModel)]="preferences.dateFormat">
+                    <mat-option value="MM/DD/YYYY">MM/DD/YYYY</mat-option>
+                    <mat-option value="DD/MM/YYYY">DD/MM/YYYY</mat-option>
+                    <mat-option value="YYYY-MM-DD">YYYY-MM-DD</mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+              
+              <div class="toggle-options">
+                <div class="toggle-item">
+                  <mat-slide-toggle [(ngModel)]="preferences.emailNotifications">
+                    Email notifications
+                  </mat-slide-toggle>
+                </div>
+                <div class="toggle-item">
+                  <mat-slide-toggle [(ngModel)]="preferences.pushNotifications">
+                    Push notifications
+                  </mat-slide-toggle>
+                </div>
+                <div class="toggle-item">
+                  <mat-slide-toggle [(ngModel)]="preferences.autoSave">
+                    Auto-save changes
+                  </mat-slide-toggle>
+                </div>
+              </div>
+              
+              <div class="actions">
+                <button mat-raised-button color="primary" (click)="savePreferences()">
+                  Save Preferences
+                </button>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </mat-tab>
+
+        <!-- Data Sources Tab -->
+        <mat-tab label="Data Sources">
           <mat-card class="settings-card">
             <mat-card-header>
               <mat-card-title>Information Sources</mat-card-title>
@@ -111,8 +238,8 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
           </mat-card>
         </mat-tab>
 
-        <!-- Send Info To Tab -->
-        <mat-tab label="Send Info To">
+        <!-- Data Destinations Tab -->
+        <mat-tab label="Data Destinations">
           <mat-card class="settings-card">
             <mat-card-header>
               <mat-card-title>Information Destinations</mat-card-title>
@@ -175,6 +302,16 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
       margin-bottom: 24px;
     }
 
+    .toggle-options {
+      margin: 24px 0;
+    }
+
+    .toggle-item {
+      margin: 12px 0;
+      display: flex;
+      align-items: center;
+    }
+
     .actions {
       display: flex;
       gap: 12px;
@@ -215,12 +352,32 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
     }
   `]
 })
-export class SimpleSettingsComponent {
+export class SimpleSettingsComponent implements OnInit {
+  selectedTabIndex = 0;
+
   userInfo = {
     name: 'John Doe',
     email: 'john.doe@example.com',
     currentPassword: '',
     newPassword: ''
+  };
+
+  calendarSettings = {
+    defaultCalendar: 'primary',
+    timezone: 'America/New_York',
+    defaultDuration: 60,
+    autoSync: true,
+    showWeekends: false,
+    enableReminders: true
+  };
+
+  preferences = {
+    language: 'en',
+    theme: 'light',
+    dateFormat: 'MM/DD/YYYY',
+    emailNotifications: true,
+    pushNotifications: false,
+    autoSave: true
   };
 
   sources = [
@@ -257,8 +414,40 @@ export class SimpleSettingsComponent {
     }
   ];
 
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
+
+  ngOnInit() {
+    // Set the selected tab based on the route
+    const url = this.router.url;
+    if (url.includes('/settings/calendar')) {
+      this.selectedTabIndex = 1;
+    } else if (url.includes('/settings/preferences')) {
+      this.selectedTabIndex = 2;
+    } else {
+      this.selectedTabIndex = 0;
+    }
+  }
+
+  onTabChange(event: any) {
+    const routes = ['/settings', '/settings/calendar', '/settings/preferences', '/settings', '/settings'];
+    this.router.navigate([routes[event.index]]);
+  }
+
   saveAccount() {
     console.log('Saving account info:', this.userInfo);
+    // Implement save logic
+  }
+
+  saveCalendarSettings() {
+    console.log('Saving calendar settings:', this.calendarSettings);
+    // Implement save logic
+  }
+
+  savePreferences() {
+    console.log('Saving preferences:', this.preferences);
     // Implement save logic
   }
 
