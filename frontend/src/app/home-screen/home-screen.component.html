@@ -105,7 +105,7 @@
         </div>
       </div>
     </div>
-  <div *ngIf="searchQuery || (localFilterConfig && ((localFilterConfig.meetingType ?? []).length > 0 || (localFilterConfig.participants ?? []).length > 0 || localFilterConfig.hasActionItems || localFilterConfig.hasRecording || (localFilterConfig.dateRange && (localFilterConfig.dateRange.start || localFilterConfig.dateRange.end))))" class="pt-4 border-t border-gray-200">
+    <div *ngIf="searchQuery || hasActiveFilters()" class="pt-4 border-t border-gray-200">
       <p class="text-sm text-gray-600">
         Showing {{ filteredMeetings.length }} of {{ meetings.length }} meetings
       </p>
@@ -113,14 +113,14 @@
   </div>
 
   <!-- Results Summary -->
-  <div *ngIf="searchQuery || (localFilterConfig && ((localFilterConfig.meetingType ?? []).length > 0 || (localFilterConfig.participants ?? []).length > 0 || localFilterConfig.hasActionItems || localFilterConfig.hasRecording || (localFilterConfig.dateRange && (localFilterConfig.dateRange.start || localFilterConfig.dateRange.end))))" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+  <div *ngIf="searchQuery || hasActiveFilters()" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm text-blue-800">
-          <strong>{{ filteredMeetings.length }}</strong> meetings found
+          <strong>{{ searchResultMeetings.length }}</strong> meetings found
           <span *ngIf="searchQuery"> matching "{{ searchQuery }}"</span>
         </p>
-  <p *ngIf="localFilterConfig && ((localFilterConfig.meetingType ?? []).length > 0 || (localFilterConfig.participants ?? []).length > 0 || localFilterConfig.hasActionItems || localFilterConfig.hasRecording || (localFilterConfig.dateRange && (localFilterConfig.dateRange.start || localFilterConfig.dateRange.end)))" class="text-xs text-blue-600 mt-1">
+        <p *ngIf="hasActiveFilters()" class="text-xs text-blue-600 mt-1">
           Active filters applied
         </p>
       </div>
@@ -128,7 +128,7 @@
   </div>
 
   <!-- Search Results -->
-  <div *ngIf="searchQuery || (localFilterConfig && ((localFilterConfig.meetingType ?? []).length > 0 || (localFilterConfig.participants ?? []).length > 0 || localFilterConfig.hasActionItems || localFilterConfig.hasRecording || (localFilterConfig.dateRange && (localFilterConfig.dateRange.start || localFilterConfig.dateRange.end))))" class="bg-white rounded-xl shadow-sm border border-gray-200">
+  <div *ngIf="searchQuery || hasActiveFilters()" class="bg-white rounded-xl shadow-sm border border-gray-200">
     <div class="px-6 py-4 border-b border-gray-200">
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-semibold text-gray-900">Search Results</h2>
@@ -139,33 +139,33 @@
       </div>
     </div>
     <div class="divide-y divide-gray-200 space-y-1">
-  <div *ngFor="let meeting of nonJustCompletedMeetings" class="p-6 hover:bg-gray-50 cursor-pointer transition-colors mb-2 rounded-lg border border-gray-100" (click)="onMeetingClick(meeting)">
+      <div *ngFor="let meeting of searchResultMeetings" class="p-6 hover:bg-gray-50 cursor-pointer transition-colors mb-2 rounded-lg border border-gray-100" (click)="onMeetingClick(meeting)">
         <div class="flex items-start justify-between">
           <div class="flex-1">
-            <h3 class="font-medium text-gray-900 mb-1">{{ meeting.subject }}</h3>
+            <h3 class="font-medium text-gray-900 mb-1">{{ meeting.title || meeting.subject }}</h3>
             <div class="flex items-center space-x-4 text-sm text-gray-600 mb-2">
-              <span>{{ meeting.date }} at {{ meeting.time }}</span>
+              <span>{{ meeting.date || (meeting.startTime | date:'MMM d, y') }} at {{ meeting.time || (meeting.startTime | date:'h:mm a') }}</span>
               <span>{{ meeting.participants.length }} participants</span>
               <span *ngIf="meeting.actionItems.length > 0" class="flex items-center">
                 <mat-icon class="w-4 h-4 mr-1 text-orange-500">warning</mat-icon>
                 {{ meeting.actionItems.length }} action items
               </span>
             </div>
-            <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getMeetingTypeColor(meeting.type)">
-              {{ formatMeetingType(meeting.type) }}
+            <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getMeetingTypeColor(meeting.meetingType || meeting.type)">
+              {{ formatMeetingType(meeting.meetingType || meeting.type) }}
             </span>
           </div>
           <mat-icon class="w-5 h-5 text-gray-400 ml-4">arrow_forward</mat-icon>
         </div>
       </div>
-  <div *ngIf="nonJustCompletedMeetings.length === 0" class="p-6 text-center text-gray-500">
-    <ng-container *ngIf="meetings && meetings.length > 0; else noMeetings">
-      No meetings found matching your search criteria
-    </ng-container>
-    <ng-template #noMeetings>
-      No meetings available. Create a new meeting to get started!
-    </ng-template>
-  </div>
+      <div *ngIf="searchResultMeetings.length === 0" class="p-6 text-center text-gray-500">
+        <ng-container *ngIf="meetings && meetings.length > 0; else noMeetings">
+          No meetings found matching your search criteria
+        </ng-container>
+        <ng-template #noMeetings>
+          No meetings available. Create a new meeting to get started!
+        </ng-template>
+      </div>
     </div>
   </div>
 
@@ -185,23 +185,23 @@
     <div class="p-6">
       <div class="flex items-start justify-between mb-6">
         <div class="flex-1">
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ justCompletedMeeting.subject }}</h3>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ justCompletedMeeting.title || justCompletedMeeting.subject }}</h3>
           <div class="flex items-center space-x-4 text-sm text-gray-600 mb-4">
             <div class="flex items-center">
               <mat-icon class="w-4 h-4 mr-1">event</mat-icon>
-              {{ justCompletedMeeting.date }}
+              {{ justCompletedMeeting.date || (justCompletedMeeting.startTime | date:'MMM d, y') }}
             </div>
             <div class="flex items-center">
               <mat-icon class="w-4 h-4 mr-1">schedule</mat-icon>
-              {{ justCompletedMeeting.time }}
+              {{ justCompletedMeeting.time || (justCompletedMeeting.startTime | date:'h:mm a') }}
             </div>
             <div class="flex items-center">
               <mat-icon class="w-4 h-4 mr-1">group</mat-icon>
               {{ justCompletedMeeting.participants.length }} participants
             </div>
           </div>
-          <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getMeetingTypeColor(justCompletedMeeting.type)">
-            {{ formatMeetingType(justCompletedMeeting.type) }}
+          <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getMeetingTypeColor(justCompletedMeeting.meetingType || justCompletedMeeting.type)">
+            {{ formatMeetingType(justCompletedMeeting.meetingType || justCompletedMeeting.type) }}
           </span>
         </div>
       </div>
@@ -251,7 +251,7 @@
   </div>
 
   <!-- Recent Meetings -->
-  <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+  <div *ngIf="!searchQuery && !hasActiveFilters()" class="bg-white rounded-xl shadow-sm border border-gray-200">
     <div class="px-6 py-4 border-b border-gray-200">
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-semibold text-gray-900">Recent Meetings</h2>
@@ -265,17 +265,17 @@
       <div *ngFor="let meeting of recentMeetings" class="p-6 hover:bg-gray-50 cursor-pointer transition-colors rounded-lg border border-gray-100 hover:border-gray-200" (click)="onMeetingClick(meeting)">
         <div class="flex items-start justify-between">
           <div class="flex-1">
-            <h3 class="font-medium text-gray-900 mb-1">{{ meeting.subject }}</h3>
+            <h3 class="font-medium text-gray-900 mb-1">{{ meeting.title || meeting.subject }}</h3>
             <div class="flex items-center space-x-4 text-sm text-gray-600 mb-2">
-              <span>{{ meeting.date }} at {{ meeting.time }}</span>
+              <span>{{ meeting.date || (meeting.startTime | date:'MMM d, y') }} at {{ meeting.time || (meeting.startTime | date:'h:mm a') }}</span>
               <span>{{ meeting.participants.length }} participants</span>
               <span *ngIf="meeting.actionItems.length > 0" class="flex items-center">
                 <mat-icon class="w-4 h-4 mr-1 text-orange-500">warning</mat-icon>
                 {{ meeting.actionItems.length }} action items
               </span>
             </div>
-            <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getMeetingTypeColor(meeting.type)">
-              {{ formatMeetingType(meeting.type) }}
+            <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getMeetingTypeColor(meeting.meetingType || meeting.type)">
+              {{ formatMeetingType(meeting.meetingType || meeting.type) }}
             </span>
           </div>
           <mat-icon class="w-5 h-5 text-gray-400 ml-4">arrow_forward</mat-icon>

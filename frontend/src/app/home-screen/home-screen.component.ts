@@ -9,7 +9,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatDialogModule } from '@angular/material/dialog';
 import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 
 // Import document-related components
@@ -28,7 +28,8 @@ import { DocumentService } from '../services/document.service';
     MatFormFieldModule,
     MatInputModule,
     MatDialogModule,
-    ButtonModule
+    ButtonModule,
+    DatePipe
   ],
   templateUrl: './home-screen.component.html',
   styleUrls: ['./home-screen.component.scss']
@@ -70,18 +71,28 @@ export class HomeScreenComponent implements OnInit {
   }
 
   applyFilters(meetingList: Meeting[]): Meeting[] {
-    const query = this.searchQuery.toLowerCase();
+    const query = this.searchQuery.toLowerCase().trim();
     return meetingList.filter((meeting: Meeting) => {
-      // Search query filter
-      if (this.searchQuery) {
+      // Search query filter - only apply if there's actually a search query
+      if (query) {
         const matchesSearch = (
           (meeting.title && meeting.title.toLowerCase().includes(query)) ||
+          (meeting.subject && meeting.subject.toLowerCase().includes(query)) ||
           (meeting.summary && meeting.summary.toLowerCase().includes(query)) ||
-          meeting.participants.some((p: Participant) => p.name.toLowerCase().includes(query) || (p.email && p.email.toLowerCase().includes(query))) ||
-          meeting.actionItems.some((ai: ActionItem) => ai.description.toLowerCase().includes(query) || (ai.assignee?.firstName && ai.assignee.firstName.toLowerCase().includes(query))) ||
+          (meeting.description && meeting.description.toLowerCase().includes(query)) ||
+          meeting.participants.some((p: Participant) => 
+            p.name.toLowerCase().includes(query) || 
+            (p.email && p.email.toLowerCase().includes(query))
+          ) ||
+          meeting.actionItems.some((ai: ActionItem) => 
+            ai.description.toLowerCase().includes(query) || 
+            (ai.title && ai.title.toLowerCase().includes(query)) ||
+            (ai.assignee?.firstName && ai.assignee.firstName.toLowerCase().includes(query)) ||
+            (ai.assignedTo && ai.assignedTo.toLowerCase().includes(query))
+          ) ||
           (meeting.nextSteps && meeting.nextSteps.toLowerCase().includes(query)) ||
           (meeting.details && meeting.details.toLowerCase().includes(query)) ||
-          this.formatMeetingType(meeting.meetingType).toLowerCase().includes(query)
+          this.formatMeetingType(meeting.meetingType || meeting.type).toLowerCase().includes(query)
         );
         if (!matchesSearch) return false;
       }
@@ -120,9 +131,32 @@ export class HomeScreenComponent implements OnInit {
   }
 
   get recentMeetings(): Meeting[] {
-    return this.applyFilters(this.meetings.filter(m => !m.isJustCompleted))
-      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
-      .slice(0, 5);
+    // Only show recent meetings when no search is active
+    if (!this.searchQuery.trim() && !this.hasActiveFilters()) {
+      return this.meetings
+        .filter(m => !m.isJustCompleted)
+        .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+        .slice(0, 5);
+    }
+    return [];
+  }
+
+  get searchResultMeetings(): Meeting[] {
+    // Only return filtered meetings if there's an actual search query or active filters
+    if (this.searchQuery.trim() || this.hasActiveFilters()) {
+      return this.filteredMeetings.filter(m => !m.isJustCompleted);
+    }
+    return [];
+  }
+
+  hasActiveFilters(): boolean {
+    return !!(
+      (this.localFilterConfig?.dateRange?.start || this.localFilterConfig?.dateRange?.end) ||
+      (this.localFilterConfig?.meetingType && this.localFilterConfig.meetingType.length > 0) ||
+      (this.localFilterConfig?.participants && this.localFilterConfig.participants.length > 0) ||
+      this.localFilterConfig?.hasActionItems ||
+      this.localFilterConfig?.hasRecording
+    );
   }
 
   handleFilterChange(key: keyof FilterConfig, value: any) {
@@ -161,7 +195,7 @@ export class HomeScreenComponent implements OnInit {
   }
 
   get nonJustCompletedMeetings(): Meeting[] {
-    return this.filteredMeetings.filter(m => !m.isJustCompleted);
+    return this.searchResultMeetings;
   }
 
   clearFilters() {
