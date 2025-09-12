@@ -135,6 +135,16 @@
         background-color: rgba(255, 255, 255, 0.2);
         border-color: rgba(255, 255, 255, 0.5);
       }
+      
+      &.editing {
+        background-color: rgba(34, 197, 94, 0.8);
+        border-color: rgba(34, 197, 94, 1);
+        color: white;
+        
+        &:hover {
+          background-color: rgba(34, 197, 94, 1);
+        }
+      }
     }
   }
 }
@@ -194,38 +204,37 @@
 
 /* Content Sections */
 .content-section {
-  padding: 24px 32px;
-  border-bottom: 1px solid #e5e7eb;
-  
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  border: 1px solid #e5e7eb;
+
   h3 {
     margin: 0 0 16px 0;
-    font-size: 1.25rem;
-    font-weight: 600;
     color: #1f2937;
+    font-size: 18px;
+    font-weight: 600;
     display: flex;
     align-items: center;
     gap: 8px;
   }
-  
+
   .content-text {
     color: #4b5563;
     line-height: 1.6;
     white-space: pre-wrap;
-    font-size: 1rem;
+    background: #f8fafc;
+    padding: 16px;
+    border-radius: 8px;
+    border-left: 4px solid #e5e7eb;
   }
-  
-  &.ai-insights {
-    background-color: #fef3c7;
-    border-left: 4px solid #f59e0b;
-    
-    .content-text {
-      font-style: italic;
-      color: #92400e;
-    }
-  }
-}
 
-/* Participants Section */
+  .section-header {
+    margin-bottom: 16px;
+  }
+}/* Participants Section */
 .participants-section {
   padding: 24px 32px;
   border-bottom: 1px solid #e5e7eb;
@@ -484,4 +493,155 @@
       gap: 8px;
     }
   }
+}
+
+// Section Headers with Action Buttons
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+
+  h3 {
+    margin: 0;
+    color: #333;
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .add-btn {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+      background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  .edit-content-btn {
+    padding: 6px 12px;
+    background: rgba(107, 114, 128, 0.1);
+    color: #6b7280;
+    border: 1px solid rgba(107, 114, 128, 0.3);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    &:hover {
+      background: rgba(79, 70, 229, 0.1);
+      color: #4f46e5;
+      border-color: rgba(79, 70, 229, 0.3);
+    }
+  }
+}
+
+// Remove buttons for items
+.participant-card, .action-item-card {
+  position: relative;
+
+  &.editable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      border-color: #4f46e5;
+    }
+  }
+
+  .remove-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    opacity: 0;
+    z-index: 10;
+
+    &:hover {
+      background: #ef4444;
+      color: white;
+      transform: scale(1.1);
+    }
+  }
+
+  .edit-hint {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    font-size: 10px;
+    color: #6b7280;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 2px 6px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  &:hover .remove-btn,
+  &:hover .edit-hint {
+    opacity: 1;
+  }
+}
+
+// Empty states
+.empty-state, .empty-content {
+  text-align: center;
+  padding: 32px 16px;
+  color: #6b7280;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 2px dashed #d1d5db;
+
+  p {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+  }
+
+  .add-btn {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    
+    &:hover {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+  }
+}
+
+.empty-content {
+  margin-top: 16px;
+  padding: 24px 16px;
 }

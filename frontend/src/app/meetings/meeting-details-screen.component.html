@@ -19,11 +19,24 @@
           </div>
         </div>
       </div>
-      <a *ngIf="editedMeeting.recordingUrl" [href]="editedMeeting.recordingUrl" target="_blank" rel="noopener noreferrer"
-         class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-        <mat-icon class="w-4 h-4 mr-2">videocam</mat-icon>
-        View Recording
-      </a>
+      <div class="flex items-center space-x-3">
+        <button 
+          type="button"
+          (click)="toggleEditMode(); $event.preventDefault(); $event.stopPropagation()"
+          class="flex items-center px-4 py-2 rounded-lg transition-colors"
+          [ngClass]="isEditing ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-blue-600 text-white hover:bg-blue-700'">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path *ngIf="!isEditing" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            <path *ngIf="isEditing" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          {{ isEditing ? 'Done' : 'Edit' }}
+        </button>
+        <a *ngIf="editedMeeting.recordingUrl" [href]="editedMeeting.recordingUrl" target="_blank" rel="noopener noreferrer"
+           class="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+          <mat-icon class="w-4 h-4 mr-2">videocam</mat-icon>
+          View Recording
+        </a>
+      </div>
     </div>
   </div>
 
@@ -50,20 +63,96 @@
         </div>
       </div>
     </div>
+
+    <!-- Add Participant Section (only visible in edit mode) -->
+    <div *ngIf="isEditing" class="mt-6 pt-4 border-t border-gray-200">
+      <div class="add-participant-section" *ngIf="!isAddingParticipant">
+        <button 
+          (click)="isAddingParticipant = true"
+          class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+          Add Participant
+        </button>
+      </div>
+
+      <!-- Add Participant Form -->
+      <div *ngIf="isAddingParticipant" class="bg-white border border-gray-200 rounded-lg p-4 mt-4">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Add New Participant</h3>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <input 
+              type="text"
+              [(ngModel)]="newParticipant.name" 
+              placeholder="Enter participant name"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input 
+              type="email"
+              [(ngModel)]="newParticipant.email" 
+              placeholder="Enter email address"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <select 
+              [(ngModel)]="newParticipant.participantRole"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              <option value="ORGANIZER">Organizer</option>
+              <option value="PRESENTER">Presenter</option>
+              <option value="ATTENDEE">Attendee</option>
+              <option value="OBSERVER">Observer</option>
+            </select>
+          </div>
+          
+          <div class="flex items-center">
+            <input 
+              type="checkbox" 
+              [(ngModel)]="newParticipant.isRequired"
+              id="required-participant"
+              class="rounded text-blue-600 focus:ring-blue-500 mr-2">
+            <label for="required-participant" class="text-sm font-medium text-gray-700">
+              Required Participant
+            </label>
+          </div>
+        </div>
+        
+        <div class="flex space-x-3 mt-6">
+          <button 
+            (click)="handleAddParticipant()"
+            [disabled]="!newParticipant.name?.trim() || !newParticipant.email?.trim()"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
+            Add Participant
+          </button>
+          <button 
+            (click)="cancelAddParticipant()"
+            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Meeting Overview -->
   <div class="bg-white rounded-lg border border-gray-200 p-6">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-semibold text-gray-900">Meeting Overview</h2>
-      <ng-container *ngIf="!isEditingOverview; else editingOverviewBtns">
+      <ng-container *ngIf="isEditing && !isEditingOverview; else editingOverviewBtns">
         <button (click)="isEditingOverview = true" class="flex items-center px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
           <mat-icon class="w-4 h-4 mr-2">edit</mat-icon>
-          Edit
+          Edit Overview
         </button>
       </ng-container>
       <ng-template #editingOverviewBtns>
-        <div class="flex space-x-2">
+        <div *ngIf="isEditingOverview" class="flex space-x-2">
           <button (click)="handleSaveOverview()" class="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
             <mat-icon class="w-4 h-4 mr-2">save</mat-icon>
             Save
@@ -111,9 +200,14 @@
   <div class="bg-white rounded-lg border border-gray-200 p-6">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-semibold text-gray-900">Action Items</h2>
-      <button (click)="isEditingActionItems = !isEditingActionItems" class="flex items-center px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-        <mat-icon class="w-4 h-4 mr-2">edit</mat-icon>
-        {{ isEditingActionItems ? 'Done Editing' : 'Edit' }}
+      <button 
+        *ngIf="isEditing"
+        (click)="isEditingActionItems = !isEditingActionItems" 
+        class="flex items-center px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        {{ isEditingActionItems ? 'Done Editing' : 'Edit Action Items' }}
       </button>
     </div>
     <ng-container *ngIf="editedMeeting.actionItems?.length; else noActionItems">
@@ -166,16 +260,22 @@
           </ng-template>
         </div>
                 <button disabled class="ml-3 p-2 text-gray-400 rounded-lg" title="Delete action item (disabled)">
-          <mat-icon>delete</mat-icon>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
         </button>
       </div>
     </ng-container>
     <ng-template #noActionItems>
       <p class="text-gray-500 text-center py-8">No action items recorded for this meeting.</p>
     </ng-template>
-    <div *ngIf="isEditingActionItems" class="mt-6 p-4 bg-gray-50 rounded-lg">
+    <div *ngIf="isEditing" class="mt-6 p-4 bg-gray-50 rounded-lg">
       <h3 class="text-sm font-medium text-gray-700 mb-3">Add New Action Item</h3>
       <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Title</label>
+          <input type="text" [(ngModel)]="newActionItem.title" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" title="Task title" placeholder="Enter task title..." />
+        </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Task Description</label>
           <textarea [(ngModel)]="newActionItem.description" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none" rows="2" title="Task description" placeholder="Enter task description..."></textarea>
@@ -194,22 +294,27 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
             <select [(ngModel)]="newActionItem.priority" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" title="Priority">
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
             </select>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
             <select [(ngModel)]="newActionItem.status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" title="Status">
-              <option value="pending">Pending</option>
-              <option value="in-progress">In Progress</option>
-              <option value="completed">Completed</option>
+              <option value="OPEN">Open</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="COMPLETED">Completed</option>
             </select>
           </div>
           <div class="flex items-end">
-            <button (click)="handleAddActionItem()" class="w-full flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              <mat-icon class="w-4 h-4 mr-2">add</mat-icon>
+            <button 
+              (click)="handleAddActionItem()" 
+              [disabled]="!newActionItem.title?.trim() || !newActionItem.description?.trim()"
+              class="w-full flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+              </svg>
               Add Action Item
             </button>
           </div>

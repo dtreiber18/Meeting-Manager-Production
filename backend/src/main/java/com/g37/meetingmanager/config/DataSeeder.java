@@ -38,12 +38,12 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Always run to ensure demo user exists
-        seedDatabase();
+        // Only seed essential system data (roles, permissions) - no demo data
+        seedSystemData();
     }
 
-    private void seedDatabase() {
-        System.out.println("Starting database seeding...");
+    private void seedSystemData() {
+        System.out.println("Initializing system data (roles, permissions)...");
         
         // Create default permissions
         Permission readPermission = createPermissionIfNotExists("READ", "Can read data");
@@ -76,24 +76,7 @@ public class DataSeeder implements CommandLineRunner {
         }
         roleRepository.save(adminRole);
 
-        // Create sample organization if it doesn't exist
-        Organization organization = organizationRepository.findByName("Acme Corporation")
-            .orElseGet(() -> {
-                Organization org = new Organization();
-                org.setName("Acme Corporation");
-                org.setDescription("A sample organization for testing");
-                org.setSubscriptionTier(Organization.SubscriptionTier.ENTERPRISE);
-                org.setMaxUsers(100);
-                return organizationRepository.save(org);
-            });
-
-        // Create sample users only if they don't exist
-        createUserIfNotExists("demo@acme.com", "Demo", "User", "Demo User", "Demo", organization, userRole);
-        createUserIfNotExists("john.doe@acme.com", "John", "Doe", "Product Manager", "Product", organization, adminRole);
-        createUserIfNotExists("jane.smith@acme.com", "Jane", "Smith", "Software Engineer", "Engineering", organization, userRole);
-        createUserIfNotExists("mike.wilson@acme.com", "Mike", "Wilson", "UX Designer", "Design", organization, userRole);
-
-        System.out.println("Database seeded with sample data!");
+        System.out.println("System data initialization complete - no demo data created");
     }
 
     private Permission createPermissionIfNotExists(String name, String description) {
@@ -112,30 +95,6 @@ public class DataSeeder implements CommandLineRunner {
             role.setDescription(description);
             role.setPermissions(new HashSet<>()); // Initialize permissions set
             return roleRepository.save(role);
-        });
-    }
-
-    private MeetingParticipant createMeetingParticipant(Meeting meeting, User user, MeetingParticipant.ParticipantRole role) {
-        MeetingParticipant participant = new MeetingParticipant(meeting, user, role);
-        participant.setInvitationStatus(MeetingParticipant.InvitationStatus.ACCEPTED);
-        if (meeting.getStatus() == Meeting.MeetingStatus.COMPLETED) {
-            participant.setAttendanceStatus(MeetingParticipant.AttendanceStatus.PRESENT);
-        }
-        return meetingParticipantRepository.save(participant);
-    }
-
-    private User createUserIfNotExists(String email, String firstName, String lastName, String jobTitle, String department, Organization organization, Role role) {
-        return userRepository.findByEmail(email).orElseGet(() -> {
-            User user = new User();
-            user.setEmail(email);
-            user.setFirstName(firstName);
-            user.setLastName(lastName);
-            user.setJobTitle(jobTitle);
-            user.setDepartment(department);
-            user.setPasswordHash(passwordEncoder.encode("password123")); // Default password
-            user.setOrganization(organization);
-            user.getRoles().add(role);
-            return userRepository.save(user);
         });
     }
 }

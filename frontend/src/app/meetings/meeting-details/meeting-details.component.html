@@ -1,4 +1,7 @@
 <div class="meeting-details-container">
+  <!-- Modal Container -->
+  <app-modal-container></app-modal-container>
+  
   <!-- Loading State -->
   <div *ngIf="loading" class="loading-container">
     <div class="loading-spinner"></div>
@@ -30,8 +33,12 @@
         </div>
       </div>
       <div class="meeting-actions">
-        <button class="action-btn edit-btn" (click)="editMeeting()">
-          📝 Edit
+        <button 
+          type="button"
+          class="action-btn edit-btn" 
+          [class.editing]="isEditing"
+          (click)="editMeeting($event)">
+          {{ isEditing ? '✅ Done' : '📝 Edit' }}
         </button>
         <button class="action-btn upload-btn" (click)="uploadDocuments()">
           📎 Upload Documents
@@ -97,10 +104,29 @@
     </div>
 
     <!-- Description -->
-    <div *ngIf="meeting.description || meeting.details" class="content-section">
-      <h3>📋 Description</h3>
-      <div class="content-text">
+    <div class="content-section">
+      <div class="section-header">
+        <h3>📋 Description</h3>
+        <button 
+          *ngIf="isEditing" 
+          type="button"
+          class="edit-content-btn" 
+          (click)="editMeetingField('description')">
+          ✏️ Edit
+        </button>
+      </div>
+      <div class="content-text" *ngIf="meeting.description || meeting.details">
         {{ meeting.description || meeting.details }}
+      </div>
+      <div class="empty-content" *ngIf="!meeting.description && !meeting.details">
+        <p>No description provided.</p>
+        <button 
+          *ngIf="isEditing" 
+          type="button"
+          class="add-btn" 
+          (click)="editMeetingField('description')">
+          ➕ Add Description
+        </button>
       </div>
     </div>
 
@@ -113,10 +139,29 @@
     </div>
 
     <!-- Summary -->
-    <div *ngIf="meeting.summary" class="content-section">
-      <h3>📊 Summary</h3>
-      <div class="content-text">
+    <div class="content-section">
+      <div class="section-header">
+        <h3>📊 Summary</h3>
+        <button 
+          *ngIf="isEditing" 
+          type="button"
+          class="edit-content-btn" 
+          (click)="editMeetingField('summary')">
+          ✏️ Edit
+        </button>
+      </div>
+      <div class="content-text" *ngIf="meeting.summary">
         {{ meeting.summary }}
+      </div>
+      <div class="empty-content" *ngIf="!meeting.summary">
+        <p>No summary provided.</p>
+        <button 
+          *ngIf="isEditing" 
+          type="button"
+          class="add-btn" 
+          (click)="editMeetingField('summary')">
+          ➕ Add Summary
+        </button>
       </div>
     </div>
 
@@ -129,10 +174,29 @@
     </div>
 
     <!-- Next Steps -->
-    <div *ngIf="meeting.nextSteps" class="content-section">
-      <h3>⏭️ Next Steps</h3>
-      <div class="content-text">
+    <div class="content-section">
+      <div class="section-header">
+        <h3>⏭️ Next Steps</h3>
+        <button 
+          *ngIf="isEditing" 
+          type="button"
+          class="edit-content-btn" 
+          (click)="editMeetingField('nextSteps')">
+          ✏️ Edit
+        </button>
+      </div>
+      <div class="content-text" *ngIf="meeting.nextSteps">
         {{ meeting.nextSteps }}
+      </div>
+      <div class="empty-content" *ngIf="!meeting.nextSteps">
+        <p>No next steps defined.</p>
+        <button 
+          *ngIf="isEditing" 
+          type="button"
+          class="add-btn" 
+          (click)="editMeetingField('nextSteps')">
+          ➕ Add Next Steps
+        </button>
       </div>
     </div>
 
@@ -145,10 +209,23 @@
     </div>
 
     <!-- Participants -->
-    <div *ngIf="meeting.participants && meeting.participants.length > 0" class="participants-section">
-      <h3>👥 Participants ({{ meeting.participants.length }})</h3>
-      <div class="participants-grid">
-        <div *ngFor="let participant of meeting.participants" class="participant-card">
+    <div class="participants-section">
+      <div class="section-header">
+        <h3>👥 Participants ({{ (meeting.participants && meeting.participants.length) || 0 }})</h3>
+        <button 
+          *ngIf="isEditing" 
+          type="button"
+          class="add-btn" 
+          (click)="addParticipant()">
+          ➕ Add Participant
+        </button>
+      </div>
+      
+      <div *ngIf="meeting.participants && meeting.participants.length > 0" class="participants-grid">
+        <div *ngFor="let participant of meeting.participants" 
+             class="participant-card"
+             [class.editable]="isEditing"
+             (click)="isEditing ? editParticipant(participant) : null">
           <div class="participant-avatar">
             {{ getInitials(participant.name) }}
           </div>
@@ -162,14 +239,45 @@
               </span>
             </div>
           </div>
+          <button 
+            *ngIf="isEditing" 
+            type="button"
+            class="remove-btn"
+            (click)="removeParticipant(participant); $event.stopPropagation()">
+            ✕
+          </button>
+          <div *ngIf="isEditing" class="edit-hint">
+            Click to edit
+          </div>
         </div>
+      </div>
+      
+      <div *ngIf="!meeting.participants || meeting.participants.length === 0" class="empty-state">
+        <p>No participants added yet.</p>
+        <button 
+          *ngIf="isEditing" 
+          type="button"
+          class="add-btn" 
+          (click)="addParticipant()">
+          ➕ Add First Participant
+        </button>
       </div>
     </div>
 
     <!-- Action Items -->
-    <div *ngIf="meeting.actionItems && meeting.actionItems.length > 0" class="action-items-section">
-      <h3>✅ Action Items ({{ meeting.actionItems.length }})</h3>
-      <div class="action-items-list">
+    <div class="action-items-section">
+      <div class="section-header">
+        <h3>✅ Action Items ({{ (meeting.actionItems && meeting.actionItems.length) || 0 }})</h3>
+        <button 
+          *ngIf="isEditing" 
+          type="button"
+          class="add-btn" 
+          (click)="addActionItem()">
+          ➕ Add Action Item
+        </button>
+      </div>
+      
+      <div *ngIf="meeting.actionItems && meeting.actionItems.length > 0" class="action-items-list">
         <div *ngFor="let item of meeting.actionItems" class="action-item-card">
           <div class="action-item-status">
             <div class="status-indicator" [class]="'status-' + (item.status || 'pending').toLowerCase()"></div>
@@ -184,7 +292,25 @@
               </span>
             </div>
           </div>
+          <button 
+            *ngIf="isEditing" 
+            type="button"
+            class="remove-btn"
+            (click)="removeActionItem(item)">
+            ✕
+          </button>
         </div>
+      </div>
+      
+      <div *ngIf="!meeting.actionItems || meeting.actionItems.length === 0" class="empty-state">
+        <p>No action items added yet.</p>
+        <button 
+          *ngIf="isEditing" 
+          type="button"
+          class="add-btn" 
+          (click)="addActionItem()">
+          ➕ Add First Action Item
+        </button>
       </div>
     </div>
 

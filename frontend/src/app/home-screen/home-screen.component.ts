@@ -72,7 +72,8 @@ export class HomeScreenComponent implements OnInit {
 
   applyFilters(meetingList: Meeting[]): Meeting[] {
     const query = this.searchQuery.toLowerCase().trim();
-    return meetingList.filter((meeting: Meeting) => {
+    
+    const filtered = meetingList.filter((meeting: Meeting) => {
       // Search query filter - only apply if there's actually a search query
       if (query) {
         const matchesSearch = (
@@ -90,10 +91,12 @@ export class HomeScreenComponent implements OnInit {
             (ai.assignee?.firstName && ai.assignee.firstName.toLowerCase().includes(query)) ||
             (ai.assignedTo && ai.assignedTo.toLowerCase().includes(query))
           ) ||
-          (meeting.nextSteps && meeting.nextSteps.toLowerCase().includes(query)) ||
+          (meeting.nextSteps && typeof meeting.nextSteps === 'string' && meeting.nextSteps.toLowerCase().includes(query)) ||
+          (meeting.nextSteps && Array.isArray(meeting.nextSteps) && meeting.nextSteps.some(step => step && step.toLowerCase().includes(query))) ||
           (meeting.details && meeting.details.toLowerCase().includes(query)) ||
           this.formatMeetingType(meeting.meetingType || meeting.type).toLowerCase().includes(query)
         );
+        
         if (!matchesSearch) return false;
       }
       // Date range filter
@@ -124,6 +127,8 @@ export class HomeScreenComponent implements OnInit {
       }
       return true;
     });
+    
+    return filtered;
   }
 
   get filteredMeetings(): Meeting[] {

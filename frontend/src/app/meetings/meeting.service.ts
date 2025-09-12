@@ -37,7 +37,7 @@ interface BackendMeeting {
 
 @Injectable({ providedIn: 'root' })
 export class MeetingService {
-  private apiUrl = '/api/meetings';
+  private apiUrl = 'http://localhost:8081/api/meetings'; // Direct backend URL for testing
   private _meetingsUpdated = new BehaviorSubject<boolean>(false);
   
   // Observable that components can subscribe to for meeting updates
@@ -47,15 +47,8 @@ export class MeetingService {
     private http: HttpClient,
     private mapper: MeetingMapperService
   ) {
-    // Use local backend for development (proxied through angular dev server)
-    // Use production backend for deployed environments
-    if (window.location.hostname.includes('azurecontainerapps.io')) {
-      // Use the backend container app URL in production with /api prefix
-      this.apiUrl = 'https://ca-backend-jq7rzfkj24zqy.mangoriver-904fd974.eastus.azurecontainerapps.io/api/meetings';
-    } else {
-      // Use local backend through Angular proxy for development
-      this.apiUrl = '/api/meetings';
-    }
+    // For now, always use direct backend URL to test
+    this.apiUrl = 'http://localhost:8081/api/meetings';
   }
 
   getMeetings(): Observable<Meeting[]> {

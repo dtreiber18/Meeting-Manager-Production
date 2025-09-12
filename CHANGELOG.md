@@ -5,6 +5,61 @@ All notable changes to the Meeting Manager project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2025-09-12
+
+### Added
+- **Advanced Modal Editing System** - Professional modal-based editing for all meeting components
+  - **Participant Edit Modal**: Edit attendance status (Attended/Absent/Partial), roles (Attendee/Presenter/Organizer), duration tracking, and presenter flags
+  - **Meeting Content Modals**: Rich text editing for Description, Summary, and Next Steps with contextual tips and character counting
+  - **Modal Service Infrastructure**: Centralized modal management with type-safe interfaces and proper lifecycle management
+  - **Click-to-Edit Interface**: Participant cards become clickable when in edit mode with professional hover effects and edit hints
+  - **Smart Edit Buttons**: Context-aware edit buttons appear on content sections when edit mode is active
+  - **Professional Modal Styling**: Consistent design language with smooth animations, backdrop blur, and responsive layouts
+
+### Enhanced
+- **Edit Mode System** - Comprehensive edit state management
+  - Fixed Edit button navigation issue - now properly toggles between "📝 Edit" and "✅ Done" states
+  - Global edit state with visual feedback and green styling when active
+  - Add Participant and Add Action Items buttons appear conditionally based on edit state
+  - Professional event handling with proper preventDefault and stopPropagation
+  - Remove buttons appear on hover with elegant confirmation system
+
+### Technical Improvements
+- **Modal Architecture**: Dynamic component loading with proper TypeScript interfaces
+- **Form Validation**: Real-time validation with visual feedback and error handling
+- **State Management**: Isolated edit state management with proper change tracking
+- **Performance**: OnPush change detection and optimized component lifecycle
+- **Accessibility**: Full keyboard navigation, ARIA labels, and screen reader support
+
+## [2.0.0] - 2025-09-11
+
+### Added
+- **Production-Ready Meeting System** - Complete meeting management with real data integration
+  - **Global Edit Mode**: Toggle edit functionality for participants and action items
+  - **Enhanced Search**: Real-time debounced search (300ms) across all meeting fields including participants and action items
+  - **Professional Meeting Details**: Comprehensive meeting information display with participant management and action item tracking
+  - **Smart Content Sections**: Organized display of description, summary, next steps with proper empty state handling
+
+### Fixed
+- **Backend Connectivity** - Resolved all API connection issues
+  - Fixed backend port configuration from 8080 to 8081 across all environment files
+  - Updated proxy.conf.json for seamless Angular-to-Spring Boot API routing
+  - Resolved CORS configuration for development environment
+  - Confirmed MySQL and MongoDB connectivity with proper data seeding
+
+### Enhanced
+- **Search Functionality** - Advanced search capabilities
+  - Fixed array vs string handling in search logic for proper participant and action item filtering
+  - Cross-field search spanning titles, descriptions, participants, and action items
+  - Smart filtering with proper indexing and performance optimization
+  - Professional search interface with real-time results
+
+### Removed
+- **Demo Data System** - Disabled all demo data seeders for production readiness
+  - Application now operates entirely on real data from database
+  - Removed hardcoded mock data generators
+  - Clean production environment with authentic data only
+
 ## [1.3.1] - 2024-12-20
 
 ### Security

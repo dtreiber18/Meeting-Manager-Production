@@ -5,11 +5,15 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MeetingService } from '../meeting.service';
 import { Meeting } from '../meeting.model';
 import { environment } from '../../../environments/environment';
+import { ModalService } from '../../shared/modal/modal.service';
+import { ModalContainerComponent } from '../../shared/modal/modal-container/modal-container.component';
+import { ParticipantEditModalComponent } from '../../shared/modal/participant-edit-modal/participant-edit-modal.component';
+import { MeetingEditModalComponent } from '../../shared/modal/meeting-edit-modal/meeting-edit-modal.component';
 
 @Component({
   selector: 'app-meeting-details',
   standalone: true,
-  imports: [CommonModule, HttpClientModule],
+  imports: [CommonModule, HttpClientModule, ModalContainerComponent],
   templateUrl: './meeting-details.component.html',
   styleUrl: './meeting-details.component.scss'
 })
@@ -19,12 +23,14 @@ export class MeetingDetailsComponent implements OnInit {
   error: string | null = null;
   meetingId: string | null = null;
   meetingSource: 'mm' | 'n8n' = 'mm';
+  isEditing = false; // Add edit mode state
 
   constructor(
     private route: ActivatedRoute, 
     private router: Router,
     private meetingService: MeetingService,
-    private http: HttpClient
+    private http: HttpClient,
+    private modalService: ModalService
   ) {}
 
   ngOnInit() {
@@ -239,15 +245,181 @@ export class MeetingDetailsComponent implements OnInit {
     this.loadMeeting();
   }
 
-  editMeeting() {
-    if (this.meeting?.id) {
-      this.router.navigate(['/meetings/edit', this.meeting.id]);
+  editMeeting(event?: Event) {
+    // Toggle edit mode instead of navigating away
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
     }
+    this.isEditing = !this.isEditing;
+    console.log('Edit mode toggled:', this.isEditing);
   }
 
   uploadDocuments() {
     // TODO: Implement document upload functionality
     console.log('Upload documents functionality coming soon');
+  }
+
+  addParticipant() {
+    // TODO: Implement add participant functionality
+    console.log('Add participant functionality - will open modal/form');
+    // For now, show a simple prompt
+    const name = prompt('Enter participant name:');
+    const email = prompt('Enter participant email:');
+    
+    if (name && email && this.meeting) {
+      if (!this.meeting.participants) {
+        this.meeting.participants = [];
+      }
+      
+      const newParticipant = {
+        id: Date.now(), // Temporary ID
+        email: email,
+        name: name,
+        participantRole: 'Attendee',
+        invitationStatus: 'pending',
+        attendanceStatus: 'pending',
+        isRequired: false,
+        canEdit: false,
+        canInviteOthers: false,
+        attendanceDurationMinutes: 0,
+        invitedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        internal: true,
+        external: false,
+        organizer: false,
+        presenter: false,
+        attended: false
+      };
+      
+      this.meeting.participants.push(newParticipant);
+      console.log('Added participant:', newParticipant);
+    }
+  }
+
+  removeParticipant(participant: any) {
+    if (this.meeting && this.meeting.participants) {
+      const index = this.meeting.participants.indexOf(participant);
+      if (index > -1) {
+        this.meeting.participants.splice(index, 1);
+        console.log('Removed participant:', participant);
+      }
+    }
+  }
+
+  addActionItem() {
+    // TODO: Implement add action item functionality
+    console.log('Add action item functionality - will open modal/form');
+    // For now, show a simple prompt
+    const title = prompt('Enter action item title:');
+    const assignee = prompt('Enter assignee name:');
+    
+    if (title && this.meeting) {
+      if (!this.meeting.actionItems) {
+        this.meeting.actionItems = [];
+      }
+      
+      const newActionItem = {
+        id: Date.now(), // Temporary ID
+        title: title,
+        description: title,
+        status: 'pending',
+        priority: 'medium',
+        type: 'task',
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+        completed: false,
+        isRecurring: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        organization: this.meeting.organization,
+        subTasks: [],
+        overdue: false,
+        progressPercentage: 0,
+        assignedTo: assignee || undefined
+      };
+      
+      this.meeting.actionItems.push(newActionItem);
+      console.log('Added action item:', newActionItem);
+    }
+  }
+
+  removeActionItem(actionItem: any) {
+    if (this.meeting && this.meeting.actionItems) {
+      const index = this.meeting.actionItems.indexOf(actionItem);
+      if (index > -1) {
+        this.meeting.actionItems.splice(index, 1);
+        console.log('Removed action item:', actionItem);
+      }
+    }
+  }
+
+  async editParticipant(participant: any) {
+    try {
+      const result = await this.modalService.openModal({
+        title: 'Edit Participant',
+        component: ParticipantEditModalComponent,
+        data: { 
+          participant: participant,
+          onSave: (updatedParticipant: any) => this.updateParticipant(updatedParticipant)
+        },
+        width: '500px'
+      });
+
+      if (result.action === 'save' && result.data) {
+        this.updateParticipant(result.data);
+      }
+    } catch (error) {
+      console.error('Error opening participant edit modal:', error);
+    }
+  }
+
+  updateParticipant(updatedParticipant: any) {
+    if (this.meeting && this.meeting.participants) {
+      const index = this.meeting.participants.findIndex(p => p.id === updatedParticipant.id);
+      if (index > -1) {
+        this.meeting.participants[index] = updatedParticipant;
+        console.log('Updated participant:', updatedParticipant);
+      }
+    }
+  }
+
+  async editMeetingField(field: 'description' | 'summary' | 'nextSteps') {
+    try {
+      const result = await this.modalService.openModal({
+        title: `Edit ${this.getFieldDisplayName(field)}`,
+        component: MeetingEditModalComponent,
+        data: { 
+          meeting: this.meeting,
+          field: field,
+          onSave: (fieldName: string, value: string) => this.updateMeetingField(fieldName, value)
+        },
+        width: '600px'
+      });
+
+      if (result.action === 'save' && result.data) {
+        this.updateMeetingField(result.data.field, result.data.value);
+      }
+    } catch (error) {
+      console.error('Error opening meeting edit modal:', error);
+    }
+  }
+
+  updateMeetingField(field: string, value: string) {
+    if (this.meeting) {
+      (this.meeting as any)[field] = value;
+      this.meeting.updatedAt = new Date().toISOString();
+      console.log(`Updated meeting ${field}:`, value);
+    }
+  }
+
+  getFieldDisplayName(field: string): string {
+    switch (field) {
+      case 'description': return 'Description';
+      case 'summary': return 'Meeting Summary';
+      case 'nextSteps': return 'Next Steps';
+      default: return 'Field';
+    }
   }
 
   formatDateTime(dateTime: string | undefined): string {
