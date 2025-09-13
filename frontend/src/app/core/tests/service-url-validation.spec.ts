@@ -28,11 +28,15 @@ describe('Service API URL Validation', () => {
   it('should verify MeetingService uses correct base URL', () => {
     const service = TestBed.inject(MeetingService);
     
-    // Use reflection to check private apiUrl property
-    const apiUrl = (service as any).apiUrl;
-    expect(apiUrl).toBe(`${environment.apiUrl}/meetings`);
-    expect(apiUrl).toContain('http://'); // Must be full URL, not relative
-    expect(apiUrl).not.toMatch(/^\/api\//); // Must not start with relative path
+    // MeetingService uses ApiConfigService, so check if it has access to it
+    const apiConfig = (service as any).apiConfig;
+    expect(apiConfig).toBeDefined();
+    
+    // Verify the meeting endpoint returns correct URL
+    const meetingsUrl = apiConfig.endpoints.meetings();
+    expect(meetingsUrl).toBe(`${environment.apiUrl}/meetings`);
+    expect(meetingsUrl).toContain('http://'); // Must be full URL, not relative
+    expect(meetingsUrl).not.toMatch(/^\/api\//); // Must not start with relative path
   });
 
   it('should verify ChatService uses correct base URL', () => {
@@ -65,10 +69,15 @@ describe('Service API URL Validation', () => {
   it('should verify UserService uses correct base URL', () => {
     const service = TestBed.inject(UserService);
     
-    const apiUrl = (service as any).API_URL;
-    expect(apiUrl).toBe(`${environment.apiUrl}/users`);
-    expect(apiUrl).toContain('http://'); // Must be full URL, not relative
-    expect(apiUrl).not.toMatch(/^\/api\//); // Must not start with relative path
+    // UserService uses ApiConfigService, so check if it has access to it
+    const apiConfig = (service as any).apiConfig;
+    expect(apiConfig).toBeDefined();
+    
+    // Verify the user profile endpoint returns correct URL
+    const userProfileUrl = apiConfig.endpoints.userProfile();
+    expect(userProfileUrl).toBe(`${environment.apiUrl}/users/profile`);
+    expect(userProfileUrl).toContain('http://'); // Must be full URL, not relative
+    expect(userProfileUrl).not.toMatch(/^\/api\//); // Must not start with relative path
   });
 
   it('should verify environment.apiUrl is properly configured', () => {
