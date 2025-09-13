@@ -50,6 +50,43 @@ body {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
+/* Toast Notification Styles */
+.toast-success {
+  background-color: #10b981 !important;
+  color: white !important;
+  
+  .mat-mdc-snack-bar-action {
+    color: white !important;
+  }
+}
+
+.toast-error {
+  background-color: #ef4444 !important;
+  color: white !important;
+  
+  .mat-mdc-snack-bar-action {
+    color: white !important;
+  }
+}
+
+.toast-warning {
+  background-color: #f59e0b !important;
+  color: white !important;
+  
+  .mat-mdc-snack-bar-action {
+    color: white !important;
+  }
+}
+
+.toast-info {
+  background-color: #3b82f6 !important;
+  color: white !important;
+  
+  .mat-mdc-snack-bar-action {
+    color: white !important;
+  }
+}
+
 .mat-mdc-button {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }

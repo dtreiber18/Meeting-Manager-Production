@@ -1,0 +1,39 @@
+{
+  "extends": [
+    "@angular-eslint/recommended",
+    "@angular-eslint/template/process-inline-templates"
+  ],
+  "rules": {
+    "no-relative-api-urls": "error",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "prefer-const": "error"
+  },
+  "overrides": [
+    {
+      "files": ["*.ts"],
+      "rules": {
+        // Custom rule to prevent relative API URLs in services
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "Literal[value=/^\\/api\\//]",
+            "message": "❌ FORBIDDEN: Use ApiConfigService.getApiUrl() instead of relative '/api/' URLs. This prevents the common issue where APIs point to localhost:4200 instead of the backend server."
+          },
+          {
+            "selector": "Literal[value=/^api\\//]",
+            "message": "❌ FORBIDDEN: Use ApiConfigService.getApiUrl() instead of relative 'api/' URLs. This prevents the common issue where APIs point to localhost:4200 instead of the backend server."
+          },
+          {
+            "selector": "TemplateLiteral > TemplateElement[value.raw=/^\\/api\\//]",
+            "message": "❌ FORBIDDEN: Use ApiConfigService.getApiUrl() instead of template literals starting with '/api/'. This prevents the common issue where APIs point to localhost:4200 instead of the backend server."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["*.html"],
+      "extends": ["@angular-eslint/template/recommended"],
+      "rules": {}
+    }
+  ]
+}

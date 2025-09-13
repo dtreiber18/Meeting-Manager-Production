@@ -6,8 +6,9 @@
   <router-outlet></router-outlet>
 </main>
 
-<!-- AI Chat Assistant - Available on all pages -->
+<!-- AI Chat Assistant - Only available after authentication -->
 <app-ai-chat 
+  *ngIf="authService.isAuthenticated$ | async"
   [pageType]="getCurrentPageType()" 
   [context]="getCurrentContext()">
 </app-ai-chat>

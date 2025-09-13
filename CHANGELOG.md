@@ -5,6 +5,16 @@ All notable changes to the Meeting Manager project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2025-09-13
+
+### Fixed
+- **Timezone Preferences** - Resolved 500 Internal Server Error when saving timezone settings
+  - Fixed backend User model validation constraint from @Size(max = 10) to @Size(max = 50) for timezone field
+  - Updated MySQL database schema: timezone column changed from VARCHAR(10) to VARCHAR(50)
+  - Added support for full IANA timezone names (e.g., "America/Los_Angeles", "Europe/London")
+  - Verified functionality with comprehensive testing of all major timezone regions
+  - Enhanced Settings component documentation to reflect fully functional timezone preferences
+
 ## [2.1.0] - 2025-09-12
 
 ### Added

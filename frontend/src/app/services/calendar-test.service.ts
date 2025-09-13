@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, throwError, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
 
 export interface CalendarStatus {
@@ -16,13 +16,11 @@ export interface CalendarAuthResponse {
   authUrl: string;
 }
 
-import { environment } from '../../environments/environment';
-
 @Injectable({
   providedIn: 'root'
 })
 export class CalendarService {
-  private readonly API_URL = environment.apiUrl;
+  private readonly API_URL = 'http://localhost:8081/api'; // Direct backend URL for testing
 
   constructor(
     private http: HttpClient,
@@ -37,7 +35,7 @@ export class CalendarService {
       .pipe(
         catchError(error => {
           console.error('Error getting calendar auth URL:', error);
-          return throwError(() => error);
+          throw error;
         })
       );
   }
@@ -48,7 +46,7 @@ export class CalendarService {
   handleOAuthCallback(code: string): Observable<any> {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
-      return throwError(() => new Error('User not authenticated'));
+      throw new Error('User not authenticated');
     }
 
     const body = {
@@ -65,7 +63,7 @@ export class CalendarService {
       .pipe(
         catchError(error => {
           console.error('Error handling OAuth callback:', error);
-          return throwError(() => error);
+          throw error;
         })
       );
   }
@@ -84,48 +82,41 @@ export class CalendarService {
       });
     }
 
-    // Use text response type to avoid Angular JSON parsing issues
-    return this.http.get(`${this.API_URL}/calendar/status?userEmail=${encodeURIComponent(currentUser.email)}`, {
-      responseType: 'text'
-    })
-      .pipe(
-        map((response: string) => {
-          try {
-            return JSON.parse(response) as CalendarStatus;
-          } catch (e) {
-            console.error('Failed to parse calendar status response:', e);
-            throw new Error('Invalid response format');
-          }
-        }),
-        catchError((error: any) => {
-          console.error('Error getting calendar status:', error);
-          console.log('Error details:', {
-            status: error.status,
-            statusText: error.statusText,
-            error: error.error,
-            message: error.message
-          });
-          
-          // If the response has a body but Angular treated it as an error
-          if (error.error && typeof error.error === 'string') {
-            try {
-              const parsed = JSON.parse(error.error) as CalendarStatus;
-              console.log('Extracted calendar status from error body:', parsed);
-              return of(parsed);
-            } catch (e) {
-              // Fall through to default handling
-            }
-          }
-          
-          // Return a default status for any other errors
-          return of({
-            isConnected: false,
-            isExpired: false,
-            userEmail: currentUser.email,
-            error: error.message || 'Unknown error'
-          });
-        })
-      );
+    const url = `${this.API_URL}/calendar/status?userEmail=${encodeURIComponent(currentUser.email)}`;
+    console.log('Making calendar status request to:', url);
+
+    return this.http.get(url, { responseType: 'text' }).pipe(
+      map((responseText: string) => {
+        console.log('Raw response text:', responseText);
+        try {
+          const response = JSON.parse(responseText);
+          console.log('Parsed response:', response);
+          return response as CalendarStatus;
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          console.error('Response text was:', responseText);
+          throw parseError;
+        }
+      }),
+      catchError((error: any) => {
+        console.error('Error getting calendar status:', error);
+        console.log('Error details:', {
+          status: error.status,
+          statusText: error.statusText,
+          error: error.error,
+          message: error.message,
+          url: error.url
+        });
+        
+        // Return a default status for any errors
+        return of({
+          isConnected: false,
+          isExpired: false,
+          userEmail: currentUser.email,
+          error: error.message || 'Unknown error'
+        });
+      })
+    );
   }
 
   /**
@@ -134,24 +125,15 @@ export class CalendarService {
   disconnectCalendar(): Observable<any> {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
-      return throwError(() => new Error('User not authenticated'));
+      throw new Error('User not authenticated');
     }
 
     return this.http.delete(`${this.API_URL}/calendar/disconnect`, {
-      params: { userEmail: currentUser.email },
-      responseType: 'text'
+      params: { userEmail: currentUser.email }
     }).pipe(
-      map((response: string) => {
-        try {
-          return response ? JSON.parse(response) : { success: true };
-        } catch (e) {
-          // If not valid JSON, treat as success
-          return { success: true };
-        }
-      }),
       catchError(error => {
         console.error('Error disconnecting calendar:', error);
-        return throwError(() => error);
+        throw error;
       })
     );
   }

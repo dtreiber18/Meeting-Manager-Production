@@ -9,6 +9,8 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { AuthService, User } from '../../auth/auth.service';
+import { RoleService } from '../services/role.service';
+import { NotificationService } from '../services/notification.service';
 import { Observable, Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 
@@ -35,6 +37,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
   
   currentUser$: Observable<User | null>;
   isAuthenticated$: Observable<boolean>;
+  isSystemAdmin$: Observable<boolean>;
+  isAssistantOrAbove$: Observable<boolean>;
   currentRoute = '';
   
   // Navigation items
@@ -60,10 +64,14 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private roleService: RoleService,
+    private notificationService: NotificationService
   ) {
     this.currentUser$ = this.authService.currentUser$;
     this.isAuthenticated$ = this.authService.isAuthenticated$;
+    this.isSystemAdmin$ = this.roleService.isSystemAdmin();
+    this.isAssistantOrAbove$ = this.roleService.isAssistantOrAbove();
   }
 
   ngOnInit(): void {
@@ -106,8 +114,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   getNotificationCount(): number {
-    // TODO: Replace with actual notification count from service
-    return 3;
+    return this.notificationService.getUnreadCount();
   }
 
   onLogout(): void {
@@ -115,18 +122,17 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   navigateToProfile(): void {
-    // TODO: Implement user profile page
-    console.log('Navigate to user profile');
+    this.router.navigate(['/preferences']);
   }
 
   navigateToOrganization(): void {
-    // TODO: Implement organization management page
-    console.log('Navigate to organization management');
+    this.router.navigate(['/settings/organization']);
   }
 
   onNotificationsClick(): void {
-    // TODO: Implement notifications functionality
-    console.log('Show notifications');
+    // TODO: Implement notifications panel/dropdown
+    console.log('Show notifications panel');
+    this.notificationService.markAllAsRead();
   }
 
   onHelpClick(): void {

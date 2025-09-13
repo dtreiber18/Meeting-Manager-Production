@@ -1,20 +1,18 @@
 import { ApplicationConfig } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
-import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
-import { AuthInterceptor } from './auth/auth.interceptor';
+import { authInterceptor } from './auth/auth.interceptor';
+import { urlNormalizationInterceptor } from './core/interceptors/url-normalization.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
     provideAnimationsAsync(),
-    provideHttpClient(),
-    {
-      provide: HTTP_INTERCEPTORS,
-      useClass: AuthInterceptor,
-      multi: true
-    }
+    provideHttpClient(withInterceptors([
+      urlNormalizationInterceptor, // Apply URL fixes BEFORE auth
+      authInterceptor
+    ]))
   ]
 };

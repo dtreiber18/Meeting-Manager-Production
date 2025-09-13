@@ -24,6 +24,7 @@ The Settings component provides a comprehensive configuration interface for user
 - User profile management
 - Display name and email configuration
 - Avatar/profile picture settings
+- **Timezone preferences** - Full IANA timezone support (Americas, Europe, Asia, etc.)
 - Account preferences
 
 #### 2. Sources Tab
@@ -115,6 +116,7 @@ export class SimpleSettingsComponent implements OnInit {
 - Real-time validation with error messages
 - Required field indicators
 - Email format validation
+- **Timezone validation** - Supports full IANA timezone names (up to 50 characters)
 - Form state management (dirty, valid, touched)
 
 ## Integration Points
@@ -208,6 +210,7 @@ export class SettingsService {
 - Material Design integration
 - Navigation and routing
 - Responsive design
+- **Timezone preferences** - Fully functional with IANA timezone support
 
 ### Next Steps
 - Backend API integration

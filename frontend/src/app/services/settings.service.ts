@@ -2,15 +2,17 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { User, AppConfig } from '../models/settings.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SettingsService {
-  private apiUrl = '/api/settings';
+  private readonly API_URL = `${environment.apiUrl}/settings`;
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   
   constructor(private http: HttpClient) {
+    console.log('🔧 SettingsService API_URL:', this.API_URL); // Debug log
     this.loadCurrentUser();
   }
 

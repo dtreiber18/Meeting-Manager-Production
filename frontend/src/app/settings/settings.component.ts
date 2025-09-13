@@ -15,6 +15,7 @@ import { FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors }
 import { MatDialog } from '@angular/material/dialog';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { InjectionToken } from '@angular/core';
+import { ToastService } from '../shared/services/toast.service';
 import { CalendarService } from '../services/calendar.service';
 
 // Interfaces
@@ -134,6 +135,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
     private calendarService: CalendarService,
+    private toastService: ToastService,
     @Inject(SETTINGS_SERVICE_TOKEN) private settingsService: SettingsService
   ) {
     this.initializeForms();
@@ -600,11 +602,11 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
   // Error + Messaging Helpers
   private showSuccessMessage(message: string): void {
-    this.snackBar.open(message, 'Close', { duration: 3000, panelClass: ['snack-success'] });
+    this.toastService.showSuccess(message);
   }
 
   private showErrorMessage(message: string): void {
-    this.snackBar.open(message, 'Close', { duration: 5000, panelClass: ['snack-error'] });
+    this.toastService.showError(message);
   }
 
   // Central error handler (logs + user feedback)

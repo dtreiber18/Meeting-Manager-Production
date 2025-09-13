@@ -67,7 +67,7 @@ public class User {
     @Column(nullable = false)
     private Boolean pushNotifications = true;
 
-    @Size(max = 10)
+    @Size(max = 50)
     private String timezone = "UTC";
 
     @Size(max = 10)

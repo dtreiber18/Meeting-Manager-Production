@@ -21,6 +21,15 @@ cd backend && mvn spring-boot:run         # → http://localhost:8080/api
 docker-compose up --build                # → Both apps + MySQL + MongoDB
 ```
 
+### ✅ **LATEST FIXES (September 13, 2025)**
+- ✅ **🕐 Timezone Preferences Fix (v2.1.1)**: 
+  - **RESOLVED**: Fixed critical 500 Internal Server Error when saving timezone preferences
+  - **Backend Model**: Updated User entity validation from `@Size(max = 10)` to `@Size(max = 50)` for timezone field
+  - **Database Schema**: Modified MySQL `users.timezone` column from `VARCHAR(10)` to `VARCHAR(50)`
+  - **Full IANA Support**: Now properly handles all timezone names like "America/Los_Angeles", "America/Chicago", "America/New_York"
+  - **Verified Working**: All timezone updates return HTTP 200 and save correctly to database
+  - **Production Ready**: Timezone dropdown functionality now fully operational for enterprise users
+
 ### ✅ **VERIFIED WORKING FEATURES**
 - ✅ **� Dual-Source Meeting Integration**: External workflow integration system (NEW!)
   - **n8n Webhook API**: Live connection to n8n workflows at https://g37-ventures1.app.n8n.cloud/webhook/operations

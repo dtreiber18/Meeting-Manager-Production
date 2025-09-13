@@ -10,6 +10,14 @@ A modern, enterprise-grade meeting management application built with Angular 17+
 
 ## 🔧 Recent Updates (September 2025)
 
+### ✅ **Timezone Preferences Fix (v2.1.1) - LATEST**
+- **Fixed Critical Backend Issue**: Resolved 500 Internal Server Error when saving timezone preferences
+- **Enhanced Data Model**: Updated User entity validation constraint from `@Size(max = 10)` to `@Size(max = 50)` for timezone field
+- **Database Schema Update**: Modified MySQL `users.timezone` column from `VARCHAR(10)` to `VARCHAR(50)` to support full IANA timezone identifiers
+- **Full IANA Support**: Now properly handles all standard timezone names like "America/Los_Angeles", "America/Chicago", "America/New_York"
+- **Comprehensive Testing**: Verified timezone updates work correctly with proper HTTP 200 responses and database persistence
+- **Backward Compatibility**: Existing shorter timezone values (like "UTC") continue to work without issues
+
 ### ✅ Advanced Modal Editing System (v2.1.0)
 - **Professional Participant Editing**: Modal-based editing for attendance status, roles, and duration tracking
 - **Rich Content Editing**: Professional modals for Description, Summary, and Next Steps with contextual guidance

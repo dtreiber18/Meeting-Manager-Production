@@ -1,0 +1,335 @@
+.preferences-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  min-height: calc(100vh - 70px);
+}
+
+.page-header {
+  margin-bottom: 32px;
+  
+  h1 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 2rem;
+    font-weight: 500;
+    color: #1976d2;
+    margin: 0 0 8px 0;
+    
+    mat-icon {
+      font-size: 2rem;
+      width: 2rem;
+      height: 2rem;
+    }
+  }
+  
+  p {
+    font-size: 1.1rem;
+    color: #666;
+    margin: 0;
+  }
+}
+
+.preferences-tabs {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  
+  .mat-mdc-tab-header {
+    background: #f8faff;
+    border-bottom: 1px solid #e0e7ff;
+  }
+  
+  .mat-mdc-tab-label {
+    padding: 16px 24px;
+    font-weight: 500;
+    
+    &.mdc-tab--active {
+      background: white;
+      border-bottom: 3px solid #1976d2;
+    }
+  }
+}
+
+.tab-content {
+  padding: 32px;
+}
+
+.preference-card {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  
+  .mat-mdc-card-header {
+    padding-bottom: 16px;
+    
+    .mat-mdc-card-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1976d2;
+      
+      mat-icon {
+        color: #1976d2;
+      }
+    }
+    
+    .mat-mdc-card-subtitle {
+      margin-top: 8px;
+      color: #666;
+      font-size: 0.95rem;
+    }
+  }
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e7ff;
+  
+  button {
+    min-width: 140px;
+    height: 44px;
+    border-radius: 8px;
+    font-weight: 500;
+    
+    mat-icon {
+      margin-right: 8px;
+    }
+  }
+}
+
+// Notification Settings
+.notification-section {
+  margin: 24px 0;
+  
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 16px 0;
+  }
+}
+
+.notification-item {
+  margin-bottom: 20px;
+  
+  .mat-mdc-slide-toggle {
+    width: 100%;
+    
+    .mdc-switch {
+      margin-right: 16px;
+    }
+  }
+  
+  .toggle-content {
+    display: flex;
+    flex-direction: column;
+    
+    .toggle-title {
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    
+    .toggle-description {
+      font-size: 0.9rem;
+      color: #666;
+    }
+  }
+}
+
+// Calendar Integration
+.calendar-status {
+  text-align: center;
+  padding: 20px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  
+  mat-icon {
+    font-size: 1.5rem;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  
+  &.connected {
+    color: #10b981;
+    
+    mat-icon {
+      color: #10b981;
+    }
+  }
+  
+  &:not(.connected) {
+    color: #ef4444;
+    
+    mat-icon {
+      color: #ef4444;
+    }
+  }
+}
+
+.connected-info {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  
+  p {
+    margin: 0 0 16px 0;
+    color: #166534;
+  }
+}
+
+.not-connected-info {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  
+  p {
+    margin: 0 0 16px 0;
+    color: #991b1b;
+  }
+}
+
+.calendar-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px;
+  color: #666;
+  
+  mat-icon {
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// Privacy Settings
+.privacy-section {
+  .privacy-item {
+    margin-bottom: 20px;
+    
+    .mat-mdc-slide-toggle {
+      width: 100%;
+      
+      .mdc-switch {
+        margin-right: 16px;
+      }
+    }
+    
+    .toggle-content {
+      display: flex;
+      flex-direction: column;
+      
+      .toggle-title {
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 4px;
+      }
+      
+      .toggle-description {
+        font-size: 0.9rem;
+        color: #666;
+      }
+    }
+  }
+}
+
+// Form field customizations
+.mat-mdc-form-field {
+  &.mat-form-field-appearance-outline {
+    .mat-mdc-form-field-outline {
+      color: #d1d5db;
+    }
+    
+    &.mat-focused {
+      .mat-mdc-form-field-outline-thick {
+        color: #1976d2;
+      }
+    }
+    
+    .mat-mdc-form-field-label {
+      color: #6b7280;
+    }
+    
+    &.mat-focused .mat-mdc-form-field-label {
+      color: #1976d2;
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .preferences-container {
+    padding: 16px;
+  }
+  
+  .tab-content {
+    padding: 20px 16px;
+  }
+  
+  .page-header h1 {
+    font-size: 1.5rem;
+    
+    mat-icon {
+      font-size: 1.5rem;
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+  }
+  
+  .calendar-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .form-actions {
+    justify-content: center;
+  }
+}

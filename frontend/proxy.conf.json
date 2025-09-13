@@ -4,6 +4,9 @@
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug",
+    "pathRewrite": {
+      "^/api": "/api"
+    },
     "headers": {
       "Connection": "keep-alive"
     }

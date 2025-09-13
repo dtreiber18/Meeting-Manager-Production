@@ -5,6 +5,7 @@ import { map } from 'rxjs/operators';
 import { PageType } from '../models/chat.model';
 import { MeetingService } from '../meetings/meeting.service';
 import { Meeting } from '../meetings/meeting.model';
+import { ApiConfigService } from '../core/services/api-config.service';
 
 export interface ChatRequest {
   message: string;
@@ -31,21 +32,22 @@ export interface MeetingCreationState {
   providedIn: 'root',
 })
 export class ChatService {
-  private apiUrl = '/api/chat';
+  private apiUrl: string;
   private meetingCreationState: MeetingCreationState | null = null;
 
   constructor(
     private http: HttpClient,
-    private meetingService: MeetingService
+    private meetingService: MeetingService,
+    private apiConfig: ApiConfigService
   ) {
-    // Use local backend for development (proxied through angular dev server)
-    // Use production backend for deployed environments
+    // Use production backend for deployed environments, otherwise use ApiConfigService
     if (window.location.hostname.includes('azurecontainerapps.io')) {
       this.apiUrl = 'https://ca-backend-jq7rzfkj24zqy.mangoriver-904fd974.eastus.azurecontainerapps.io/api/chat';
     } else {
-      // Use local backend through Angular proxy for development
-      this.apiUrl = '/api/chat';
+      // Use ApiConfigService for local development
+      this.apiUrl = this.apiConfig.endpoints.chat();
     }
+    console.log('🔧 ChatService API URL:', this.apiUrl); // Debug log
   }
 
   getContextualWelcome(pageType: PageType): string {

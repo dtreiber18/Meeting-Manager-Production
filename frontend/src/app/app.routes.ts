@@ -6,6 +6,7 @@ import { MeetingDetailsComponent } from './meetings/meeting-details/meeting-deta
 import { MeetingFormComponent } from './meetings/meeting-form/meeting-form.component';
 import { PreviousMeetingsComponent } from './meetings/previous-meetings/previous-meetings.component';
 import { SimpleSettingsComponent } from './simple-settings/simple-settings.component';
+import { PreferencesComponent } from './preferences/preferences.component';
 import { AuthComponent } from './auth/auth.component';
 import { AuthTestComponent } from './testing/auth-test.component';
 import { CalendarAuthComponent } from './calendar-auth/calendar-auth.component';
@@ -24,9 +25,18 @@ export const routes: Routes = [
 	{ path: 'meetings/new', component: MeetingFormComponent, canActivate: [AuthGuard] },
 	{ path: 'meetings/:id', component: MeetingDetailsComponent, canActivate: [AuthGuard] },
 	{ path: 'meetings/:id/edit', component: MeetingFormComponent, canActivate: [AuthGuard] },
+	
+	// User Preferences (moved from settings dropdown to profile dropdown)
+	{ path: 'preferences', component: PreferencesComponent, canActivate: [AuthGuard] },
+	{ path: 'preferences/calendar', component: PreferencesComponent, canActivate: [AuthGuard] },
+	
+	// System Admin Settings (only accessible by System Admins)
 	{ path: 'settings', component: SimpleSettingsComponent, canActivate: [AuthGuard] },
-	{ path: 'settings/calendar', component: SimpleSettingsComponent, canActivate: [AuthGuard] },
-	{ path: 'settings/preferences', component: SimpleSettingsComponent, canActivate: [AuthGuard] },
+	{ path: 'settings/system', component: SimpleSettingsComponent, canActivate: [AuthGuard] },
+	{ path: 'settings/organization', component: SimpleSettingsComponent, canActivate: [AuthGuard] },
+	{ path: 'settings/users', component: SimpleSettingsComponent, canActivate: [AuthGuard] },
+	{ path: 'settings/monitoring', component: SimpleSettingsComponent, canActivate: [AuthGuard] },
+	
 	{ path: 'unauthorized', redirectTo: '/auth', pathMatch: 'full' },
 	{ path: '**', redirectTo: '', pathMatch: 'full' }
 ];

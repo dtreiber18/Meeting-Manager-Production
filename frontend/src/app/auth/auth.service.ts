@@ -15,6 +15,16 @@ export interface User {
   permissions: string[];
   isActive: boolean;
   azureAdObjectId?: string;
+  
+  // Extended properties for preferences
+  phoneNumber?: string;
+  jobTitle?: string;
+  department?: string;
+  bio?: string;
+  language?: string;
+  timezone?: string;
+  emailNotifications?: boolean;
+  pushNotifications?: boolean;
 }
 
 export interface LoginRequest {
@@ -239,6 +249,13 @@ export class AuthService {
   getAuthHeaders(): HttpHeaders {
     const token = this.getStoredToken();
     return new HttpHeaders().set('Authorization', `Bearer ${token}`);
+  }
+
+  /**
+   * Get the current auth token
+   */
+  getToken(): string | null {
+    return this.getStoredToken();
   }
 
   /**

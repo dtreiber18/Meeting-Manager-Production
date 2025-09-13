@@ -74,27 +74,32 @@
       <mat-icon>help_outline</mat-icon>
     </button>
 
-    <!-- Settings -->
+    <!-- Settings (System Admin only) -->
     <button 
       mat-icon-button 
       [matMenuTriggerFor]="settingsMenu"
-      class="action-btn">
+      class="action-btn"
+      *ngIf="isSystemAdmin$ | async">
       <mat-icon>settings</mat-icon>
     </button>
 
-    <!-- Settings dropdown menu -->
+    <!-- Settings dropdown menu (System Admin only) -->
     <mat-menu #settingsMenu="matMenu" class="settings-dropdown-menu">
-      <button mat-menu-item routerLink="/settings">
-        <mat-icon>settings</mat-icon>
-        <span>General Settings</span>
+      <button mat-menu-item routerLink="/settings/system">
+        <mat-icon>admin_panel_settings</mat-icon>
+        <span>System Settings</span>
       </button>
-      <button mat-menu-item routerLink="/settings/calendar">
-        <mat-icon>calendar_month</mat-icon>
-        <span>Calendar</span>
+      <button mat-menu-item routerLink="/settings/organization">
+        <mat-icon>business</mat-icon>
+        <span>Organization Management</span>
       </button>
-      <button mat-menu-item routerLink="/settings/preferences">
-        <mat-icon>person_outline</mat-icon>
-        <span>User Preferences</span>
+      <button mat-menu-item routerLink="/settings/users">
+        <mat-icon>group</mat-icon>
+        <span>User Management</span>
+      </button>
+      <button mat-menu-item routerLink="/settings/monitoring">
+        <mat-icon>monitoring</mat-icon>
+        <span>System Monitoring</span>
       </button>
     </mat-menu>
 
@@ -132,7 +137,17 @@
         <span>My Profile</span>
       </button>
 
-      <button mat-menu-item (click)="navigateToOrganization()">
+      <button mat-menu-item routerLink="/preferences">
+        <mat-icon>tune</mat-icon>
+        <span>Preferences</span>
+      </button>
+
+      <button mat-menu-item routerLink="/preferences/calendar">
+        <mat-icon>calendar_month</mat-icon>
+        <span>Calendar Settings</span>
+      </button>
+
+      <button mat-menu-item (click)="navigateToOrganization()" *ngIf="isAssistantOrAbove$ | async">
         <mat-icon>business</mat-icon>
         <span>Organization Settings</span>
       </button>

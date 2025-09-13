@@ -1,0 +1,386 @@
+<div class="preferences-container">
+  <div class="page-header">
+    <h1>
+      <mat-icon>tune</mat-icon>
+      User Preferences
+    </h1>
+    <p>Customize your Meeting Manager experience</p>
+  </div>
+
+  <mat-tab-group class="preferences-tabs" animationDuration="300ms">
+    <!-- Profile Tab -->
+    <mat-tab label="Profile">
+      <ng-template matTabContent>
+        <div class="tab-content">
+          <mat-card class="preference-card">
+            <mat-card-header>
+              <mat-card-title>
+                <mat-icon>person</mat-icon>
+                Personal Information
+              </mat-card-title>
+              <mat-card-subtitle>
+                Update your profile details and contact information
+              </mat-card-subtitle>
+            </mat-card-header>
+            
+            <mat-card-content>
+              <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+                <div class="form-row">
+                  <mat-form-field appearance="outline">
+                    <mat-label>First Name</mat-label>
+                    <input matInput formControlName="firstName" placeholder="Enter your first name">
+                    <mat-error *ngIf="hasError(profileForm, 'firstName', 'required')">
+                      First name is required
+                    </mat-error>
+                  </mat-form-field>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Last Name</mat-label>
+                    <input matInput formControlName="lastName" placeholder="Enter your last name">
+                    <mat-error *ngIf="hasError(profileForm, 'lastName', 'required')">
+                      Last name is required
+                    </mat-error>
+                  </mat-form-field>
+                </div>
+
+                <div class="form-row">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Email Address</mat-label>
+                    <input matInput formControlName="email" type="email" placeholder="Enter your email">
+                    <mat-error *ngIf="hasError(profileForm, 'email', 'required')">
+                      Email is required
+                    </mat-error>
+                    <mat-error *ngIf="hasError(profileForm, 'email', 'email')">
+                      Invalid email address
+                    </mat-error>
+                  </mat-form-field>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Phone Number</mat-label>
+                    <input matInput formControlName="phoneNumber" placeholder="Enter your phone number">
+                  </mat-form-field>
+                </div>
+
+                <div class="form-row">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Job Title</mat-label>
+                    <input matInput formControlName="jobTitle" placeholder="Enter your job title">
+                  </mat-form-field>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Department</mat-label>
+                    <input matInput formControlName="department" placeholder="Enter your department">
+                  </mat-form-field>
+                </div>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Bio</mat-label>
+                  <textarea matInput formControlName="bio" 
+                           placeholder="Tell us about yourself" 
+                           rows="3"
+                           maxlength="500"></textarea>
+                  <mat-hint align="end">{{profileForm.get('bio')?.value?.length || 0}}/500</mat-hint>
+                </mat-form-field>
+
+                <div class="form-actions">
+                  <button mat-raised-button color="primary" type="submit" 
+                          [disabled]="isSaving || !profileForm.valid">
+                    <mat-icon *ngIf="isSaving">hourglass_empty</mat-icon>
+                    <mat-icon *ngIf="!isSaving">save</mat-icon>
+                    {{isSaving ? 'Saving...' : 'Save Profile'}}
+                  </button>
+                </div>
+              </form>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </ng-template>
+    </mat-tab>
+
+    <!-- Display & Language Tab -->
+    <mat-tab label="Display & Language">
+      <ng-template matTabContent>
+        <div class="tab-content">
+          <mat-card class="preference-card">
+            <mat-card-header>
+              <mat-card-title>
+                <mat-icon>display_settings</mat-icon>
+                Display & Language Settings
+              </mat-card-title>
+              <mat-card-subtitle>
+                Customize how information is displayed and your preferred language
+              </mat-card-subtitle>
+            </mat-card-header>
+            
+            <mat-card-content>
+              <form [formGroup]="displayForm" (ngSubmit)="saveDisplaySettings()">
+                <div class="form-row">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Language</mat-label>
+                    <mat-select formControlName="language">
+                      <mat-option *ngFor="let lang of languageOptions" [value]="lang.value">
+                        {{lang.label}}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Timezone</mat-label>
+                    <mat-select formControlName="timezone">
+                      <mat-option *ngFor="let tz of timezoneOptions" [value]="tz.value">
+                        {{tz.label}}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+
+                <div class="form-row">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Date Format</mat-label>
+                    <mat-select formControlName="dateFormat">
+                      <mat-option *ngFor="let format of dateFormatOptions" [value]="format.value">
+                        {{format.label}}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Time Format</mat-label>
+                    <mat-select formControlName="timeFormat">
+                      <mat-option *ngFor="let format of timeFormatOptions" [value]="format.value">
+                        {{format.label}}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+
+                <div class="form-row">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Theme</mat-label>
+                    <mat-select formControlName="theme">
+                      <mat-option *ngFor="let theme of themeOptions" [value]="theme.value">
+                        {{theme.label}}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+
+                <div class="form-actions">
+                  <button mat-raised-button color="primary" type="submit" 
+                          [disabled]="isSaving || !displayForm.valid">
+                    <mat-icon *ngIf="isSaving">hourglass_empty</mat-icon>
+                    <mat-icon *ngIf="!isSaving">save</mat-icon>
+                    {{isSaving ? 'Saving...' : 'Save Display Settings'}}
+                  </button>
+                </div>
+              </form>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </ng-template>
+    </mat-tab>
+
+    <!-- Notifications Tab -->
+    <mat-tab label="Notifications">
+      <ng-template matTabContent>
+        <div class="tab-content">
+          <mat-card class="preference-card">
+            <mat-card-header>
+              <mat-card-title>
+                <mat-icon>notifications</mat-icon>
+                Notification Preferences
+              </mat-card-title>
+              <mat-card-subtitle>
+                Choose how and when you want to receive notifications
+              </mat-card-subtitle>
+            </mat-card-header>
+            
+            <mat-card-content>
+              <form [formGroup]="notificationForm" (ngSubmit)="saveNotificationSettings()">
+                <div class="notification-section">
+                  <h3>General Notifications</h3>
+                  
+                  <div class="notification-item">
+                    <mat-slide-toggle formControlName="emailNotifications">
+                      <div class="toggle-content">
+                        <span class="toggle-title">Email Notifications</span>
+                        <span class="toggle-description">Receive notifications via email</span>
+                      </div>
+                    </mat-slide-toggle>
+                  </div>
+
+                  <div class="notification-item">
+                    <mat-slide-toggle formControlName="pushNotifications">
+                      <div class="toggle-content">
+                        <span class="toggle-title">Browser Notifications</span>
+                        <span class="toggle-description">Receive push notifications in your browser</span>
+                      </div>
+                    </mat-slide-toggle>
+                  </div>
+                </div>
+
+                <mat-divider></mat-divider>
+
+                <div class="notification-section">
+                  <h3>Meeting Notifications</h3>
+                  
+                  <div class="notification-item">
+                    <mat-slide-toggle formControlName="meetingReminders">
+                      <div class="toggle-content">
+                        <span class="toggle-title">Meeting Reminders</span>
+                        <span class="toggle-description">Get reminded before meetings start</span>
+                      </div>
+                    </mat-slide-toggle>
+                  </div>
+
+                  <div class="notification-item">
+                    <mat-slide-toggle formControlName="actionItemReminders">
+                      <div class="toggle-content">
+                        <span class="toggle-title">Action Item Reminders</span>
+                        <span class="toggle-description">Get reminded about pending action items</span>
+                      </div>
+                    </mat-slide-toggle>
+                  </div>
+
+                  <div class="notification-item">
+                    <mat-slide-toggle formControlName="weeklyDigest">
+                      <div class="toggle-content">
+                        <span class="toggle-title">Weekly Digest</span>
+                        <span class="toggle-description">Receive a weekly summary of your meetings and action items</span>
+                      </div>
+                    </mat-slide-toggle>
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button mat-raised-button color="primary" type="submit" [disabled]="isSaving">
+                    <mat-icon *ngIf="isSaving">hourglass_empty</mat-icon>
+                    <mat-icon *ngIf="!isSaving">save</mat-icon>
+                    {{isSaving ? 'Saving...' : 'Save Notification Settings'}}
+                  </button>
+                </div>
+              </form>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </ng-template>
+    </mat-tab>
+
+    <!-- Calendar Integration Tab -->
+    <mat-tab label="Calendar">
+      <ng-template matTabContent>
+        <div class="tab-content">
+          <mat-card class="preference-card">
+            <mat-card-header>
+              <mat-card-title>
+                <mat-icon>calendar_month</mat-icon>
+                Calendar Integration
+              </mat-card-title>
+              <mat-card-subtitle>
+                Connect your external calendar for seamless meeting management
+              </mat-card-subtitle>
+            </mat-card-header>
+            
+            <mat-card-content>
+              <div class="calendar-status" *ngIf="calendarStatus">
+                <div class="status-indicator" [class.connected]="calendarStatus.isConnected">
+                  <mat-icon>{{calendarStatus.isConnected ? 'check_circle' : 'cancel'}}</mat-icon>
+                  <span>{{calendarStatus.isConnected ? 'Connected' : 'Not Connected'}}</span>
+                </div>
+
+                <div *ngIf="calendarStatus.isConnected" class="connected-info">
+                  <p><strong>Connected Account:</strong> {{calendarStatus.userEmail}}</p>
+                  <div class="calendar-actions">
+                    <button mat-raised-button color="warn" (click)="disconnectCalendar()">
+                      <mat-icon>link_off</mat-icon>
+                      Disconnect Calendar
+                    </button>
+                    <button mat-button (click)="refreshCalendarStatus()">
+                      <mat-icon>refresh</mat-icon>
+                      Refresh Status
+                    </button>
+                  </div>
+                </div>
+
+                <div *ngIf="!calendarStatus.isConnected" class="not-connected-info">
+                  <p>Connect your Microsoft Outlook calendar to automatically sync your meetings.</p>
+                  <button mat-raised-button color="primary" (click)="connectCalendar()">
+                    <mat-icon>link</mat-icon>
+                    Connect Calendar
+                  </button>
+                </div>
+              </div>
+
+              <div *ngIf="isLoading" class="loading-state">
+                <mat-icon>hourglass_empty</mat-icon>
+                <span>Checking calendar status...</span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </ng-template>
+    </mat-tab>
+
+    <!-- Privacy Tab -->
+    <mat-tab label="Privacy">
+      <ng-template matTabContent>
+        <div class="tab-content">
+          <mat-card class="preference-card">
+            <mat-card-header>
+              <mat-card-title>
+                <mat-icon>security</mat-icon>
+                Privacy Settings
+              </mat-card-title>
+              <mat-card-subtitle>
+                Control your privacy and visibility settings
+              </mat-card-subtitle>
+            </mat-card-header>
+            
+            <mat-card-content>
+              <form [formGroup]="privacyForm" (ngSubmit)="savePrivacySettings()">
+                <div class="privacy-section">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Profile Visibility</mat-label>
+                    <mat-select formControlName="profileVisibility">
+                      <mat-option *ngFor="let option of profileVisibilityOptions" [value]="option.value">
+                        {{option.label}}
+                      </mat-option>
+                    </mat-select>
+                    <mat-hint>Choose who can see your profile information</mat-hint>
+                  </mat-form-field>
+
+                  <div class="privacy-item">
+                    <mat-slide-toggle formControlName="showOnlineStatus">
+                      <div class="toggle-content">
+                        <span class="toggle-title">Show Online Status</span>
+                        <span class="toggle-description">Let others see when you're online</span>
+                      </div>
+                    </mat-slide-toggle>
+                  </div>
+
+                  <div class="privacy-item">
+                    <mat-slide-toggle formControlName="allowDirectMessages">
+                      <div class="toggle-content">
+                        <span class="toggle-title">Allow Direct Messages</span>
+                        <span class="toggle-description">Allow other users to send you direct messages</span>
+                      </div>
+                    </mat-slide-toggle>
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button mat-raised-button color="primary" type="submit" 
+                          [disabled]="isSaving || !privacyForm.valid">
+                    <mat-icon *ngIf="isSaving">hourglass_empty</mat-icon>
+                    <mat-icon *ngIf="!isSaving">save</mat-icon>
+                    {{isSaving ? 'Saving...' : 'Save Privacy Settings'}}
+                  </button>
+                </div>
+              </form>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </ng-template>
+    </mat-tab>
+  </mat-tab-group>
+</div>

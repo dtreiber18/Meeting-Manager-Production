@@ -5,6 +5,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
+import { ApiConfigService } from '../core/services/api-config.service';
 
 interface BackendMeeting {
   id: number;
@@ -37,7 +38,6 @@ interface BackendMeeting {
 
 @Injectable({ providedIn: 'root' })
 export class MeetingService {
-  private apiUrl = 'http://localhost:8081/api/meetings'; // Direct backend URL for testing
   private _meetingsUpdated = new BehaviorSubject<boolean>(false);
   
   // Observable that components can subscribe to for meeting updates
@@ -45,20 +45,23 @@ export class MeetingService {
 
   constructor(
     private http: HttpClient,
-    private mapper: MeetingMapperService
+    private mapper: MeetingMapperService,
+    private apiConfig: ApiConfigService
   ) {
-    // For now, always use direct backend URL to test
-    this.apiUrl = 'http://localhost:8081/api/meetings';
+    console.log('🔧 MeetingService using ApiConfigService');
+    console.log('🔧 Meetings endpoint:', this.apiConfig.endpoints.meetings());
   }
 
   getMeetings(): Observable<Meeting[]> {
-    return this.http.get<BackendMeeting[]>(this.apiUrl).pipe(
+    return this.http.get<BackendMeeting[]>(this.apiConfig.endpoints.meetings()).pipe(
       map(backendMeetings => this.mapper.transformMeetingsFromBackend(backendMeetings))
     );
   }
 
   getMeeting(id: string | number): Observable<Meeting> {
-    return this.http.get<BackendMeeting>(`${this.apiUrl}/${id}`, { 
+    const fullUrl = this.apiConfig.endpoints.meeting(id);
+    console.log('🔧 MeetingService.getMeeting() calling URL:', fullUrl);
+    return this.http.get<BackendMeeting>(fullUrl, { 
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
@@ -73,7 +76,7 @@ export class MeetingService {
   }
 
   createMeeting(meeting: Meeting): Observable<Meeting> {
-    return this.http.post<Meeting>(this.apiUrl, meeting).pipe(
+    return this.http.post<Meeting>(this.apiConfig.endpoints.meetings(), meeting).pipe(
       tap(() => {
         // Notify subscribers that meetings have been updated
         this._meetingsUpdated.next(true);
@@ -82,7 +85,7 @@ export class MeetingService {
   }
 
   updateMeeting(id: string | number, meeting: Meeting): Observable<Meeting> {
-    return this.http.put<Meeting>(`${this.apiUrl}/${id}`, meeting).pipe(
+    return this.http.put<Meeting>(this.apiConfig.endpoints.meeting(id), meeting).pipe(
       tap(() => {
         // Notify subscribers that meetings have been updated
         this._meetingsUpdated.next(true);
@@ -91,7 +94,7 @@ export class MeetingService {
   }
 
   deleteMeeting(id: string | number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+    return this.http.delete<void>(this.apiConfig.endpoints.meeting(id)).pipe(
       tap(() => {
         // Notify subscribers that meetings have been updated
         this._meetingsUpdated.next(true);
