@@ -72,8 +72,9 @@
   justify-content: space-between;
   align-items: flex-start;
   padding: 32px 32px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  color: #1f2937;
   
   .meeting-title-section {
     flex: 1;
@@ -84,6 +85,7 @@
     font-weight: 700;
     margin: 0 0 16px 0;
     line-height: 1.2;
+    color: #111827;
   }
   
   .meeting-meta {
@@ -92,28 +94,58 @@
     flex-wrap: wrap;
     
     span {
-      padding: 4px 12px;
-      border-radius: 20px;
+      padding: 6px 12px;
+      border-radius: 6px;
       font-size: 0.875rem;
       font-weight: 500;
-      background-color: rgba(255, 255, 255, 0.2);
+      border: 1px solid #e5e7eb;
     }
     
     .meeting-type {
-      background-color: rgba(59, 130, 246, 0.3);
+      background-color: #f3f4f6;
+      color: #374151;
+      border-color: #d1d5db;
     }
     
     .meeting-status {
-      &.status-completed { background-color: rgba(34, 197, 94, 0.3); }
-      &.status-in-progress { background-color: rgba(251, 191, 36, 0.3); }
-      &.status-scheduled { background-color: rgba(168, 85, 247, 0.3); }
-      &.status-cancelled { background-color: rgba(239, 68, 68, 0.3); }
+      &.status-completed { 
+        background-color: #dcfce7; 
+        color: #166534; 
+        border-color: #bbf7d0;
+      }
+      &.status-in-progress { 
+        background-color: #fef3c7; 
+        color: #92400e; 
+        border-color: #fde68a;
+      }
+      &.status-scheduled { 
+        background-color: #dbeafe; 
+        color: #1e40af; 
+        border-color: #bfdbfe;
+      }
+      &.status-cancelled { 
+        background-color: #fee2e2; 
+        color: #dc2626; 
+        border-color: #fecaca;
+      }
     }
     
     .meeting-priority {
-      &.priority-high { background-color: rgba(239, 68, 68, 0.3); }
-      &.priority-medium { background-color: rgba(251, 191, 36, 0.3); }
-      &.priority-low { background-color: rgba(34, 197, 94, 0.3); }
+      &.priority-high { 
+        background-color: #fee2e2; 
+        color: #dc2626; 
+        border-color: #fecaca;
+      }
+      &.priority-medium { 
+        background-color: #fef3c7; 
+        color: #92400e; 
+        border-color: #fde68a;
+      }
+      &.priority-low { 
+        background-color: #dcfce7; 
+        color: #166534; 
+        border-color: #bbf7d0;
+      }
     }
   }
   
@@ -122,27 +154,31 @@
     gap: 12px;
     
     .action-btn {
-      padding: 8px 16px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      background-color: rgba(255, 255, 255, 0.1);
-      color: white;
+      padding: 10px 16px;
+      border: 1px solid #d1d5db;
+      background-color: #ffffff;
+      color: #374151;
       border-radius: 8px;
       cursor: pointer;
       font-weight: 500;
+      font-size: 0.875rem;
       transition: all 0.2s;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
       
       &:hover {
-        background-color: rgba(255, 255, 255, 0.2);
-        border-color: rgba(255, 255, 255, 0.5);
+        background-color: #f9fafb;
+        border-color: #9ca3af;
+        box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
       }
       
       &.editing {
-        background-color: rgba(34, 197, 94, 0.8);
-        border-color: rgba(34, 197, 94, 1);
+        background-color: #10b981;
+        border-color: #10b981;
         color: white;
         
         &:hover {
-          background-color: rgba(34, 197, 94, 1);
+          background-color: #059669;
+          border-color: #059669;
         }
       }
     }
@@ -462,9 +498,25 @@
     gap: 16px;
     padding: 24px 20px;
     
+    .meeting-title {
+      font-size: 1.5rem;
+    }
+    
+    .meeting-meta {
+      gap: 8px;
+    }
+    
     .meeting-actions {
       width: 100%;
       justify-content: flex-start;
+      
+      .action-btn {
+        flex: 1;
+        justify-content: center;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
     }
   }
   
