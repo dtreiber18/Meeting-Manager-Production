@@ -10,7 +10,22 @@ A modern, enterprise-grade meeting management application built with Angular 17+
 
 ## 🔧 Recent Updates (September 2025)
 
-### ✅ **Timezone Preferences Fix (v2.1.1) - LATEST**
+### ✅ **Document Upload Integration (v2.1.2) - LATEST**
+- **Upload Documents Feature**: Fully enabled the "Upload Documents" button in meeting details page
+- **Seamless Integration**: Reuses the same professional document upload system from dashboard
+- **Meeting-Specific Uploads**: Documents are automatically associated with the current meeting
+- **Drag & Drop Support**: Professional file upload dialog with drag-and-drop functionality
+- **Multiple Storage Providers**: Support for OneDrive, Google Drive, and local storage
+- **Comprehensive File Management**: Document type categorization, access permissions, and metadata support
+- **Auto-Attachment**: Uploaded documents automatically added to meeting attachments list
+
+### ✅ **Professional UI Cleanup (v2.1.1)**
+- **Clean Meeting Headers**: Removed gradient backgrounds for professional, enterprise-grade appearance
+- **Consistent Design Language**: Updated badges and buttons to follow clean, modern styling
+- **Enhanced Readability**: Improved color contrast and professional color scheme
+- **Better Button Design**: Clean white buttons with proper shadows and hover effects
+
+### ✅ **Timezone Preferences Fix (v2.1.0)**
 - **Fixed Critical Backend Issue**: Resolved 500 Internal Server Error when saving timezone preferences
 - **Enhanced Data Model**: Updated User entity validation constraint from `@Size(max = 10)` to `@Size(max = 50)` for timezone field
 - **Database Schema Update**: Modified MySQL `users.timezone` column from `VARCHAR(10)` to `VARCHAR(50)` to support full IANA timezone identifiers
