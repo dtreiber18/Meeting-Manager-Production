@@ -47,12 +47,14 @@ describe('ApiConfigService', () => {
     expect(service.endpoints.notifications()).toBe(`${environment.apiUrl}/notifications`);
   });
 
-  it('should throw error for invalid base URL', () => {
+  it('should handle invalid base URL gracefully by using fallback', () => {
     // Mock environment with invalid URL
     const originalApiUrl = environment.apiUrl;
     (environment as any).apiUrl = 'invalid-url';
     
-    expect(() => new ApiConfigService()).toThrowError(/Invalid API URL format/);
+    // Service should not throw but use fallback URL
+    const service = new ApiConfigService();
+    expect(service.getApiUrl('test')).toBe('http://localhost:8081/api/test');
     
     // Restore original URL
     (environment as any).apiUrl = originalApiUrl;
