@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 import { MeetingService } from '../meeting.service';
 import { Meeting } from '../meeting.model';
 import { environment } from '../../../environments/environment';
@@ -9,6 +10,7 @@ import { ModalService } from '../../shared/modal/modal.service';
 import { ModalContainerComponent } from '../../shared/modal/modal-container/modal-container.component';
 import { ParticipantEditModalComponent } from '../../shared/modal/participant-edit-modal/participant-edit-modal.component';
 import { MeetingEditModalComponent } from '../../shared/modal/meeting-edit-modal/meeting-edit-modal.component';
+import { DocumentUploadDialogComponent } from '../../shared/document-upload-dialog/document-upload-dialog.component';
 
 @Component({
   selector: 'app-meeting-details',
@@ -30,7 +32,8 @@ export class MeetingDetailsComponent implements OnInit {
     private router: Router,
     private meetingService: MeetingService,
     private http: HttpClient,
-    private modalService: ModalService
+    private modalService: ModalService,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit() {
@@ -256,8 +259,32 @@ export class MeetingDetailsComponent implements OnInit {
   }
 
   uploadDocuments() {
-    // TODO: Implement document upload functionality
-    console.log('Upload documents functionality coming soon');
+    const dialogRef = this.dialog.open(DocumentUploadDialogComponent, {
+      width: '600px',
+      maxHeight: '90vh',
+      data: {
+        meetingId: this.meeting?.id,
+        preselectedMeeting: this.meeting ? {
+          id: this.meeting.id,
+          subject: this.meeting.title || this.meeting.subject || 'Meeting',
+          date: this.meeting.startTime
+        } : undefined
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        console.log('Document uploaded successfully for meeting:', this.meeting?.id, result);
+        // Could refresh meeting details or show success message
+        // You might want to add the uploaded document to the meeting's attachments list
+        if (this.meeting && result) {
+          if (!this.meeting.attachments) {
+            this.meeting.attachments = [];
+          }
+          this.meeting.attachments.push(result);
+        }
+      }
+    });
   }
 
   addParticipant() {
