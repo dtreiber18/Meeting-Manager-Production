@@ -6,7 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 
 @RestController
-@RequestMapping("/chat")
+@RequestMapping("/api/chat")
 @CrossOrigin(origins = "*")
 public class ChatController {
     

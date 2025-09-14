@@ -176,66 +176,34 @@ export class NotificationService {
    */
   async loadNotifications(): Promise<void> {
     try {
-      const notifications = await this.http.get<Notification[]>(`${this.apiUrl}`).toPromise();
+      const notifications = await this.http.get<any[]>(`${this.apiUrl}`).toPromise();
       if (notifications) {
-        this.notificationsSubject.next(notifications);
-        this.updateUnreadCount(notifications);
+        // Convert API response to proper Notification objects with Date conversion
+        const convertedNotifications: Notification[] = notifications.map(n => ({
+          id: n.id.toString(),
+          userId: n.userId.toString(),
+          type: n.type as NotificationType,
+          title: n.title,
+          message: n.message,
+          data: n.data,
+          isRead: n.isRead,
+          createdAt: new Date(n.createdAt),
+          updatedAt: new Date(n.updatedAt),
+          expiresAt: n.expiresAt ? new Date(n.expiresAt) : undefined,
+          priority: n.priority as NotificationPriority,
+          actionUrl: n.actionUrl,
+          actionText: n.actionText
+        }));
+        
+        this.notificationsSubject.next(convertedNotifications);
+        this.updateUnreadCount(convertedNotifications);
       }
     } catch (error) {
-      console.error('Error loading notifications:', error);
-      // For now, use mock data if API fails
-      this.loadMockNotifications();
+      console.error('Error loading notifications from API:', error);
+      // Don't fall back to mock data - let the user know there's an issue
+      this.notificationsSubject.next([]);
+      this.unreadCountSubject.next(0);
     }
-  }
-
-  /**
-   * Load mock notifications for development
-   */
-  private loadMockNotifications(): void {
-    const mockNotifications: Notification[] = [
-      {
-        id: '1',
-        userId: 'current-user',
-        type: NotificationType.MEETING_REMINDER,
-        title: 'Meeting Reminder',
-        message: 'Your meeting "Weekly Team Sync" starts in 15 minutes',
-        isRead: false,
-        createdAt: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-        updatedAt: new Date(),
-        priority: NotificationPriority.HIGH,
-        actionUrl: '/meetings/1',
-        actionText: 'Join Meeting'
-      },
-      {
-        id: '2',
-        userId: 'current-user',
-        type: NotificationType.ACTION_ITEM_DUE,
-        title: 'Action Item Due Tomorrow',
-        message: 'Action item "Update project documentation" is due tomorrow',
-        isRead: false,
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-        updatedAt: new Date(),
-        priority: NotificationPriority.NORMAL,
-        actionUrl: '/meetings/2',
-        actionText: 'View Details'
-      },
-      {
-        id: '3',
-        userId: 'current-user',
-        type: NotificationType.MEETING_INVITATION,
-        title: 'Meeting Invitation',
-        message: 'You have been invited to "Q4 Planning Session" on Friday, 2:00 PM',
-        isRead: true,
-        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-        updatedAt: new Date(),
-        priority: NotificationPriority.NORMAL,
-        actionUrl: '/meetings/3',
-        actionText: 'Respond'
-      }
-    ];
-
-    this.notificationsSubject.next(mockNotifications);
-    this.updateUnreadCount(mockNotifications);
   }
 
   /**

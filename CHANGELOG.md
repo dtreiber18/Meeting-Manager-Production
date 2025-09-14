@@ -5,6 +5,54 @@ All notable changes to the Meeting Manager project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.3] - 2025-01-11
+
+### Added
+- Complete real database integration for notification system
+- Database seed scripts for development data (`scripts/seed-meetings.sql`)
+
+### Fixed
+- **Critical**: Resolved notification system 404 errors by removing duplicate `/api` prefix
+  - Fixed `application.yml` servlet context-path configuration that was causing double `/api/api/` URLs
+  - Updated all backend controllers to use consistent `/api` prefix mapping
+  - Notification dropdown now loads real data from MySQL database instead of failing with 404s
+- **Debug Component**: Fixed all 25 TypeScript errors in debug-config component
+  - Added proper `ngOnInit()` method implementation with correct lifecycle hook
+  - Corrected environment import path from `@angular/core` to `../environments/environment`
+  - Fixed standalone code placement outside class methods
+  - Resolved CommonModule import and component structure issues
+- **Production Data Quality**: Eliminated all mock data usage throughout application
+  - Removed `loadMockNotifications()` fallback method from NotificationService
+  - Updated error handling to show proper empty states instead of mock data fallbacks
+  - Application now operates exclusively on real database content for production readiness
+
+### Changed
+- Backend server configuration: Removed problematic `servlet.context-path: /api` setting
+- NotificationService error handling: Now shows empty notification state instead of mock fallbacks
+- Database integration: All components now use real MySQL/MongoDB data exclusively
+
+### Technical
+- All API endpoints verified returning HTTP 200 status with proper data
+- Database schema properly seeded with realistic development data
+- Comprehensive mock data elimination ensures production-ready data flow
+- Enhanced error handling for better user experience with empty states
+
+## [2.1.2] - 2025-01-10
+
+### Added
+- **Document Upload Integration**: Fully enabled the "Upload Documents" button in meeting details page
+  - Seamless integration with existing professional document upload system
+  - Meeting-specific uploads with automatic document association
+  - Drag & drop support with professional file upload dialog
+  - Multiple storage provider support (OneDrive, Google Drive, local storage)
+  - Comprehensive file management with document type categorization
+  - Auto-attachment feature adds uploaded documents to meeting attachments list
+
+### Enhanced
+- Document upload system reusability across dashboard and meeting details
+- Professional file upload UI consistency throughout application
+- Meeting-specific document management workflow
+
 ## [2.1.1] - 2025-09-13
 
 ### Fixed

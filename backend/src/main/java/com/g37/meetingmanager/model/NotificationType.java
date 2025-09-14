@@ -1,0 +1,15 @@
+package com.g37.meetingmanager.model;
+
+public enum NotificationType {
+    MEETING_REMINDER,
+    MEETING_INVITATION,
+    MEETING_UPDATED,
+    MEETING_CANCELLED,
+    ACTION_ITEM_ASSIGNED,
+    ACTION_ITEM_DUE,
+    ACTION_ITEM_OVERDUE,
+    SYSTEM_ANNOUNCEMENT,
+    USER_MENTION,
+    DOCUMENT_SHARED,
+    WEEKLY_DIGEST
+}

@@ -1,0 +1,94 @@
+<div class="notifications-dropdown">
+  <!-- Header -->
+  <div class="notifications-header">
+    <div class="notifications-title">
+      <mat-icon>notifications</mat-icon>
+      <span>Notifications</span>
+      <span class="unread-badge" *ngIf="getUnreadCount() > 0">({{ getUnreadCount() }})</span>
+    </div>
+    <div class="notifications-actions">
+      <button 
+        mat-icon-button 
+        (click)="onMarkAllAsRead()" 
+        [disabled]="getUnreadCount() === 0"
+        matTooltip="Mark all as read"
+        class="mark-all-read-btn">
+        <mat-icon>done_all</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <mat-divider></mat-divider>
+
+  <!-- Notifications List -->
+  <div class="notifications-list" *ngIf="hasNotifications(); else noNotifications">
+    <div 
+      *ngFor="let notification of displayNotifications; trackBy: trackByNotificationId"
+      class="notification-item"
+      [class.unread]="!notification.isRead"
+      [class]="getPriorityClass(notification.priority)"
+      (click)="onNotificationClick(notification, $event)">
+      
+      <!-- Notification Icon -->
+      <div class="notification-icon">
+        <mat-icon [class.unread-icon]="!notification.isRead">
+          {{ getNotificationIcon(notification.type) }}
+        </mat-icon>
+      </div>
+
+      <!-- Notification Content -->
+      <div class="notification-content">
+        <div class="notification-title">
+          {{ notification.title }}
+          <span class="unread-indicator" *ngIf="!notification.isRead"></span>
+        </div>
+        <div class="notification-message">
+          {{ notification.message }}
+        </div>
+        <div class="notification-meta">
+          <span class="notification-time">{{ getRelativeTime(notification.createdAt) }}</span>
+          <span class="notification-action" *ngIf="notification.actionText">
+            • {{ notification.actionText }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Notification Actions -->
+      <div class="notification-actions">
+        <button 
+          mat-icon-button 
+          *ngIf="!notification.isRead"
+          (click)="onMarkAsRead(notification, $event)"
+          matTooltip="Mark as read"
+          class="notification-action-btn">
+          <mat-icon>done</mat-icon>
+        </button>
+        <button 
+          mat-icon-button 
+          (click)="onDeleteNotification(notification, $event)"
+          matTooltip="Delete notification"
+          class="notification-action-btn delete-btn">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Show More Link -->
+    <div class="show-more-section" *ngIf="hasMoreNotifications">
+      <mat-divider></mat-divider>
+      <button mat-button routerLink="/notifications" class="show-more-btn">
+        <mat-icon>expand_more</mat-icon>
+        <span>View All Notifications</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <ng-template #noNotifications>
+    <div class="no-notifications">
+      <mat-icon class="no-notifications-icon">notifications_none</mat-icon>
+      <div class="no-notifications-title">No notifications</div>
+      <div class="no-notifications-message">You're all caught up!</div>
+    </div>
+  </ng-template>
+</div>

@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ApiConfigService } from '../core/services/api-config.service';
 import { AuthService } from '../auth/auth.service';
 import { CommonModule } from '@angular/common';
+import { environment } from '../../environments/environment';
 
 /**
  * Debugging component to verify environment and API configuration
@@ -53,9 +54,7 @@ export class DebugConfigComponent implements OnInit {
 
   ngOnInit() {
     // Get environment info
-    import('../../../environments/environment').then(env => {
-      this.environmentInfo = env.environment;
-    });
+    this.environmentInfo = environment;
 
     // Get API config info
     this.apiConfig = {

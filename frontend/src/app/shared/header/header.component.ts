@@ -10,7 +10,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { AuthService, User } from '../../auth/auth.service';
 import { RoleService } from '../services/role.service';
-import { NotificationService } from '../services/notification.service';
+import { NotificationService, Notification } from '../services/notification.service';
+import { NotificationsDropdownComponent } from '../notifications-dropdown/notifications-dropdown.component';
 import { Observable, Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 
@@ -26,7 +27,8 @@ import { takeUntil, filter } from 'rxjs/operators';
     MatMenuModule,
     MatBadgeModule,
     MatTooltipModule,
-    MatDividerModule
+    MatDividerModule,
+    NotificationsDropdownComponent
   ],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss', './header-override.css'],
@@ -129,10 +131,22 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.router.navigate(['/settings/organization']);
   }
 
+  onNotificationClick(notification: Notification): void {
+    // Navigate to action URL if available
+    if (notification.actionUrl) {
+      this.router.navigate([notification.actionUrl]);
+    }
+  }
+
+  onNotificationsMarkAllRead(): void {
+    // This is handled by the notification service in the dropdown component
+    console.log('All notifications marked as read');
+  }
+
   onNotificationsClick(): void {
-    // TODO: Implement notifications panel/dropdown
+    // This method is no longer used since we're using mat-menu trigger
+    // But keeping it for backward compatibility
     console.log('Show notifications panel');
-    this.notificationService.markAllAsRead();
   }
 
   onHelpClick(): void {

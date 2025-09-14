@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/meetings")
+@RequestMapping("/api/meetings")
 @CrossOrigin(origins = "*")
 public class MeetingController {
     private static final Logger logger = LoggerFactory.getLogger(MeetingController.class);

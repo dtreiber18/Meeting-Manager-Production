@@ -1,94 +1,199 @@
 package com.g37.meetingmanager.controller;
 
+import com.g37.meetingmanager.model.Notification;
+import com.g37.meetingmanager.model.NotificationType;
+import com.g37.meetingmanager.model.NotificationPriority;
+import com.g37.meetingmanager.service.NotificationService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
+
 import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/notifications")
-@CrossOrigin(origins = {"http://localhost:4200", "https://dtreiber18.github.io"})
+@RequestMapping("/api/notifications")
+@CrossOrigin(origins = {"http://localhost:4200", "http://localhost:4201", "https://dtreiber18.github.io"})
 public class NotificationController {
-
+    
+    private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);
+    
+    @Autowired
+    private NotificationService notificationService;
+    
+    /**
+     * Get current user ID from JWT token (simplified for demo)
+     */
+    private Long getCurrentUserId(HttpServletRequest request) {
+        // For demo purposes, return user ID 1
+        // In production, extract from JWT token
+        return 1L;
+    }
+    
+    /**
+     * Get all notifications for the current user
+     */
     @GetMapping
-    public ResponseEntity<List<Map<String, Object>>> getNotifications(Authentication authentication) {
-        List<Map<String, Object>> notifications = new ArrayList<>();
+    public ResponseEntity<List<Notification>> getNotifications(HttpServletRequest request) {
+        try {
+            Long userId = getCurrentUserId(request);
+            logger.info("Getting notifications for user: {}", userId);
+            
+            List<Notification> notifications = notificationService.getNotificationsForUser(userId);
+            return ResponseEntity.ok(notifications);
+        } catch (Exception e) {
+            logger.error("Error getting notifications", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    /**
+     * Get unread notification count
+     */
+    @GetMapping("/unread/count")
+    public ResponseEntity<Map<String, Long>> getUnreadCount(HttpServletRequest request) {
+        try {
+            Long userId = getCurrentUserId(request);
+            logger.debug("Getting unread count for user: {}", userId);
+            
+            long count = notificationService.getUnreadCount(userId);
+            return ResponseEntity.ok(Map.of("count", count));
+        } catch (Exception e) {
+            logger.error("Error getting unread count", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    /**
+     * Mark a notification as read
+     */
+    @PatchMapping("/{id}/read")
+    public ResponseEntity<Map<String, String>> markAsRead(@PathVariable Long id, HttpServletRequest request) {
+        try {
+            Long userId = getCurrentUserId(request);
+            logger.info("Marking notification {} as read for user: {}", id, userId);
+            
+            boolean updated = notificationService.markAsRead(id, userId);
+            if (updated) {
+                return ResponseEntity.ok(Map.of("message", "Notification marked as read"));
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            logger.error("Error marking notification as read", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to mark notification as read"));
+        }
+    }
+    
+    /**
+     * Mark all notifications as read
+     */
+    @PatchMapping("/mark-all-read")
+    public ResponseEntity<Map<String, Object>> markAllAsRead(HttpServletRequest request) {
+        try {
+            Long userId = getCurrentUserId(request);
+            logger.info("Marking all notifications as read for user: {}", userId);
+            
+            int updated = notificationService.markAllAsRead(userId);
+            return ResponseEntity.ok(Map.of(
+                "message", "All notifications marked as read",
+                "updated", updated
+            ));
+        } catch (Exception e) {
+            logger.error("Error marking all notifications as read", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to mark notifications as read"));
+        }
+    }
+    
+    /**
+     * Delete a notification
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, String>> deleteNotification(@PathVariable Long id, HttpServletRequest request) {
+        try {
+            Long userId = getCurrentUserId(request);
+            logger.info("Deleting notification {} for user: {}", id, userId);
+            
+            boolean deleted = notificationService.deleteNotification(id, userId);
+            if (deleted) {
+                return ResponseEntity.ok(Map.of("message", "Notification deleted successfully"));
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            logger.error("Error deleting notification", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to delete notification"));
+        }
+    }
+    
+    /**
+     * Create a new notification (for testing/demo purposes)
+     */
+    @PostMapping
+    public ResponseEntity<Notification> createNotification(@RequestBody CreateNotificationRequest request, HttpServletRequest httpRequest) {
+        try {
+            Long currentUserId = getCurrentUserId(httpRequest);
+            logger.info("Creating notification for user {} by user: {}", request.getUserId(), currentUserId);
+            
+            // For demo purposes, allow creating notifications for yourself
+            Long targetUserId = request.getUserId() != null ? request.getUserId() : currentUserId;
+            
+            Notification notification = notificationService.createNotification(
+                targetUserId,
+                request.getType(),
+                request.getTitle(),
+                request.getMessage(),
+                request.getPriority() != null ? request.getPriority() : NotificationPriority.NORMAL,
+                request.getActionUrl(),
+                request.getActionText()
+            );
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(notification);
+        } catch (Exception e) {
+            logger.error("Error creating notification", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    /**
+     * Request class for creating notifications
+     */
+    public static class CreateNotificationRequest {
+        private Long userId;
+        private NotificationType type;
+        private String title;
+        private String message;
+        private NotificationPriority priority;
+        private String actionUrl;
+        private String actionText;
         
-        // Sample notifications for testing
-        Map<String, Object> notification1 = new HashMap<>();
-        notification1.put("id", 1);
-        notification1.put("type", "meeting");
-        notification1.put("title", "Upcoming Meeting");
-        notification1.put("message", "You have a team meeting in 30 minutes");
-        notification1.put("timestamp", LocalDateTime.now().minusMinutes(5).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-        notification1.put("read", false);
-        notification1.put("priority", "high");
-        notifications.add(notification1);
-
-        Map<String, Object> notification2 = new HashMap<>();
-        notification2.put("id", 2);
-        notification2.put("type", "action_item");
-        notification2.put("title", "Action Item Due");
-        notification2.put("message", "Review quarterly reports - Due today");
-        notification2.put("timestamp", LocalDateTime.now().minusHours(2).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-        notification2.put("read", false);
-        notification2.put("priority", "medium");
-        notifications.add(notification2);
-
-        Map<String, Object> notification3 = new HashMap<>();
-        notification3.put("id", 3);
-        notification3.put("type", "system");
-        notification3.put("title", "System Update");
-        notification3.put("message", "Your preferences have been updated successfully");
-        notification3.put("timestamp", LocalDateTime.now().minusHours(1).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-        notification3.put("read", true);
-        notification3.put("priority", "low");
-        notifications.add(notification3);
-
-        return ResponseEntity.ok(notifications);
-    }
-
-    @PostMapping("/{id}/read")
-    public ResponseEntity<Map<String, Object>> markAsRead(@PathVariable Long id, Authentication authentication) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", id);
-        response.put("read", true);
-        response.put("message", "Notification marked as read");
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/mark-all-read")
-    public ResponseEntity<Map<String, Object>> markAllAsRead(Authentication authentication) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "All notifications marked as read");
-        response.put("count", 3);
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/count")
-    public ResponseEntity<Map<String, Object>> getUnreadCount(Authentication authentication) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("unreadCount", 2);
-        response.put("totalCount", 3);
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/test")
-    public ResponseEntity<Map<String, Object>> createTestNotification(@RequestBody Map<String, Object> payload) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", System.currentTimeMillis());
-        response.put("type", payload.getOrDefault("type", "test"));
-        response.put("title", payload.getOrDefault("title", "Test Notification"));
-        response.put("message", payload.getOrDefault("message", "This is a test notification"));
-        response.put("timestamp", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-        response.put("read", false);
-        response.put("priority", payload.getOrDefault("priority", "medium"));
-        response.put("status", "created");
-        return ResponseEntity.ok(response);
+        // Getters and setters
+        public Long getUserId() { return userId; }
+        public void setUserId(Long userId) { this.userId = userId; }
+        
+        public NotificationType getType() { return type; }
+        public void setType(NotificationType type) { this.type = type; }
+        
+        public String getTitle() { return title; }
+        public void setTitle(String title) { this.title = title; }
+        
+        public String getMessage() { return message; }
+        public void setMessage(String message) { this.message = message; }
+        
+        public NotificationPriority getPriority() { return priority; }
+        public void setPriority(NotificationPriority priority) { this.priority = priority; }
+        
+        public String getActionUrl() { return actionUrl; }
+        public void setActionUrl(String actionUrl) { this.actionUrl = actionUrl; }
+        
+        public String getActionText() { return actionText; }
+        public void setActionText(String actionText) { this.actionText = actionText; }
     }
 }
