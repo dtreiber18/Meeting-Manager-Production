@@ -11,6 +11,8 @@ import { AuthComponent } from './auth/auth.component';
 import { AuthTestComponent } from './testing/auth-test.component';
 import { CalendarAuthComponent } from './calendar-auth/calendar-auth.component';
 import { AuthCallbackComponent } from './auth-callback/auth-callback.component';
+import { ActionItemListComponent } from './action-items/action-item-list.component';
+import { ActionItemDetailsComponent } from './action-items/action-item-details.component';
 import { AuthGuard, GuestGuard } from './auth/auth.guard';
 
 export const routes: Routes = [
@@ -25,6 +27,10 @@ export const routes: Routes = [
 	{ path: 'meetings/new', component: MeetingFormComponent, canActivate: [AuthGuard] },
 	{ path: 'meetings/:id', component: MeetingDetailsComponent, canActivate: [AuthGuard] },
 	{ path: 'meetings/:id/edit', component: MeetingFormComponent, canActivate: [AuthGuard] },
+	
+	// Action Items
+	{ path: 'action-items', component: ActionItemListComponent, canActivate: [AuthGuard] },
+	{ path: 'action-items/:id', component: ActionItemDetailsComponent, canActivate: [AuthGuard] },
 	
 	// User Preferences (moved from settings dropdown to profile dropdown)
 	{ path: 'preferences', component: PreferencesComponent, canActivate: [AuthGuard] },

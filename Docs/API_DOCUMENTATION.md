@@ -108,6 +108,225 @@ Content-Type: application/json
 DELETE /api/meetings/{id}
 ```
 
+### Action Items API
+
+#### Get All Action Items
+```http
+GET /api/action-items
+```
+
+**Query Parameters**:
+- `page` (integer): Page number (default: 0)
+- `size` (integer): Page size (default: 10)
+- `sortBy` (string): Sort field (default: dueDate)
+- `sortDir` (string): Sort direction (asc/desc, default: asc)
+- `status` (string): Filter by status (OPEN, IN_PROGRESS, BLOCKED, COMPLETED, CANCELLED)
+- `priority` (string): Filter by priority (LOW, MEDIUM, HIGH, URGENT)
+- `assigneeId` (integer): Filter by assignee user ID
+- `overdue` (boolean): Filter overdue items only
+- `completed` (boolean): Filter by completion status
+- `search` (string): Search in title, description, and notes
+
+**Example Response**:
+```json
+{
+  "content": [
+    {
+      "id": 1,
+      "title": "Draft Q3 OKRs",
+      "description": "Create and draft Q3 objectives and key results",
+      "status": "OPEN",
+      "priority": "HIGH",
+      "type": "TASK",
+      "dueDate": "2025-08-10T17:00:00",
+      "startDate": null,
+      "completedAt": null,
+      "completed": false,
+      "isRecurring": false,
+      "recurringPattern": null,
+      "estimatedHours": null,
+      "actualHours": null,
+      "notes": null,
+      "completionNotes": null,
+      "tags": null,
+      "createdAt": "2025-09-03T18:32:39.952427",
+      "updatedAt": "2025-09-03T18:32:39.952431",
+      "lastReminderSent": null,
+      "assignee": null,
+      "reporter": null,
+      "organization": {
+        "id": 1,
+        "name": "Sample Company"
+      },
+      "subTasks": [],
+      "parentActionItem": null,
+      "progressPercentage": 0,
+      "assignedTo": null,
+      "overdue": true
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 10,
+    "sort": {
+      "sorted": true,
+      "unsorted": false,
+      "empty": false
+    }
+  },
+  "totalElements": 4,
+  "totalPages": 1,
+  "last": true,
+  "numberOfElements": 4,
+  "first": true,
+  "size": 10,
+  "number": 0
+}
+```
+
+#### Get Action Item by ID
+```http
+GET /api/action-items/{id}
+```
+
+**Parameters**:
+- `id` (path): Action item ID
+
+**Response**: Single ActionItem object
+
+#### Create New Action Item
+```http
+POST /api/action-items
+Content-Type: application/json
+```
+
+**Query Parameters**:
+- `assigneeId` (integer): User ID to assign the action item to (optional)
+- `reporterId` (integer): User ID of the reporter (optional)
+
+**Request Body**:
+```json
+{
+  "title": "Complete quarterly report",
+  "description": "Prepare and submit Q3 quarterly business report",
+  "priority": "HIGH",
+  "type": "TASK",
+  "dueDate": "2025-09-30T17:00:00",
+  "estimatedHours": 8,
+  "notes": "Include all department metrics",
+  "tags": "quarterly,report,business"
+}
+```
+
+#### Update Action Item
+```http
+PUT /api/action-items/{id}
+Content-Type: application/json
+```
+
+**Request Body**: Complete ActionItem object
+
+#### Mark Action Item as Completed
+```http
+PATCH /api/action-items/{id}/complete
+Content-Type: application/json
+```
+
+**Request Body**:
+```json
+{
+  "completionNotes": "Successfully completed all quarterly objectives"
+}
+```
+
+#### Mark Action Item as In Progress
+```http
+PATCH /api/action-items/{id}/in-progress
+```
+
+#### Delete Action Item
+```http
+DELETE /api/action-items/{id}
+```
+
+#### Get Action Items by Assignee
+```http
+GET /api/action-items/assignee/{assigneeId}
+```
+
+**Query Parameters**: Same pagination and sorting options as GET /api/action-items
+
+#### Get Action Items by Reporter
+```http
+GET /api/action-items/reporter/{reporterId}
+```
+
+#### Get Overdue Action Items
+```http
+GET /api/action-items/overdue
+```
+
+#### Get Action Items Due Soon
+```http
+GET /api/action-items/due-soon
+```
+
+**Query Parameters**:
+- `days` (integer): Number of days to look ahead (default: 7)
+
+#### Search Action Items
+```http
+GET /api/action-items/search
+```
+
+**Query Parameters**:
+- `q` (string): Search query for title, description, or notes
+- Standard pagination and sorting parameters
+
+#### Get Action Items by Status
+```http
+GET /api/action-items/status/{status}
+```
+
+**Path Parameters**:
+- `status`: OPEN, IN_PROGRESS, BLOCKED, COMPLETED, CANCELLED
+
+#### Get Action Items by Priority
+```http
+GET /api/action-items/priority/{priority}
+```
+
+**Path Parameters**:
+- `priority`: LOW, MEDIUM, HIGH, URGENT
+
+#### Add Subtask to Action Item
+```http
+POST /api/action-items/{id}/subtasks
+Content-Type: application/json
+```
+
+**Query Parameters**:
+- `assigneeId` (integer): User ID to assign the subtask to (optional)
+
+**Request Body**: ActionItem object for the subtask
+
+#### Get Action Item Statistics
+```http
+GET /api/action-items/statistics/{userId}
+```
+
+**Response**:
+```json
+{
+  "total": 15,
+  "completed": 8,
+  "overdue": 3,
+  "dueSoon": 2,
+  "inProgress": 4,
+  "completionRate": 53.33
+}
+```
+
 ### Documents API
 
 #### Upload Document
@@ -281,6 +500,40 @@ interface ActionItem {
   dueDate: string;
   priority?: 'high' | 'medium' | 'low';
   status?: 'pending' | 'in-progress' | 'completed';
+}
+```
+
+### ActionItem Entity
+```typescript
+interface ActionItem {
+  id: number;
+  title: string;
+  description?: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'BLOCKED' | 'COMPLETED' | 'CANCELLED';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  type: 'TASK' | 'FOLLOW_UP' | 'DECISION' | 'RESEARCH' | 'APPROVAL' | 'DOCUMENTATION' | 'MEETING';
+  dueDate?: string;
+  startDate?: string;
+  completedAt?: string;
+  completed: boolean;
+  isRecurring: boolean;
+  recurringPattern?: string;
+  estimatedHours?: number;
+  actualHours?: number;
+  notes?: string;
+  completionNotes?: string;
+  tags?: string;
+  createdAt: string;
+  updatedAt: string;
+  lastReminderSent?: string;
+  assignee?: User;
+  reporter?: User;
+  organization?: Organization;
+  subTasks: ActionItem[];
+  parentActionItem?: ActionItem;
+  progressPercentage: number;
+  assignedTo?: string;
+  overdue: boolean;
 }
 ```
 

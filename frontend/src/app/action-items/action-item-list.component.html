@@ -1,0 +1,195 @@
+<div class="action-item-list-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Action Items</h1>
+      <p class="page-subtitle">Manage and track your action items</p>
+    </div>
+    <div class="header-actions">
+      <button mat-raised-button color="primary" routerLink="/action-items/new">
+        <mat-icon>add</mat-icon>
+        New Action Item
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <mat-card class="filters-card">
+    <mat-card-content>
+      <div class="filters-grid">
+        <!-- Search -->
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Search action items</mat-label>
+          <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange()" placeholder="Search by title, description...">
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <!-- Status Filter -->
+        <mat-form-field appearance="outline">
+          <mat-label>Status</mat-label>
+          <mat-select [(ngModel)]="selectedStatuses" multiple (selectionChange)="onFilterChange()">
+            <mat-option *ngFor="let option of getStatusOptions()" [value]="option.value">
+              {{ option.label }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Priority Filter -->
+        <mat-form-field appearance="outline">
+          <mat-label>Priority</mat-label>
+          <mat-select [(ngModel)]="selectedPriorities" multiple (selectionChange)="onFilterChange()">
+            <mat-option *ngFor="let option of getPriorityOptions()" [value]="option.value">
+              {{ option.label }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Type Filter -->
+        <mat-form-field appearance="outline">
+          <mat-label>Type</mat-label>
+          <mat-select [(ngModel)]="selectedTypes" multiple (selectionChange)="onFilterChange()">
+            <mat-option *ngFor="let option of getTypeOptions()" [value]="option.value">
+              {{ option.label }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <!-- Filter Checkboxes -->
+      <div class="filter-checkboxes">
+        <mat-checkbox [(ngModel)]="showCompletedItems" (change)="onFilterChange()">
+          Show completed items
+        </mat-checkbox>
+        <mat-checkbox [(ngModel)]="showOverdueOnly" (change)="onFilterChange()">
+          Show overdue only
+        </mat-checkbox>
+        <mat-checkbox [(ngModel)]="showDueSoonOnly" (change)="onFilterChange()">
+          Show due soon only
+        </mat-checkbox>
+      </div>
+
+      <!-- Clear Filters -->
+      <div class="filter-actions">
+        <button mat-button (click)="clearFilters()">
+          <mat-icon>clear_all</mat-icon>
+          Clear Filters
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    <p>Loading action items...</p>
+  </div>
+
+  <!-- Action Items List -->
+  <div *ngIf="!isLoading" class="action-items-grid">
+    <div *ngIf="getFilteredActionItems().length === 0" class="empty-state">
+      <mat-icon class="empty-icon">assignment</mat-icon>
+      <h3>No action items found</h3>
+      <p>Try adjusting your filters or create a new action item.</p>
+      <button mat-raised-button color="primary" routerLink="/action-items/new">
+        <mat-icon>add</mat-icon>
+        Create Action Item
+      </button>
+    </div>
+
+    <mat-card 
+      *ngFor="let actionItem of getFilteredActionItems(); trackBy: trackByActionItemId"
+      class="action-item-card"
+      [class.overdue]="isOverdue(actionItem)"
+      [class.due-soon]="isDueSoon(actionItem)"
+      [class.completed]="actionItem.completed"
+      [routerLink]="['/action-items', actionItem.id]">
+      
+      <mat-card-header>
+        <div class="card-header-content">
+          <div class="header-left">
+            <h3 class="action-item-title">{{ actionItem.title }}</h3>
+            <div class="action-item-meta">
+              <span class="action-item-id">#{{ actionItem.id }}</span>
+              <span class="separator">•</span>
+              <span class="created-date">{{ actionItem.createdAt | date:'short' }}</span>
+            </div>
+          </div>
+          <div class="header-badges">
+            <div class="status-badge" [ngClass]="getStatusColor(actionItem.status)">
+              <mat-icon>{{ getStatusIcon(actionItem.status) }}</mat-icon>
+              <span>{{ actionItem.status | titlecase }}</span>
+            </div>
+            <div class="priority-badge" [ngClass]="getPriorityColor(actionItem.priority)">
+              <mat-icon>{{ getPriorityIcon(actionItem.priority) }}</mat-icon>
+              <span>{{ actionItem.priority | titlecase }}</span>
+            </div>
+          </div>
+        </div>
+      </mat-card-header>
+
+      <mat-card-content>
+        <p *ngIf="actionItem.description" class="action-item-description">
+          {{ actionItem.description }}
+        </p>
+
+        <div class="action-item-details">
+          <div class="detail-item" *ngIf="actionItem.dueDate">
+            <mat-icon class="detail-icon">schedule</mat-icon>
+            <span class="detail-text" [ngClass]="{'overdue-text': isOverdue(actionItem), 'due-soon-text': isDueSoon(actionItem)}">
+              Due: {{ formatDueDate(actionItem.dueDate) }}
+            </span>
+          </div>
+
+          <div class="detail-item" *ngIf="actionItem.assignee">
+            <mat-icon class="detail-icon">person</mat-icon>
+            <span class="detail-text">{{ actionItem.assignee.firstName }} {{ actionItem.assignee.lastName }}</span>
+          </div>
+
+          <div class="detail-item" *ngIf="actionItem.meeting">
+            <mat-icon class="detail-icon">event</mat-icon>
+            <span class="detail-text">{{ actionItem.meeting.title }}</span>
+          </div>
+        </div>
+
+        <div class="action-item-progress" *ngIf="!actionItem.completed">
+          <div class="progress-label">
+            <span>Progress</span>
+            <span class="progress-percentage">{{ getProgressPercentage(actionItem) }}%</span>
+          </div>
+          <mat-progress-bar 
+            mode="determinate" 
+            [value]="getProgressPercentage(actionItem)"
+            class="progress-bar">
+          </mat-progress-bar>
+        </div>
+      </mat-card-content>
+
+      <mat-card-actions class="card-actions">
+        <div class="action-buttons">
+          <button 
+            mat-icon-button 
+            *ngIf="!actionItem.completed"
+            (click)="markAsCompleted(actionItem, $event)"
+            matTooltip="Mark as completed"
+            class="action-button">
+            <mat-icon>check_circle</mat-icon>
+          </button>
+          
+          <button 
+            mat-icon-button 
+            *ngIf="actionItem.status !== ActionItemStatus.IN_PROGRESS && !actionItem.completed"
+            (click)="markAsInProgress(actionItem, $event)"
+            matTooltip="Mark as in progress"
+            class="action-button">
+            <mat-icon>play_arrow</mat-icon>
+          </button>
+        </div>
+
+        <div class="card-footer">
+          <span class="type-chip">{{ actionItem.type | titlecase }}</span>
+          <span class="updated-date">Updated {{ actionItem.updatedAt | date:'short' }}</span>
+        </div>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+</div>

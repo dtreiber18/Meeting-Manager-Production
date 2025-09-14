@@ -205,6 +205,32 @@ public class NotificationService {
     }
     
     /**
+     * Create action item assignment notification
+     */
+    public Notification createActionItemAssignment(Long userId, String actionTitle, String actionId, LocalDateTime dueDate) {
+        String title = "New Action Item Assigned";
+        String message = String.format("You have been assigned action item \"%s\"", actionTitle);
+        String actionUrl = "/action-items/" + actionId;
+        String actionText = "View Details";
+        
+        return createNotification(userId, NotificationType.ACTION_ITEM_ASSIGNED, title, message, 
+                                NotificationPriority.NORMAL, actionUrl, actionText);
+    }
+    
+    /**
+     * Create action item completed notification
+     */
+    public Notification createActionItemCompleted(Long userId, String actionTitle, String actionId, String completedBy) {
+        String title = "Action Item Completed";
+        String message = String.format("Action item \"%s\" has been completed by %s", actionTitle, completedBy);
+        String actionUrl = "/action-items/" + actionId;
+        String actionText = "View Details";
+        
+        return createNotification(userId, NotificationType.ACTION_ITEM_COMPLETED, title, message, 
+                                NotificationPriority.NORMAL, actionUrl, actionText);
+    }
+
+    /**
      * Create system announcement notification
      */
     public Notification createSystemAnnouncement(Long userId, String title, String message) {

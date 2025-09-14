@@ -1,0 +1,370 @@
+<div class="action-item-details-container">
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    <p>Loading action item...</p>
+  </div>
+
+  <!-- Action Item Details -->
+  <div *ngIf="!isLoading && actionItem" class="action-item-content">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-left">
+        <button mat-icon-button (click)="goBack()" class="back-button">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <div class="header-info">
+          <h1 class="page-title">{{ actionItem.title }}</h1>
+          <div class="header-meta">
+            <span class="action-item-id">ID: {{ actionItem.id }}</span>
+            <span class="separator">•</span>
+            <span class="created-date">Created {{ actionItem.createdAt | date:'short' }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button mat-raised-button color="primary" (click)="toggleEdit()" *ngIf="!isEditing">
+          <mat-icon>edit</mat-icon>
+          Edit
+        </button>
+        <button mat-raised-button color="primary" (click)="saveChanges()" *ngIf="isEditing" [disabled]="!editForm.valid">
+          <mat-icon>save</mat-icon>
+          Save
+        </button>
+        <button mat-button (click)="cancelEdit()" *ngIf="isEditing">
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <div class="content-grid">
+      <!-- Main Content -->
+      <div class="main-content">
+        <!-- Status and Priority Card -->
+        <mat-card class="status-card">
+          <mat-card-header>
+            <mat-card-title>Status & Priority</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="status-grid" *ngIf="!isEditing">
+              <div class="status-item">
+                <label>Status</label>
+                <div class="status-badge" [ngClass]="getStatusColor(actionItem.status)">
+                  <mat-icon>{{ getStatusIcon(actionItem.status) }}</mat-icon>
+                  <span>{{ actionItem.status | titlecase }}</span>
+                </div>
+              </div>
+              <div class="status-item">
+                <label>Priority</label>
+                <div class="priority-badge" [ngClass]="getPriorityColor(actionItem.priority)">
+                  <mat-icon>{{ getPriorityIcon(actionItem.priority) }}</mat-icon>
+                  <span>{{ actionItem.priority | titlecase }}</span>
+                </div>
+              </div>
+              <div class="status-item">
+                <label>Type</label>
+                <span class="type-value">{{ actionItem.type | titlecase }}</span>
+              </div>
+              <div class="status-item">
+                <label>Progress</label>
+                <div class="progress-container">
+                  <mat-progress-bar 
+                    mode="determinate" 
+                    [value]="getProgressPercentage(actionItem)"
+                    class="progress-bar">
+                  </mat-progress-bar>
+                  <span class="progress-text">{{ getProgressPercentage(actionItem) }}%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Edit Mode -->
+            <form [formGroup]="editForm" *ngIf="isEditing" class="edit-form">
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Title</mat-label>
+                  <input matInput formControlName="title" maxlength="500">
+                  <mat-error *ngIf="editForm.get('title')?.hasError('required')">
+                    Title is required
+                  </mat-error>
+                </mat-form-field>
+              </div>
+              
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Status</mat-label>
+                  <mat-select formControlName="status">
+                    <mat-option *ngFor="let option of getStatusOptions()" [value]="option.value">
+                      {{ option.label }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+                
+                <mat-form-field appearance="outline">
+                  <mat-label>Priority</mat-label>
+                  <mat-select formControlName="priority">
+                    <mat-option *ngFor="let option of getPriorityOptions()" [value]="option.value">
+                      {{ option.label }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+                
+                <mat-form-field appearance="outline">
+                  <mat-label>Type</mat-label>
+                  <mat-select formControlName="type">
+                    <mat-option *ngFor="let option of getTypeOptions()" [value]="option.value">
+                      {{ option.label }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+            </form>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Description Card -->
+        <mat-card class="description-card">
+          <mat-card-header>
+            <mat-card-title>Description</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div *ngIf="!isEditing">
+              <p *ngIf="actionItem.description" class="description-text">{{ actionItem.description }}</p>
+              <p *ngIf="!actionItem.description" class="no-description">No description provided</p>
+            </div>
+            <mat-form-field *ngIf="isEditing" appearance="outline" class="full-width">
+              <mat-label>Description</mat-label>
+              <textarea matInput formControlName="description" rows="4" [formGroup]="editForm"></textarea>
+            </mat-form-field>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Dates and Time Card -->
+        <mat-card class="dates-card">
+          <mat-card-header>
+            <mat-card-title>Timeline</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="dates-grid" *ngIf="!isEditing">
+              <div class="date-item">
+                <label>Due Date</label>
+                <div class="date-value" [ngClass]="{'overdue': isOverdue(actionItem), 'due-soon': isDueSoon(actionItem)}">
+                  <mat-icon *ngIf="isOverdue(actionItem)">warning</mat-icon>
+                  <mat-icon *ngIf="isDueSoon(actionItem) && !isOverdue(actionItem)">schedule</mat-icon>
+                  <span>{{ formatDueDate(actionItem.dueDate) }}</span>
+                </div>
+              </div>
+              <div class="date-item" *ngIf="actionItem.startDate">
+                <label>Start Date</label>
+                <span class="date-value">{{ actionItem.startDate | date:'medium' }}</span>
+              </div>
+              <div class="date-item" *ngIf="actionItem.completedAt">
+                <label>Completed Date</label>
+                <span class="date-value">{{ actionItem.completedAt | date:'medium' }}</span>
+              </div>
+            </div>
+
+            <!-- Edit Mode -->
+            <div *ngIf="isEditing" class="dates-edit-form" [formGroup]="editForm">
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Due Date</mat-label>
+                  <input matInput [matDatepicker]="duePicker" formControlName="dueDate">
+                  <mat-datepicker-toggle matSuffix [for]="duePicker"></mat-datepicker-toggle>
+                  <mat-datepicker #duePicker></mat-datepicker>
+                </mat-form-field>
+                
+                <mat-form-field appearance="outline">
+                  <mat-label>Start Date</mat-label>
+                  <input matInput [matDatepicker]="startPicker" formControlName="startDate">
+                  <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+                  <mat-datepicker #startPicker></mat-datepicker>
+                </mat-form-field>
+              </div>
+              
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Estimated Hours</mat-label>
+                  <input matInput type="number" formControlName="estimatedHours" min="0">
+                </mat-form-field>
+                
+                <mat-form-field appearance="outline">
+                  <mat-label>Actual Hours</mat-label>
+                  <input matInput type="number" formControlName="actualHours" min="0">
+                </mat-form-field>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Notes Card -->
+        <mat-card class="notes-card" *ngIf="actionItem.notes || actionItem.completionNotes || isEditing">
+          <mat-card-header>
+            <mat-card-title>Notes</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div *ngIf="!isEditing">
+              <div *ngIf="actionItem.notes" class="notes-section">
+                <h4>Notes</h4>
+                <p class="notes-text">{{ actionItem.notes }}</p>
+              </div>
+              <div *ngIf="actionItem.completionNotes" class="notes-section">
+                <h4>Completion Notes</h4>
+                <p class="notes-text">{{ actionItem.completionNotes }}</p>
+              </div>
+            </div>
+            
+            <div *ngIf="isEditing" [formGroup]="editForm">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Notes</mat-label>
+                <textarea matInput formControlName="notes" rows="3"></textarea>
+              </mat-form-field>
+              
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Completion Notes</mat-label>
+                <textarea matInput formControlName="completionNotes" rows="3"></textarea>
+              </mat-form-field>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Tags Card -->
+        <mat-card class="tags-card" *ngIf="getTagsArray().length > 0 || isEditing">
+          <mat-card-header>
+            <mat-card-title>Tags</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div *ngIf="!isEditing">
+              <mat-chip-listbox class="tags-list">
+                <mat-chip-option *ngFor="let tag of getTagsArray()" class="tag-chip">
+                  {{ tag }}
+                </mat-chip-option>
+              </mat-chip-listbox>
+            </div>
+            
+            <mat-form-field *ngIf="isEditing" appearance="outline" class="full-width" [formGroup]="editForm">
+              <mat-label>Tags (comma-separated)</mat-label>
+              <input matInput formControlName="tags" placeholder="tag1, tag2, tag3">
+            </mat-form-field>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <!-- Quick Actions -->
+        <mat-card class="quick-actions-card">
+          <mat-card-header>
+            <mat-card-title>Quick Actions</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="action-buttons">
+              <button 
+                mat-raised-button 
+                color="primary" 
+                (click)="markAsCompleted()"
+                *ngIf="!actionItem.completed"
+                class="action-button">
+                <mat-icon>check_circle</mat-icon>
+                Mark as Completed
+              </button>
+              
+              <button 
+                mat-raised-button 
+                color="accent" 
+                (click)="markAsInProgress()"
+                *ngIf="actionItem.status !== ActionItemStatus.IN_PROGRESS && !actionItem.completed"
+                class="action-button">
+                <mat-icon>play_arrow</mat-icon>
+                Start Progress
+              </button>
+              
+              <button 
+                mat-button 
+                color="warn" 
+                (click)="deleteActionItem()"
+                class="action-button">
+                <mat-icon>delete</mat-icon>
+                Delete
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Assignment Info -->
+        <mat-card class="assignment-card">
+          <mat-card-header>
+            <mat-card-title>Assignment</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="assignment-info">
+              <div class="assignment-item" *ngIf="actionItem.assignee">
+                <label>Assigned To</label>
+                <div class="assignee-info">
+                  <div class="assignee-avatar">
+                    {{ actionItem.assignee.firstName?.charAt(0) }}{{ actionItem.assignee.lastName?.charAt(0) }}
+                  </div>
+                  <div class="assignee-details">
+                    <span class="assignee-name">{{ actionItem.assignee.firstName }} {{ actionItem.assignee.lastName }}</span>
+                    <span class="assignee-email">{{ actionItem.assignee.email }}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="assignment-item" *ngIf="actionItem.reporter">
+                <label>Reported By</label>
+                <div class="reporter-info">
+                  <span class="reporter-name">{{ actionItem.reporter.firstName }} {{ actionItem.reporter.lastName }}</span>
+                  <span class="reporter-email">{{ actionItem.reporter.email }}</span>
+                </div>
+              </div>
+              
+              <div class="assignment-item" *ngIf="actionItem.meeting">
+                <label>Related Meeting</label>
+                <button mat-button color="primary" (click)="navigateToMeeting()" class="meeting-link">
+                  <mat-icon>event</mat-icon>
+                  {{ actionItem.meeting.title }}
+                </button>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Time Tracking -->
+        <mat-card class="time-card" *ngIf="actionItem.estimatedHours || actionItem.actualHours">
+          <mat-card-header>
+            <mat-card-title>Time Tracking</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="time-info">
+              <div class="time-item" *ngIf="actionItem.estimatedHours">
+                <label>Estimated</label>
+                <span class="time-value">{{ actionItem.estimatedHours }}h</span>
+              </div>
+              <div class="time-item" *ngIf="actionItem.actualHours">
+                <label>Actual</label>
+                <span class="time-value">{{ actionItem.actualHours }}h</span>
+              </div>
+              <div class="time-item" *ngIf="actionItem.estimatedHours && actionItem.actualHours">
+                <label>Variance</label>
+                <span class="time-value" [ngClass]="{'over-estimate': actionItem.actualHours > actionItem.estimatedHours}">
+                  {{ actionItem.actualHours - actionItem.estimatedHours > 0 ? '+' : '' }}{{ actionItem.actualHours - actionItem.estimatedHours }}h
+                </span>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+  </div>
+
+  <!-- Not Found State -->
+  <div *ngIf="!isLoading && !actionItem" class="not-found">
+    <mat-icon class="not-found-icon">search_off</mat-icon>
+    <h2>Action Item Not Found</h2>
+    <p>The action item you're looking for doesn't exist or you don't have permission to view it.</p>
+    <button mat-raised-button color="primary" (click)="goBack()">
+      Go Back to Action Items
+    </button>
+  </div>
+</div>

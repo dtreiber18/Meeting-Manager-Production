@@ -1,0 +1,383 @@
+.action-item-list-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    gap: 16px;
+
+    .header-left {
+      .page-title {
+        margin: 0 0 8px 0;
+        font-size: 32px;
+        font-weight: 500;
+        color: var(--mat-color-on-surface);
+      }
+
+      .page-subtitle {
+        margin: 0;
+        color: var(--mat-color-on-surface-variant);
+        font-size: 16px;
+      }
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 16px;
+
+      .header-actions {
+        justify-content: flex-start;
+      }
+    }
+  }
+
+  .filters-card {
+    margin-bottom: 24px;
+    border-radius: 12px;
+    border: 1px solid var(--mat-color-outline-variant);
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+
+      @media (max-width: 1024px) {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      @media (max-width: 600px) {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .search-field {
+        min-width: 0;
+      }
+    }
+
+    .filter-checkboxes {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+
+      @media (max-width: 600px) {
+        flex-direction: column;
+        gap: 8px;
+      }
+    }
+
+    .filter-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+  }
+
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    gap: 16px;
+
+    mat-progress-bar {
+      width: 200px;
+    }
+
+    p {
+      color: var(--mat-color-on-surface-variant);
+    }
+  }
+
+  .action-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 20px;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+  }
+
+  .empty-state {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    text-align: center;
+    gap: 16px;
+
+    .empty-icon {
+      font-size: 64px;
+      width: 64px;
+      height: 64px;
+      color: var(--mat-color-on-surface-variant);
+      opacity: 0.6;
+    }
+
+    h3 {
+      margin: 0;
+      color: var(--mat-color-on-surface);
+    }
+
+    p {
+      margin: 0;
+      color: var(--mat-color-on-surface-variant);
+      max-width: 400px;
+    }
+  }
+
+  .action-item-card {
+    border-radius: 12px;
+    border: 1px solid var(--mat-color-outline-variant);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transform: translateY(-2px);
+    }
+
+    &.completed {
+      opacity: 0.7;
+      border-color: var(--mat-color-outline);
+    }
+
+    &.overdue {
+      border-left: 4px solid var(--mat-color-error);
+    }
+
+    &.due-soon {
+      border-left: 4px solid var(--mat-color-warning);
+    }
+
+    mat-card-header {
+      margin-bottom: 16px;
+
+      .card-header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+        gap: 16px;
+
+        .header-left {
+          flex: 1;
+          min-width: 0;
+
+          .action-item-title {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--mat-color-on-surface);
+            line-height: 1.3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+          }
+
+          .action-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--mat-color-on-surface-variant);
+            font-size: 12px;
+
+            .separator {
+              opacity: 0.6;
+            }
+          }
+        }
+
+        .header-badges {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          align-items: flex-end;
+          flex-shrink: 0;
+
+          .status-badge, .priority-badge {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            white-space: nowrap;
+
+            mat-icon {
+              font-size: 14px;
+              width: 14px;
+              height: 14px;
+            }
+          }
+        }
+      }
+    }
+
+    mat-card-content {
+      .action-item-description {
+        margin: 0 0 16px 0;
+        color: var(--mat-color-on-surface-variant);
+        line-height: 1.5;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+        -webkit-box-orient: vertical;
+      }
+
+      .action-item-details {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+
+        .detail-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          .detail-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+            color: var(--mat-color-on-surface-variant);
+          }
+
+          .detail-text {
+            font-size: 14px;
+            color: var(--mat-color-on-surface-variant);
+
+            &.overdue-text {
+              color: var(--mat-color-error);
+              font-weight: 500;
+            }
+
+            &.due-soon-text {
+              color: var(--mat-color-warning);
+              font-weight: 500;
+            }
+          }
+        }
+      }
+
+      .action-item-progress {
+        .progress-label {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+          font-size: 12px;
+          color: var(--mat-color-on-surface-variant);
+
+          .progress-percentage {
+            font-weight: 500;
+          }
+        }
+
+        .progress-bar {
+          height: 6px;
+          border-radius: 3px;
+        }
+      }
+    }
+
+    mat-card-actions {
+      &.card-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px;
+        border-top: 1px solid var(--mat-color-outline-variant);
+
+        .action-buttons {
+          display: flex;
+          gap: 8px;
+
+          .action-button {
+            &:hover {
+              background-color: var(--mat-color-surface-variant);
+            }
+          }
+        }
+
+        .card-footer {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 4px;
+
+          .type-chip {
+            background-color: var(--mat-color-surface-variant);
+            color: var(--mat-color-on-surface-variant);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+
+          .updated-date {
+            font-size: 10px;
+            color: var(--mat-color-on-surface-variant);
+          }
+        }
+      }
+    }
+  }
+}
+
+// Status and Priority Color Classes
+.text-blue-600 {
+  background-color: rgba(37, 99, 235, 0.1);
+  color: rgb(37, 99, 235);
+}
+
+.text-yellow-600 {
+  background-color: rgba(202, 138, 4, 0.1);
+  color: rgb(202, 138, 4);
+}
+
+.text-red-600 {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: rgb(220, 38, 38);
+}
+
+.text-green-600 {
+  background-color: rgba(22, 163, 74, 0.1);
+  color: rgb(22, 163, 74);
+}
+
+.text-gray-600 {
+  background-color: rgba(75, 85, 99, 0.1);
+  color: rgb(75, 85, 99);
+}
+
+.text-orange-600 {
+  background-color: rgba(234, 88, 12, 0.1);
+  color: rgb(234, 88, 12);
+}

@@ -5,6 +5,48 @@ All notable changes to the Meeting Manager project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-09-14
+
+### Added
+- **Complete Action Items Management System**
+  - Full CRUD action items functionality with professional UI components
+  - ActionItemDetailsComponent with editing, status management, and navigation
+  - ActionItemListComponent with advanced filtering, search, and responsive design
+  - Comprehensive ActionItem model with TypeScript interfaces and helper functions
+  - ActionItemService with HTTP operations and error handling
+- **Backend Action Items API**
+  - ActionItemService with 280+ lines of business logic and filtering
+  - ActionItemController with 320+ lines providing full REST API
+  - Enhanced ActionItemRepository with 60+ custom query methods
+  - Action item notifications integration with proper routing
+  - Added ACTION_ITEM_COMPLETED to NotificationType enum
+- **Navigation System Enhancement**
+  - Added protected routes `/action-items` and `/action-items/:id` with AuthGuard
+  - Fixed silent navigation failures from notification dropdown
+  - Complete routing integration between notifications and action item details
+
+### Fixed
+- **Critical Navigation Issue**: Resolved silent failures when clicking "Action Item Due Tomorrow" in notifications
+  - Missing action items routes causing navigation to fail silently
+  - Added comprehensive action items routing configuration
+  - Fixed notification click handlers to properly navigate to action item details
+- **Backend API Completeness**: Implemented missing ActionItem REST endpoints
+  - GET /api/action-items - List with pagination and filtering
+  - GET /api/action-items/{id} - Individual action item details  
+  - POST /api/action-items - Create new action items
+  - PUT /api/action-items/{id} - Update existing action items
+  - PATCH /api/action-items/{id}/complete - Mark as completed
+  - DELETE /api/action-items/{id} - Remove action items
+- **Database Integration**: Enhanced action items database model
+  - Added comprehensive query methods for filtering and search
+  - Proper relationship management with users and organizations
+  - Subtask support and progress tracking
+
+### Changed
+- Enhanced notification system to support action item assignment and completion notifications
+- Updated ActionItem entity to include comprehensive metadata and relationships
+- Improved error handling throughout action items workflow
+
 ## [2.1.3] - 2025-01-11
 
 ### Added
