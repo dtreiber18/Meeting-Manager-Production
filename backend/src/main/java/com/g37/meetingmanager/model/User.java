@@ -73,6 +73,16 @@ public class User {
     @Size(max = 10)
     private String language = "en";
 
+    // Display preferences
+    @Size(max = 20)
+    private String theme = "light";
+
+    @Size(max = 20)
+    private String dateFormat = "MM/dd/yyyy";
+
+    @Size(max = 20)
+    private String timeFormat = "12h";
+
     // Azure AD B2C Integration
     @Size(max = 255)
     @Column(unique = true)
@@ -275,6 +285,30 @@ public class User {
 
     public void setLanguage(String language) {
         this.language = language;
+    }
+
+    public String getTheme() {
+        return theme;
+    }
+
+    public void setTheme(String theme) {
+        this.theme = theme;
+    }
+
+    public String getDateFormat() {
+        return dateFormat;
+    }
+
+    public void setDateFormat(String dateFormat) {
+        this.dateFormat = dateFormat;
+    }
+
+    public String getTimeFormat() {
+        return timeFormat;
+    }
+
+    public void setTimeFormat(String timeFormat) {
+        this.timeFormat = timeFormat;
     }
 
     public String getAzureAdObjectId() {

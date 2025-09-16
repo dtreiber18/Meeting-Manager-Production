@@ -235,6 +235,15 @@ public class UserController {
         if (updates.containsKey("timezone")) {
             user.setTimezone((String) updates.get("timezone"));
         }
+        if (updates.containsKey("theme")) {
+            user.setTheme((String) updates.get("theme"));
+        }
+        if (updates.containsKey("dateFormat")) {
+            user.setDateFormat((String) updates.get("dateFormat"));
+        }
+        if (updates.containsKey("timeFormat")) {
+            user.setTimeFormat((String) updates.get("timeFormat"));
+        }
         if (updates.containsKey("emailNotifications")) {
             user.setEmailNotifications((Boolean) updates.get("emailNotifications"));
         }

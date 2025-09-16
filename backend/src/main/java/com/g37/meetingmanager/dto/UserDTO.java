@@ -20,6 +20,12 @@ public class UserDTO {
     private Boolean pushNotifications;
     private String timezone;
     private String language;
+    
+    // Display preferences
+    private String theme;
+    private String dateFormat;
+    private String timeFormat;
+    
     private LocalDateTime createdAt;
     private LocalDateTime lastLoginAt;
     
@@ -48,6 +54,9 @@ public class UserDTO {
         this.pushNotifications = user.getPushNotifications();
         this.timezone = user.getTimezone();
         this.language = user.getLanguage();
+        this.theme = user.getTheme();
+        this.dateFormat = user.getDateFormat();
+        this.timeFormat = user.getTimeFormat();
         this.createdAt = user.getCreatedAt();
         this.lastLoginAt = user.getLastLoginAt();
         
@@ -114,6 +123,15 @@ public class UserDTO {
 
     public String getLanguage() { return language; }
     public void setLanguage(String language) { this.language = language; }
+
+    public String getTheme() { return theme; }
+    public void setTheme(String theme) { this.theme = theme; }
+
+    public String getDateFormat() { return dateFormat; }
+    public void setDateFormat(String dateFormat) { this.dateFormat = dateFormat; }
+
+    public String getTimeFormat() { return timeFormat; }
+    public void setTimeFormat(String timeFormat) { this.timeFormat = timeFormat; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

@@ -38,9 +38,14 @@ export const routes: Routes = [
 	{ path: 'help', component: HelpComponent, canActivate: [AuthGuard] },
 	{ path: 'help/admin', component: HelpAdminComponent, canActivate: [AuthGuard] },
 	
-	// User Preferences (moved from settings dropdown to profile dropdown)
-	{ path: 'preferences', component: PreferencesComponent, canActivate: [AuthGuard] },
-	{ path: 'preferences/calendar', component: PreferencesComponent, canActivate: [AuthGuard] },
+	// User Preferences (dedicated pages)
+	{ path: 'profile', loadComponent: () => import('./profile/profile.component').then(m => m.ProfileComponent), canActivate: [AuthGuard] },
+	{ path: 'preferences', loadComponent: () => import('./preferences/preferences-only.component').then(m => m.PreferencesComponent), canActivate: [AuthGuard] },
+	{ path: 'calendar-settings', loadComponent: () => import('./calendar-settings/calendar-settings.component').then(m => m.CalendarSettingsComponent), canActivate: [AuthGuard] },
+	
+	// Legacy tabbed interface (keep for power users who prefer consolidated settings)
+	{ path: 'settings/preferences', component: PreferencesComponent, canActivate: [AuthGuard] },
+	{ path: 'settings/preferences/calendar', component: PreferencesComponent, canActivate: [AuthGuard] },
 	
 	// System Admin Settings (only accessible by System Admins)
 	{ path: 'settings', component: SimpleSettingsComponent, canActivate: [AuthGuard] },

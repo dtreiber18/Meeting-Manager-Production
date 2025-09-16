@@ -10,7 +10,18 @@ A modern, enterprise-grade meeting management application built with Angular 17+
 
 ## 🔧 Recent Updates (September 2025)
 
-### ✅ **TinyMCE Rich Text Editor Integration (v2.3.0) - LATEST**
+### ✅ **UI Restructuring with Separated Profile/Preferences/Calendar Components (v2.4.0) - LATEST**
+- **Complete UI Separation**: Replaced single tabbed preferences page with three dedicated, professional pages
+- **Profile Component** (`/profile`): Dedicated personal information management with reactive forms and professional validation
+- **Preferences Component** (`/preferences`): Standalone app settings page for theme, notifications, privacy controls
+- **Calendar Settings Component** (`/calendar-settings`): Dedicated calendar integration and meeting preferences interface
+- **Enhanced Navigation**: Updated header dropdown to route to separated pages instead of tabbed interface
+- **Theme Persistence Fix**: Resolved backend theme persistence issue with proper User entity field mapping
+- **Professional UI/UX**: Enterprise-grade Material Design implementation across all new components
+- **Routing Optimization**: Lazy-loaded components with dedicated routes for improved performance
+- **User Experience Enhancement**: Clear separation of concerns improves navigation and reduces cognitive load
+
+### ✅ **TinyMCE Rich Text Editor Integration (v2.3.0)**
 - **Professional WYSIWYG Editors**: Integrated TinyMCE rich text editors in Help Admin interface
 - **Complete Content Creation**: Description and content fields now have full formatting capabilities
 - **Advanced Formatting Tools**: Bold, italic, colors, lists, tables, links, code blocks, and more
@@ -239,6 +250,14 @@ The Meeting Manager includes a comprehensive dashboard and meeting management sy
 ## 🚀 Features
 
 ### Current Features (Implemented ✅)
+- **🎨 Separated Profile/Preferences/Calendar Settings UI** - Complete UI restructuring with dedicated components
+  - **Profile Page** (`/profile`): Dedicated personal information management with comprehensive form validation, account details, organization info, and role display
+  - **Preferences Page** (`/preferences`): Standalone app settings for theme selection (with backend persistence), notification preferences, privacy controls, and user experience settings
+  - **Calendar Settings Page** (`/calendar-settings`): Dedicated calendar integration interface with Microsoft Graph controls, working hours configuration, and meeting default preferences
+  - **Enhanced Navigation**: Professional header dropdown routing to dedicated pages instead of confusing tabbed interface
+  - **Theme Persistence**: Complete backend integration with User entity theme field mapping, ensuring display theme settings persist across sessions
+  - **Professional Form Design**: Enterprise-grade reactive forms with Material Design validation and consistent styling across all components
+  - **Improved User Experience**: Clear separation of concerns reduces cognitive load and provides intuitive navigation paths
 - **🎨 Advanced Modal Editing System** - Professional modal-based editing for all meeting components
   - **Participant Edit Modal**: Edit attendance status (Attended/Absent/Partial), roles (Attendee/Presenter/Organizer), duration tracking, and presenter flags with real-time validation
   - **Meeting Content Modals**: Rich text editing for Description, Summary, and Next Steps with contextual tips, character counting, and field-specific guidance
@@ -400,10 +419,16 @@ meeting-manager/
 │   │   │   │   ├── auth.service.ts           # Complete authentication management (300+ lines)
 │   │   │   │   ├── auth.guard.ts             # Route protection guard
 │   │   │   │   └── auth.interceptor.ts       # JWT token interceptor
+│   │   │   ├── profile/      # NEW: Dedicated profile management
+│   │   │   │   └── profile.component.ts      # Personal information and account details (400+ lines)
+│   │   │   ├── preferences/  # NEW: Dedicated preferences page
+│   │   │   │   └── preferences.component.ts  # Theme, notifications, privacy settings (350+ lines)
+│   │   │   ├── calendar-settings/ # NEW: Dedicated calendar settings
+│   │   │   │   └── calendar-settings.component.ts # Calendar integration and meeting preferences (300+ lines)
 │   │   │   ├── shared/       # Shared components
 │   │   │   │   └── header/   # Professional header component
-│   │   │   │       ├── header.component.ts   # Header logic and navigation
-│   │   │   │       ├── header.component.html # Professional header template
+│   │   │   │       ├── header.component.ts   # Enhanced navigation with separated page routing
+│   │   │   │       ├── header.component.html # Updated dropdown menu for new pages
 │   │   │   │       └── header.component.scss # Enterprise header styling (500+ lines)
 │   │   │   ├── home-screen/  # Dashboard component
 │   │   │   │   ├── home-screen.component.ts

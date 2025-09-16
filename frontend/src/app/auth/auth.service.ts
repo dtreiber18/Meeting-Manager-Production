@@ -23,6 +23,9 @@ export interface User {
   bio?: string;
   language?: string;
   timezone?: string;
+  theme?: string;
+  dateFormat?: string;
+  timeFormat?: string;
   emailNotifications?: boolean;
   pushNotifications?: boolean;
 }

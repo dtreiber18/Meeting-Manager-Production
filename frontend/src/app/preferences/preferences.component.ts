@@ -133,12 +133,29 @@ export class PreferencesComponent implements OnInit, OnDestroy {
     private calendarService: CalendarService,
     private userService: UserService
   ) {
+    console.log('🎨 PreferencesComponent - Constructor called');
+    console.log('🎨 PreferencesComponent - Services initialized:', {
+      fb: !!this.fb,
+      toastService: !!this.toastService,
+      authService: !!this.authService,
+      calendarService: !!this.calendarService,
+      userService: !!this.userService
+    });
     this.initializeForms();
   }
 
   ngOnInit(): void {
+    console.log('🎨 PreferencesComponent - ngOnInit called');
     this.loadCurrentUser();
     this.loadCalendarStatus();
+    this.initializeTheme();
+  }
+
+  private initializeTheme(): void {
+    // Initialize theme from localStorage or user profile
+    const savedTheme = localStorage.getItem('user-theme-preference') || 'auto';
+    console.log('🎨 Theme Init - Theme from localStorage:', savedTheme);
+    this.applyThemeSettings(savedTheme);
   }
 
   ngOnDestroy(): void {
@@ -147,6 +164,8 @@ export class PreferencesComponent implements OnInit, OnDestroy {
   }
 
   private initializeForms(): void {
+    console.log('🎨 PreferencesComponent - Initializing forms');
+    
     this.profileForm = this.fb.group({
       firstName: ['', [Validators.required, Validators.minLength(2)]],
       lastName: ['', [Validators.required, Validators.minLength(2)]],
@@ -165,6 +184,9 @@ export class PreferencesComponent implements OnInit, OnDestroy {
       theme: ['light', Validators.required]
     });
 
+    console.log('🎨 PreferencesComponent - Display form initialized:', this.displayForm.value);
+    console.log('🎨 PreferencesComponent - Theme control initialized:', this.displayForm.get('theme')?.value);
+
     this.notificationForm = this.fb.group({
       emailNotifications: [true],
       pushNotifications: [true],
@@ -178,30 +200,48 @@ export class PreferencesComponent implements OnInit, OnDestroy {
       showOnlineStatus: [true],
       allowDirectMessages: [true]
     });
+    
+    console.log('🎨 PreferencesComponent - All forms initialized');
   }
 
   private loadCurrentUser(): void {
+    console.log('🎨 PreferencesComponent - Loading current user...');
+    
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
+        console.log('🎨 PreferencesComponent - Current user received:', user);
         this.currentUser = user;
         if (user) {
+          console.log('🎨 PreferencesComponent - User authenticated, loading profile...');
           this.loadUserProfile();
+        } else {
+          console.log('🎨 PreferencesComponent - No user authenticated');
         }
       });
   }
 
   private async loadUserProfile(): Promise<void> {
     try {
+      console.log('🎨 PreferencesComponent - Loading user profile from API...');
       this.isLoading = true;
       const userProfile = await this.userService.getUserProfile().toPromise();
+      console.log('🎨 PreferencesComponent - User profile loaded:', userProfile);
+      
       if (userProfile) {
+        console.log('🎨 PreferencesComponent - Populating forms with profile data...');
         this.populateFormsWithUserData(userProfile);
+      } else {
+        console.log('🎨 PreferencesComponent - No profile data, using current user...');
+        if (this.currentUser) {
+          this.populateFormsWithUserData(this.currentUser);
+        }
       }
     } catch (error) {
-      console.error('Error loading user profile:', error);
+      console.error('🎨 PreferencesComponent - Error loading user profile:', error);
       // Fall back to current user data if API fails
       if (this.currentUser) {
+        console.log('🎨 PreferencesComponent - Falling back to current user data...');
         this.populateFormsWithUserData(this.currentUser);
       }
     } finally {
@@ -210,6 +250,9 @@ export class PreferencesComponent implements OnInit, OnDestroy {
   }
 
   private populateFormsWithUserData(user: User | any): void {
+    console.log('🎨 Theme Loading - Populating forms with user data:', user);
+    console.log('🎨 Theme Loading - User theme value:', user.theme);
+    
     // Profile information
     this.profileForm.patchValue({
       firstName: user.firstName || '',
@@ -222,28 +265,37 @@ export class PreferencesComponent implements OnInit, OnDestroy {
     });
 
     // Display preferences (with defaults if not set)
-    this.displayForm.patchValue({
+    const displayValues = {
       language: user.language || 'en',
       timezone: user.timezone || 'America/New_York',
-      dateFormat: 'MM/DD/YYYY', // Add to user model later
-      timeFormat: '12', // Add to user model later
-      theme: 'light' // Add to user model later
-    });
+      dateFormat: user.dateFormat || 'MM/DD/YYYY',
+      timeFormat: user.timeFormat || '12',
+      theme: user.theme || 'light'
+    };
+    
+    console.log('🎨 Theme Loading - Display form values to be set:', displayValues);
+    this.displayForm.patchValue(displayValues);
+    
+    // Log what the form actually contains after patching
+    setTimeout(() => {
+      console.log('🎨 Theme Loading - Display form after patching:', this.displayForm.value);
+      console.log('🎨 Theme Loading - Theme control value:', this.displayForm.get('theme')?.value);
+    }, 100);
 
     // Notification preferences
     this.notificationForm.patchValue({
       emailNotifications: user.emailNotifications ?? true,
       pushNotifications: user.pushNotifications ?? true,
-      meetingReminders: true, // Add to user model later
-      actionItemReminders: true, // Add to user model later
-      weeklyDigest: false // Add to user model later
+      meetingReminders: user.meetingReminders ?? true,
+      actionItemReminders: user.actionItemReminders ?? true,
+      weeklyDigest: user.weeklyDigest ?? false
     });
 
     // Privacy settings
     this.privacyForm.patchValue({
-      profileVisibility: 'organization', // Add to user model later
-      showOnlineStatus: true, // Add to user model later
-      allowDirectMessages: true // Add to user model later
+      profileVisibility: user.profileVisibility || 'organization',
+      showOnlineStatus: user.showOnlineStatus ?? true,
+      allowDirectMessages: user.allowDirectMessages ?? true
     });
   }
 
@@ -285,29 +337,117 @@ export class PreferencesComponent implements OnInit, OnDestroy {
     }
   }
 
+  onSaveDisplaySettingsClick(event: Event): void {
+    console.log('🎨 Theme Saving - Button clicked!', event);
+    event.preventDefault(); // Prevent default to avoid double submission
+    this.saveDisplaySettings();
+  }
+
   async saveDisplaySettings(): Promise<void> {
+    console.log('🎨 Theme Saving - saveDisplaySettings() method called');
+    console.log('🎨 Theme Saving - isSaving state:', this.isSaving);
+    
     if (!this.displayForm.valid) {
+      console.log('🎨 Theme Saving - Form is invalid:', this.displayForm.errors);
       this.toastService.showError('Please correct the errors in the form');
       return;
     }
 
+    console.log('🎨 Theme Saving - Form is valid, proceeding with save');
     this.isSaving = true;
+    
     try {
       const formData = this.displayForm.value;
-      console.log('Saving display settings:', formData);
+      console.log('🎨 Theme Saving - Form data:', formData);
+      console.log('🎨 Theme Saving - Current theme value:', formData.theme);
+      console.log('🎨 Theme Saving - Form valid:', this.displayForm.valid);
+      console.log('🎨 Theme Saving - Form dirty:', this.displayForm.dirty);
+      console.log('🎨 Theme Saving - Form controls:', {
+        language: this.displayForm.get('language')?.value,
+        timezone: this.displayForm.get('timezone')?.value,
+        dateFormat: this.displayForm.get('dateFormat')?.value,
+        timeFormat: this.displayForm.get('timeFormat')?.value,
+        theme: this.displayForm.get('theme')?.value
+      });
       
-      await this.userService.updateUserProfile({
+      const updateData = {
         language: formData.language,
-        timezone: formData.timezone
-      }).toPromise();
+        timezone: formData.timezone,
+        dateFormat: formData.dateFormat,
+        timeFormat: formData.timeFormat,
+        theme: formData.theme
+      };
       
+      console.log('🎨 Theme Saving - Update data being sent:', updateData);
+      
+      // Check if userService exists
+      if (!this.userService) {
+        console.error('🎨 Theme Saving - ERROR: userService is null/undefined');
+        throw new Error('User service not available');
+      }
+      
+      console.log('🎨 Theme Saving - Calling userService.updateUserProfile()...');
+      
+      // Save all display settings to the backend
+      const result = await this.userService.updateUserProfile(updateData).toPromise();
+      console.log('🎨 Theme Saving - Backend response received:', result);
+      
+      // Apply theme changes immediately
+      console.log('🎨 Theme Saving - Applying theme settings...');
+      this.applyThemeSettings(formData.theme);
+      
+      console.log('🎨 Theme Saving - Showing success toast...');
       this.toastService.showSuccess('Display settings updated successfully');
+      
+      // Reload user profile to verify save
+      setTimeout(async () => {
+        try {
+          console.log('🎨 Theme Saving - Verification: Loading updated profile...');
+          const updatedProfile = await this.userService.getUserProfile().toPromise();
+          console.log('🎨 Theme Saving - Verification: Updated profile from backend:', updatedProfile);
+          console.log('🎨 Theme Saving - Verification: Theme in updated profile:', updatedProfile?.theme);
+        } catch (error) {
+          console.error('🎨 Theme Saving - Verification failed:', error);
+        }
+      }, 1000);
+      
     } catch (error) {
-      console.error('Error saving display settings:', error);
+      console.error('🎨 Theme Saving - ERROR occurred:', error);
+      console.error('🎨 Theme Saving - Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        fullError: error
+      });
       this.toastService.showError('Failed to update display settings');
     } finally {
+      console.log('🎨 Theme Saving - Setting isSaving to false');
       this.isSaving = false;
     }
+  }
+
+  private applyThemeSettings(theme: string): void {
+    console.log('🎨 Theme Apply - Applying theme:', theme);
+    
+    // Store theme preference in localStorage for immediate application
+    localStorage.setItem('user-theme-preference', theme);
+    
+    // Apply theme to document body
+    const body = document.body;
+    
+    // Remove existing theme classes
+    body.classList.remove('light-theme', 'dark-theme');
+    
+    if (theme === 'dark') {
+      body.classList.add('dark-theme');
+    } else if (theme === 'light') {
+      body.classList.add('light-theme');
+    } else if (theme === 'auto') {
+      // Use system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      body.classList.add(prefersDark ? 'dark-theme' : 'light-theme');
+    }
+    
+    console.log('🎨 Theme Apply - Applied theme:', theme, 'Body classes:', body.className);
   }
 
   async saveNotificationSettings(): Promise<void> {

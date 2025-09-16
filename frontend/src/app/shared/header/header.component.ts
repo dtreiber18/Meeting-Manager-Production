@@ -123,10 +123,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.authService.logout();
   }
 
-  navigateToProfile(): void {
-    this.router.navigate(['/preferences']);
-  }
-
   navigateToOrganization(): void {
     this.router.navigate(['/settings/organization']);
   }

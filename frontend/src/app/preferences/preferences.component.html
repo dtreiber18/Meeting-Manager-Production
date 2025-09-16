@@ -167,7 +167,8 @@
 
                 <div class="form-actions">
                   <button mat-raised-button color="primary" type="submit" 
-                          [disabled]="isSaving || !displayForm.valid">
+                          [disabled]="isSaving || !displayForm.valid"
+                          (click)="onSaveDisplaySettingsClick($event)">
                     <mat-icon *ngIf="isSaving">hourglass_empty</mat-icon>
                     <mat-icon *ngIf="!isSaving">save</mat-icon>
                     {{isSaving ? 'Saving...' : 'Save Display Settings'}}

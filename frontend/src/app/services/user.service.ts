@@ -17,6 +17,25 @@ export interface UserProfile {
   meetingReminders: boolean;
   darkMode: boolean;
   compactView: boolean;
+  // Display preferences
+  theme?: string;
+  dateFormat?: string;
+  timeFormat?: string;
+  // Personal information  
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  jobTitle?: string;
+  department?: string;
+  bio?: string;
+  // Notification preferences
+  pushNotifications?: boolean;
+  actionItemReminders?: boolean;
+  weeklyDigest?: boolean;
+  // Privacy settings
+  profileVisibility?: string;
+  showOnlineStatus?: boolean;
+  allowDirectMessages?: boolean;
 }
 
 @Injectable({
