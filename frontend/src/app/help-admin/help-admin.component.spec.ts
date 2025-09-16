@@ -60,7 +60,8 @@ describe('HelpAdminComponent', () => {
     expect(component.faqForm.get('question')).toBeTruthy();
     expect(component.faqForm.get('category')).toBeTruthy();
     expect(component.faqForm.get('answer')).toBeTruthy();
-    expect(component.faqForm.get('priority')).toBeTruthy();
+    expect(component.faqForm.get('tags')).toBeTruthy();
+    expect(component.faqForm.get('sortOrder')).toBeTruthy();
   });
 
   it('should show create new article form when new article button is clicked', () => {
