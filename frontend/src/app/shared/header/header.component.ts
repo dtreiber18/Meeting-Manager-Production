@@ -150,7 +150,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   onHelpClick(): void {
-    // TODO: Implement help/documentation
-    console.log('Show help');
+    this.router.navigate(['/help']);
   }
 }

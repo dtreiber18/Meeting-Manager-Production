@@ -1,0 +1,598 @@
+<div class="help-container">
+  <!-- Header Section -->
+  <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+    <div class="flex items-start justify-between">
+      <div class="flex items-start">
+        <div class="help-icon-container mr-4">
+          <mat-icon class="help-icon">help_center</mat-icon>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 mb-2">Help Center</h1>
+          <p class="text-gray-600">Find answers, documentation, and support for Meeting Manager</p>
+        </div>
+      </div>
+      
+      <!-- Admin Access Button -->
+      <button 
+        (click)="navigateToAdmin()"
+        class="flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+        title="Manage Help Content">
+        <mat-icon class="w-4 h-4 mr-1">admin_panel_settings</mat-icon>
+        Admin
+      </button>
+    </div>
+  </div>
+
+  <!-- Search Section -->
+  <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+    <div class="flex flex-col sm:flex-row gap-4">
+      <div class="flex-1 relative">
+        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5">search</mat-icon>
+        <input
+          type="text"
+          placeholder="Type your question or keywords"
+          [(ngModel)]="searchQuery"
+          (input)="onSearchInput()"
+          autocomplete="off"
+          class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+        />
+      </div>
+      <button 
+        (click)="performSearch()"
+        [disabled]="!searchQuery.trim()"
+        class="flex items-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+        Search
+      </button>
+      <button
+        (click)="showFilters = !showFilters"
+        class="flex items-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+      >
+        <mat-icon class="w-5 h-5 mr-2">filter_list</mat-icon>
+        Filters
+        <mat-icon class="w-4 h-4 ml-2">{{ showFilters ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </button>
+    </div>
+    
+    <!-- Filter Panel -->
+    <div *ngIf="showFilters" class="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4 space-y-4">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-medium text-gray-900">Filter Help Content</h3>
+        <button (click)="clearFilters()" class="text-sm text-blue-600 hover:text-blue-800">Clear All</button>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Category Filter -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+          <select [(ngModel)]="selectedCategory" (change)="applyFilters()" 
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">All Categories</option>
+            <option value="getting-started">Getting Started</option>
+            <option value="user-guide">User Guide</option>
+            <option value="troubleshooting">Troubleshooting</option>
+            <option value="api">API Documentation</option>
+          </select>
+        </div>
+        
+        <!-- Content Type Filter -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Content Type</label>
+          <select [(ngModel)]="selectedContentType" (change)="applyFilters()"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">All Types</option>
+            <option value="article">Articles</option>
+            <option value="faq">FAQs</option>
+            <option value="guide">Guides</option>
+          </select>
+        </div>
+        
+        <!-- Sort By -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+          <select [(ngModel)]="sortBy" (change)="applyFilters()"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="relevance">Relevance</option>
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="popular">Most Popular</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Quick Search Suggestions -->
+    <div class="quick-suggestions" *ngIf="showSuggestions && searchSuggestions.length > 0 && !showFilters">
+      <h4>Suggested topics:</h4>
+      <div class="suggestion-chips">
+        <mat-chip-set>
+          <mat-chip 
+            *ngFor="let suggestion of searchSuggestions" 
+            (click)="selectSuggestion(suggestion)"
+            class="suggestion-chip">
+            {{ suggestion }}
+          </mat-chip>
+        </mat-chip-set>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="hasError" class="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+    <div class="flex items-center mb-4">
+      <mat-icon class="text-red-600 mr-3">error_outline</mat-icon>
+      <h3 class="text-lg font-medium text-red-800">Unable to Load Help Content</h3>
+    </div>
+    <p class="text-red-700 mb-4">{{ errorMessage }}</p>
+    <div class="flex gap-3">
+      <button 
+        (click)="retryLoadContent()"
+        [disabled]="retryAttempts >= maxRetryAttempts"
+        class="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <mat-icon class="w-4 h-4 mr-2">refresh</mat-icon>
+        {{ retryAttempts >= maxRetryAttempts ? 'Max Retries Reached' : 'Retry' }}
+      </button>
+      <button 
+        (click)="navigateToSection('support')"
+        class="flex items-center px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors">
+        <mat-icon class="w-4 h-4 mr-2">support_agent</mat-icon>
+        Contact Support
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading && !hasError" class="flex justify-center items-center py-12">
+    <div class="text-center">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p class="mt-4 text-gray-600">Loading help content...</p>
+    </div>
+  </div>
+
+  <!-- Content Section -->
+  <div class="help-content" [ngSwitch]="currentSection" *ngIf="!isLoading && !hasError">
+    
+    <!-- Main Help Navigation -->
+    <div *ngSwitchDefault class="help-navigation">
+      <div class="section-grid">
+        
+        <!-- Getting Started -->
+        <mat-card class="help-section-card" (click)="navigateToSection('getting-started')">
+          <mat-card-header>
+            <div mat-card-avatar class="section-avatar getting-started">
+              <mat-icon>rocket_launch</mat-icon>
+            </div>
+            <mat-card-title>Getting Started</mat-card-title>
+            <mat-card-subtitle>Quick setup and basic features</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <p>Learn the basics of Meeting Manager, from initial setup to creating your first meeting.</p>
+            <div class="article-count">{{ getArticleCount('getting-started') }} articles</div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- User Guide -->
+        <mat-card class="help-section-card" (click)="navigateToSection('user-guide')">
+          <mat-card-header>
+            <div mat-card-avatar class="section-avatar user-guide">
+              <mat-icon>menu_book</mat-icon>
+            </div>
+            <mat-card-title>User Guide</mat-card-title>
+            <mat-card-subtitle>Comprehensive feature documentation</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <p>Detailed guides for all features including meetings, action items, and collaboration tools.</p>
+            <div class="article-count">{{ getArticleCount('user-guide') }} articles</div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- FAQ -->
+        <mat-card class="help-section-card" (click)="navigateToSection('faq')">
+          <mat-card-header>
+            <div mat-card-avatar class="section-avatar faq">
+              <mat-icon>quiz</mat-icon>
+            </div>
+            <mat-card-title>Frequently Asked Questions</mat-card-title>
+            <mat-card-subtitle>Common questions and answers</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <p>Find quick answers to the most commonly asked questions about Meeting Manager.</p>
+            <div class="article-count">{{ getFAQCount() }} questions</div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Troubleshooting -->
+        <mat-card class="help-section-card" (click)="navigateToSection('troubleshooting')">
+          <mat-card-header>
+            <div mat-card-avatar class="section-avatar troubleshooting">
+              <mat-icon>build</mat-icon>
+            </div>
+            <mat-card-title>Troubleshooting</mat-card-title>
+            <mat-card-subtitle>Solutions for common issues</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <p>Step-by-step solutions for technical issues and error messages you might encounter.</p>
+            <div class="article-count">{{ getArticleCount('troubleshooting') }} guides</div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- API Documentation -->
+        <mat-card class="help-section-card" (click)="navigateToSection('api')">
+          <mat-card-header>
+            <div mat-card-avatar class="section-avatar api">
+              <mat-icon>code</mat-icon>
+            </div>
+            <mat-card-title>API Documentation</mat-card-title>
+            <mat-card-subtitle>Developer resources</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <p>Technical documentation for developers integrating with Meeting Manager APIs.</p>
+            <div class="article-count">{{ getArticleCount('api') }} endpoints</div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Contact Support -->
+        <mat-card class="help-section-card" (click)="navigateToSection('support')">
+          <mat-card-header>
+            <div mat-card-avatar class="section-avatar support">
+              <mat-icon>support_agent</mat-icon>
+            </div>
+            <mat-card-title>Contact Support</mat-card-title>
+            <mat-card-subtitle>Get personalized help</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <p>Submit a support ticket or contact our team directly for assistance with your account.</p>
+            <div class="article-count">24/7 support available</div>
+          </mat-card-content>
+        </mat-card>
+
+      </div>
+    </div>
+
+    <!-- Getting Started Section -->
+    <div *ngSwitchCase="'getting-started'" class="help-section">
+      <div class="section-header">
+        <button mat-icon-button (click)="goBack()" class="back-btn">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <h2>Getting Started</h2>
+      </div>
+      
+      <div class="articles-list">
+        <div *ngIf="getFilteredArticles('getting-started').length === 0 && !isLoading" class="empty-state">
+          <div class="text-center py-12">
+            <mat-icon class="text-gray-400 text-6xl mb-4">article</mat-icon>
+            <h3 class="text-xl font-medium text-gray-600 mb-2">No Articles Available</h3>
+            <p class="text-gray-500 mb-4">There are currently no getting started articles available.</p>
+            <button (click)="navigateToSection('support')" mat-raised-button color="primary">
+              <mat-icon>support_agent</mat-icon>
+              Contact Support
+            </button>
+          </div>
+        </div>
+        <mat-accordion *ngIf="getFilteredArticles('getting-started').length > 0">
+          <mat-expansion-panel *ngFor="let article of getFilteredArticles('getting-started')">
+            <mat-expansion-panel-header>
+              <mat-panel-title>{{ article.title }}</mat-panel-title>
+              <mat-panel-description>{{ article.description }}</mat-panel-description>
+            </mat-expansion-panel-header>
+            <div class="article-content" [innerHTML]="article.content"></div>
+          </mat-expansion-panel>
+        </mat-accordion>
+      </div>
+    </div>
+
+    <!-- User Guide Section -->
+    <div *ngSwitchCase="'user-guide'" class="help-section">
+      <div class="section-header">
+        <button mat-icon-button (click)="goBack()" class="back-btn">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <h2>User Guide</h2>
+      </div>
+      
+      <div class="articles-list">
+        <mat-accordion>
+          <mat-expansion-panel *ngFor="let article of getFilteredArticles('user-guide')">
+            <mat-expansion-panel-header>
+              <mat-panel-title>{{ article.title }}</mat-panel-title>
+              <mat-panel-description>{{ article.description }}</mat-panel-description>
+            </mat-expansion-panel-header>
+            <div class="article-content" [innerHTML]="article.content"></div>
+          </mat-expansion-panel>
+        </mat-accordion>
+      </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <div *ngSwitchCase="'faq'" class="help-section">
+      <div class="section-header">
+        <button mat-icon-button (click)="goBack()" class="back-btn">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <h2>Frequently Asked Questions</h2>
+      </div>
+      
+      <div class="faq-categories">
+        <mat-chip-set>
+          <mat-chip 
+            *ngFor="let category of faqCategories" 
+            [class.selected]="selectedFAQCategory === category"
+            (click)="selectFAQCategory(category)"
+            class="category-chip">
+            {{ category }}
+          </mat-chip>
+        </mat-chip-set>
+      </div>
+
+      <div class="faq-list">
+        <div *ngIf="getFilteredFAQs().length === 0 && !isLoading" class="empty-state">
+          <div class="text-center py-12">
+            <mat-icon class="text-gray-400 text-6xl mb-4">quiz</mat-icon>
+            <h3 class="text-xl font-medium text-gray-600 mb-2">No FAQs Available</h3>
+            <p class="text-gray-500 mb-4">There are currently no frequently asked questions for this category.</p>
+            <button (click)="navigateToSection('support')" mat-raised-button color="primary">
+              <mat-icon>support_agent</mat-icon>
+              Ask a Question
+            </button>
+          </div>
+        </div>
+        <mat-accordion *ngIf="getFilteredFAQs().length > 0">
+          <mat-expansion-panel *ngFor="let faq of getFilteredFAQs()">
+            <mat-expansion-panel-header>
+              <mat-panel-title>{{ faq.question }}</mat-panel-title>
+            </mat-expansion-panel-header>
+            <div class="faq-answer" [innerHTML]="faq.answer"></div>
+          </mat-expansion-panel>
+        </mat-accordion>
+      </div>
+    </div>
+
+    <!-- Troubleshooting Section -->
+    <div *ngSwitchCase="'troubleshooting'" class="help-section">
+      <div class="section-header">
+        <button mat-icon-button (click)="goBack()" class="back-btn">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <h2>Troubleshooting</h2>
+      </div>
+      
+      <div class="articles-list">
+        <mat-accordion>
+          <mat-expansion-panel *ngFor="let article of getFilteredArticles('troubleshooting')">
+            <mat-expansion-panel-header>
+              <mat-panel-title>{{ article.title }}</mat-panel-title>
+              <mat-panel-description>{{ article.description }}</mat-panel-description>
+            </mat-expansion-panel-header>
+            <div class="article-content" [innerHTML]="article.content"></div>
+          </mat-expansion-panel>
+        </mat-accordion>
+      </div>
+    </div>
+
+    <!-- API Documentation Section -->
+    <div *ngSwitchCase="'api'" class="help-section">
+      <div class="section-header">
+        <button mat-icon-button (click)="goBack()" class="back-btn">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <h2>API Documentation</h2>
+      </div>
+      
+      <div class="api-info">
+        <mat-card class="api-card">
+          <mat-card-header>
+            <mat-card-title>REST API Reference</mat-card-title>
+            <mat-card-subtitle>Complete API documentation for developers</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <p>Our RESTful API provides programmatic access to all Meeting Manager features.</p>
+            <div class="api-links">
+              <a href="/docs/api" target="_blank" mat-button color="primary">
+                <mat-icon>open_in_new</mat-icon>
+                View Full API Docs
+              </a>
+              <a href="/docs/api/swagger" target="_blank" mat-button>
+                <mat-icon>code</mat-icon>
+                Interactive API Explorer
+              </a>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <div class="articles-list">
+          <mat-accordion>
+            <mat-expansion-panel *ngFor="let article of getFilteredArticles('api')">
+              <mat-expansion-panel-header>
+                <mat-panel-title>{{ article.title }}</mat-panel-title>
+                <mat-panel-description>{{ article.description }}</mat-panel-description>
+              </mat-expansion-panel-header>
+              <div class="article-content" [innerHTML]="article.content"></div>
+            </mat-expansion-panel>
+          </mat-accordion>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact Support Section -->
+    <div *ngSwitchCase="'support'" class="help-section">
+      <div class="section-header">
+        <button mat-icon-button (click)="goBack()" class="back-btn">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <h2>Contact Support</h2>
+      </div>
+      
+      <div class="support-options">
+        <div class="support-grid">
+          <mat-card class="support-card">
+            <mat-card-header>
+              <div mat-card-avatar class="support-avatar email">
+                <mat-icon>email</mat-icon>
+              </div>
+              <mat-card-title>Email Support</mat-card-title>
+              <mat-card-subtitle>Get help via email</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <p>Send us a detailed message and we'll respond within 24 hours.</p>
+              <a href="mailto:support@meetingmanager.com" mat-button color="primary">
+                <mat-icon>send</mat-icon>
+                Send Email
+              </a>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card class="support-card">
+            <mat-card-header>
+              <div mat-card-avatar class="support-avatar ticket">
+                <mat-icon>confirmation_number</mat-icon>
+              </div>
+              <mat-card-title>Support Ticket</mat-card-title>
+              <mat-card-subtitle>Submit a support request</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <p>Create a support ticket for technical issues or account problems.</p>
+              <button mat-button color="primary" (click)="openSupportTicket()">
+                <mat-icon>add</mat-icon>
+                Create Ticket
+              </button>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card class="support-card">
+            <mat-card-header>
+              <div mat-card-avatar class="support-avatar chat">
+                <mat-icon>chat</mat-icon>
+              </div>
+              <mat-card-title>Live Chat</mat-card-title>
+              <mat-card-subtitle>Instant help available</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <p>Chat with our support team for immediate assistance.</p>
+              <button mat-button color="primary" (click)="startLiveChat()">
+                <mat-icon>chat_bubble</mat-icon>
+                Start Chat
+              </button>
+            </mat-card-content>
+          </mat-card>
+        </div>
+
+        <!-- Support Ticket Form -->
+        <mat-card class="ticket-form-card" *ngIf="showTicketForm">
+          <mat-card-header>
+            <mat-card-title>Create Support Ticket</mat-card-title>
+            <mat-card-subtitle>Provide details about your issue</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <form [formGroup]="supportTicketForm" (ngSubmit)="submitSupportTicket()">
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Subject</mat-label>
+                  <input matInput formControlName="subject" placeholder="Brief description of your issue">
+                  <mat-error *ngIf="supportTicketForm.get('subject')?.invalid && supportTicketForm.get('subject')?.touched">
+                    Subject is required
+                  </mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Priority</mat-label>
+                  <mat-select formControlName="priority">
+                    <mat-option value="low">Low</mat-option>
+                    <mat-option value="medium">Medium</mat-option>
+                    <mat-option value="high">High</mat-option>
+                    <mat-option value="urgent">Urgent</mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Category</mat-label>
+                  <mat-select formControlName="category">
+                    <mat-option value="technical">Technical Issue</mat-option>
+                    <mat-option value="account">Account Problem</mat-option>
+                    <mat-option value="billing">Billing Question</mat-option>
+                    <mat-option value="feature">Feature Request</mat-option>
+                    <mat-option value="other">Other</mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Description</mat-label>
+                  <textarea 
+                    matInput 
+                    formControlName="description" 
+                    rows="6"
+                    placeholder="Please provide detailed information about your issue, including steps to reproduce if applicable">
+                  </textarea>
+                  <mat-error *ngIf="supportTicketForm.get('description')?.invalid && supportTicketForm.get('description')?.touched">
+                    Description is required
+                  </mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="form-actions">
+                <button mat-button type="button" (click)="cancelTicketForm()">Cancel</button>
+                <button 
+                  mat-raised-button 
+                  color="primary" 
+                  type="submit"
+                  [disabled]="supportTicketForm.invalid || isSubmittingTicket">
+                  <mat-icon *ngIf="isSubmittingTicket">hourglass_empty</mat-icon>
+                  <mat-icon *ngIf="!isSubmittingTicket">send</mat-icon>
+                  {{ isSubmittingTicket ? 'Submitting...' : 'Submit Ticket' }}
+                </button>
+              </div>
+            </form>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+
+    <!-- Search Results -->
+    <div *ngSwitchCase="'search-results'" class="help-section">
+      <div class="section-header">
+        <button mat-icon-button (click)="goBack()" class="back-btn">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <h2>Search Results</h2>
+        <span class="search-query">"{{ searchQuery }}"</span>
+      </div>
+      
+      <div class="search-results" *ngIf="searchResults.length > 0; else noResults">
+        <p class="results-count">{{ searchResults.length }} result(s) found</p>
+        
+        <div class="results-list">
+          <mat-card class="result-card" *ngFor="let result of searchResults" (click)="openResult(result)">
+            <mat-card-header>
+              <div mat-card-avatar class="result-avatar" [ngClass]="result.type">
+                <mat-icon>{{ getResultIcon(result.type) }}</mat-icon>
+              </div>
+              <mat-card-title>{{ result.title }}</mat-card-title>
+              <mat-card-subtitle>{{ result.category }} • {{ result.type }}</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <p class="result-snippet" [innerHTML]="result.snippet"></p>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </div>
+
+      <ng-template #noResults>
+        <div class="no-results">
+          <mat-icon class="no-results-icon">search_off</mat-icon>
+          <h3>No results found</h3>
+          <p>Try different keywords or browse our help sections above.</p>
+          <button mat-button color="primary" (click)="goBack()">
+            <mat-icon>arrow_back</mat-icon>
+            Back to Help Center
+          </button>
+        </div>
+      </ng-template>
+    </div>
+
+  </div>
+</div>

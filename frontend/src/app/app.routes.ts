@@ -13,6 +13,8 @@ import { CalendarAuthComponent } from './calendar-auth/calendar-auth.component';
 import { AuthCallbackComponent } from './auth-callback/auth-callback.component';
 import { ActionItemListComponent } from './action-items/action-item-list.component';
 import { ActionItemDetailsComponent } from './action-items/action-item-details.component';
+import { HelpComponent } from './help/help.component';
+import { HelpAdminComponent } from './help-admin/help-admin.component';
 import { AuthGuard, GuestGuard } from './auth/auth.guard';
 
 export const routes: Routes = [
@@ -31,6 +33,10 @@ export const routes: Routes = [
 	// Action Items
 	{ path: 'action-items', component: ActionItemListComponent, canActivate: [AuthGuard] },
 	{ path: 'action-items/:id', component: ActionItemDetailsComponent, canActivate: [AuthGuard] },
+	
+	// Help Center
+	{ path: 'help', component: HelpComponent, canActivate: [AuthGuard] },
+	{ path: 'help/admin', component: HelpAdminComponent, canActivate: [AuthGuard] },
 	
 	// User Preferences (moved from settings dropdown to profile dropdown)
 	{ path: 'preferences', component: PreferencesComponent, canActivate: [AuthGuard] },

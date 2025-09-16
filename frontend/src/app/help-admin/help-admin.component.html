@@ -1,0 +1,413 @@
+<div class="help-admin-container">
+  <!-- Header -->
+  <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">Help Center Administration</h1>
+        <p class="text-gray-600">Manage help articles, FAQs, and support tickets</p>
+      </div>
+      <div class="flex gap-3">
+        <input 
+          type="file" 
+          #articleFileInput 
+          (change)="importArticles($event)" 
+          accept=".json,.csv" 
+          style="display: none">
+        <input 
+          type="file" 
+          #faqFileInput 
+          (change)="importFaqs($event)" 
+          accept=".json,.csv" 
+          style="display: none">
+        
+        <button 
+          (click)="articleFileInput.click()"
+          class="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm">
+          <mat-icon class="w-5 h-5 mr-2">upload</mat-icon>
+          Import Articles
+        </button>
+        <button 
+          (click)="faqFileInput.click()"
+          class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+          <mat-icon class="w-5 h-5 mr-2">upload</mat-icon>
+          Import FAQs
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <mat-tab-group [(selectedIndex)]="selectedTab" class="help-admin-tabs">
+    
+    <!-- Articles Tab -->
+    <mat-tab label="Articles">
+      <div class="tab-content">
+        
+        <!-- Articles Header -->
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-semibold text-gray-900">Help Articles</h2>
+          <button 
+            (click)="showCreateArticle()"
+            class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+            <mat-icon class="w-5 h-5 mr-2">add</mat-icon>
+            New Article
+          </button>
+        </div>
+
+        <!-- Article Form -->
+        <div *ngIf="showArticleForm" class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium text-gray-900">
+              {{ editingArticle ? 'Edit Article' : 'Create New Article' }}
+            </h3>
+            <button (click)="cancelEdit()" mat-icon-button>
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+
+          <form [formGroup]="articleForm" (ngSubmit)="saveArticle()" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Title</mat-label>
+                <input matInput formControlName="title" placeholder="Enter article title">
+                <mat-error *ngIf="articleForm.get('title')?.invalid && articleForm.get('title')?.touched">
+                  Title is required (minimum 5 characters)
+                </mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Category</mat-label>
+                <mat-select formControlName="category">
+                  <mat-option *ngFor="let category of categories" [value]="category">
+                    {{ category | titlecase }}
+                  </mat-option>
+                </mat-select>
+                <mat-error *ngIf="articleForm.get('category')?.invalid && articleForm.get('category')?.touched">
+                  Category is required
+                </mat-error>
+              </mat-form-field>
+            </div>
+
+            <div class="editor-section">
+              <label class="editor-label">Description</label>
+              <editor
+                [init]="editorConfig"
+                formControlName="description"
+                class="w-full">
+              </editor>
+              <div *ngIf="articleForm.get('description')?.invalid && articleForm.get('description')?.touched" 
+                   class="text-red-600 text-sm mt-1">
+                Description is required (minimum 10 characters)
+              </div>
+            </div>
+
+            <div class="editor-section">
+              <label class="editor-label">Content</label>
+              <editor
+                [init]="contentEditorConfig"
+                formControlName="content"
+                class="w-full">
+              </editor>
+              <div *ngIf="articleForm.get('content')?.invalid && articleForm.get('content')?.touched" 
+                   class="text-red-600 text-sm mt-1">
+                Content is required (minimum 50 characters)
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Tags (comma separated)</mat-label>
+                <input matInput formControlName="tags" placeholder="tag1, tag2, tag3">
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Sort Order</mat-label>
+                <input matInput type="number" formControlName="sortOrder" placeholder="0">
+              </mat-form-field>
+
+              <div class="flex items-center h-14">
+                <mat-slide-toggle formControlName="isPublished">
+                  Published
+                </mat-slide-toggle>
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4">
+              <button type="button" (click)="cancelEdit()" 
+                      class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                Cancel
+              </button>
+              <button type="submit" [disabled]="articleForm.invalid || isLoading"
+                      class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">
+                {{ isLoading ? 'Saving...' : (editingArticle ? 'Update' : 'Create') }} Article
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Articles Table -->
+        <div class="bg-white rounded-lg border border-gray-200">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50 border-b">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Views</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr *ngFor="let article of articles" class="hover:bg-gray-50">
+                  <td class="px-6 py-4">
+                    <div class="text-sm font-medium text-gray-900">{{ article.title }}</div>
+                    <div class="text-sm text-gray-500">{{ article.description }}</div>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-500">
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                      {{ article.category | titlecase }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-sm">
+                    <span [ngClass]="article.isPublished ? 
+                      'inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800' :
+                      'inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800'">
+                      {{ article.isPublished ? 'Published' : 'Draft' }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-500">
+                    {{ article.createdAt | date:'short' }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-500">
+                    {{ article.viewCount }}
+                  </td>
+                  <td class="px-6 py-4 text-sm">
+                    <div class="flex items-center gap-2">
+                      <button (click)="editArticle(article)" 
+                              class="text-blue-600 hover:text-blue-800" 
+                              title="Edit">
+                        <mat-icon class="w-4 h-4">edit</mat-icon>
+                      </button>
+                      <button (click)="toggleArticlePublished(article)" 
+                              [class]="article.isPublished ? 'text-yellow-600 hover:text-yellow-800' : 'text-green-600 hover:text-green-800'"
+                              [title]="article.isPublished ? 'Unpublish' : 'Publish'">
+                        <mat-icon class="w-4 h-4">{{ article.isPublished ? 'visibility_off' : 'visibility' }}</mat-icon>
+                      </button>
+                      <button (click)="deleteArticle(article)" 
+                              class="text-red-600 hover:text-red-800" 
+                              title="Delete">
+                        <mat-icon class="w-4 h-4">delete</mat-icon>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- FAQs Tab -->
+    <mat-tab label="FAQs">
+      <div class="tab-content">
+        
+        <!-- FAQs Header -->
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-semibold text-gray-900">Frequently Asked Questions</h2>
+          <button 
+            (click)="showCreateFaq()"
+            class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+            <mat-icon class="w-5 h-5 mr-2">add</mat-icon>
+            New FAQ
+          </button>
+        </div>
+
+        <!-- FAQ Form -->
+        <div *ngIf="showFaqForm" class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium text-gray-900">
+              {{ editingFaq ? 'Edit FAQ' : 'Create New FAQ' }}
+            </h3>
+            <button (click)="cancelEdit()" mat-icon-button>
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+
+          <form [formGroup]="faqForm" (ngSubmit)="saveFaq()" class="space-y-4">
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Question</mat-label>
+              <input matInput formControlName="question" placeholder="Enter the question">
+              <mat-error *ngIf="faqForm.get('question')?.invalid && faqForm.get('question')?.touched">
+                Question is required (minimum 5 characters)
+              </mat-error>
+            </mat-form-field>
+
+            <div class="editor-section">
+              <label class="editor-label">Answer</label>
+              <editor
+                [init]="editorConfig"
+                formControlName="answer"
+                class="w-full">
+              </editor>
+              <div *ngIf="faqForm.get('answer')?.invalid && faqForm.get('answer')?.touched" 
+                   class="text-red-600 text-sm mt-1">
+                Answer is required (minimum 10 characters)
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Category</mat-label>
+                <mat-select formControlName="category">
+                  <mat-option *ngFor="let category of categories" [value]="category">
+                    {{ category | titlecase }}
+                  </mat-option>
+                </mat-select>
+                <mat-error *ngIf="faqForm.get('category')?.invalid && faqForm.get('category')?.touched">
+                  Category is required
+                </mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Tags (comma separated)</mat-label>
+                <input matInput formControlName="tags" placeholder="tag1, tag2, tag3">
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Sort Order</mat-label>
+                <input matInput type="number" formControlName="sortOrder" placeholder="0">
+              </mat-form-field>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4">
+              <button type="button" (click)="cancelEdit()" 
+                      class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                Cancel
+              </button>
+              <button type="submit" [disabled]="faqForm.invalid || isLoading"
+                      class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">
+                {{ isLoading ? 'Saving...' : (editingFaq ? 'Update' : 'Create') }} FAQ
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- FAQs Table -->
+        <div class="bg-white rounded-lg border border-gray-200">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50 border-b">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Question</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr *ngFor="let faq of faqs" class="hover:bg-gray-50">
+                  <td class="px-6 py-4">
+                    <div class="text-sm font-medium text-gray-900">{{ faq.question }}</div>
+                    <div class="text-sm text-gray-500">{{ (faq.answer | slice:0:100) + (faq.answer.length > 100 ? '...' : '') }}</div>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-500">
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                      {{ faq.category | titlecase }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-500">
+                    {{ faq.createdAt | date:'short' }}
+                  </td>
+                  <td class="px-6 py-4 text-sm">
+                    <div class="flex items-center gap-2">
+                      <button (click)="editFaq(faq)" 
+                              class="text-blue-600 hover:text-blue-800" 
+                              title="Edit">
+                        <mat-icon class="w-4 h-4">edit</mat-icon>
+                      </button>
+                      <button (click)="deleteFaq(faq)" 
+                              class="text-red-600 hover:text-red-800" 
+                              title="Delete">
+                        <mat-icon class="w-4 h-4">delete</mat-icon>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Support Tickets Tab -->
+    <mat-tab label="Support Tickets">
+      <div class="tab-content">
+        <h2 class="text-xl font-semibold text-gray-900 mb-6">Support Tickets</h2>
+
+        <!-- Tickets Table -->
+        <div class="bg-white rounded-lg border border-gray-200">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50 border-b">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ticket #</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr *ngFor="let ticket of tickets" class="hover:bg-gray-50">
+                  <td class="px-6 py-4 text-sm font-medium text-gray-900">
+                    {{ ticket.ticketNumber }}
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="text-sm font-medium text-gray-900">{{ ticket.subject }}</div>
+                    <div class="text-sm text-gray-500">{{ ticket.submittedBy }}</div>
+                  </td>
+                  <td class="px-6 py-4 text-sm">
+                    <span [ngClass]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full ' + 
+                      (ticket.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                       ticket.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                       ticket.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                       'bg-green-100 text-green-800')">
+                      {{ ticket.priority | titlecase }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-sm">
+                    <span [ngClass]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full ' + 
+                      (ticket.status === 'open' ? 'bg-red-100 text-red-800' :
+                       ticket.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                       ticket.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                       'bg-gray-100 text-gray-800')">
+                      {{ ticket.status | titlecase }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-500">
+                    {{ ticket.createdAt | date:'short' }}
+                  </td>
+                  <td class="px-6 py-4 text-sm">
+                    <div class="flex items-center gap-2">
+                      <button class="text-blue-600 hover:text-blue-800" title="View Details">
+                        <mat-icon class="w-4 h-4">visibility</mat-icon>
+                      </button>
+                      <button class="text-green-600 hover:text-green-800" title="Respond">
+                        <mat-icon class="w-4 h-4">reply</mat-icon>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>

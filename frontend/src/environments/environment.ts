@@ -1,12 +1,13 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:8081/api', // Direct backend URL for development
+  apiUrl: '/api', // Use proxy configuration for development
   enableN8nIntegration: true,
-  n8nWebhookUrl: 'https://g37-ventures1.app.n8n.cloud/webhook/operations'
+  n8nWebhookUrl: 'https://g37-ventures1.app.n8n.cloud/webhook/operations',
+  tinymceApiKey: '' // Add your TinyMCE API key here for production (leave empty for development)
 };
 
 // Debug: Log environment loading
 console.log('🔧 Environment.ts loaded:', {
   production: false,
-  apiUrl: 'http://localhost:8081/api'
+  apiUrl: '/api'
 });

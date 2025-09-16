@@ -28,9 +28,13 @@
     "@angular/platform-browser": "^17.3.0",
     "@angular/platform-browser-dynamic": "^17.3.0",
     "@angular/router": "^17.3.0",
+    "@tinymce/tinymce-angular": "^9.1.0",
+    "@types/marked": "^5.0.2",
+    "marked": "^16.3.0",
     "primeicons": "^7.0.0",
     "primeng": "^17.18.12",
     "rxjs": "~7.8.0",
+    "tinymce": "^8.0.2",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.3"
   },
