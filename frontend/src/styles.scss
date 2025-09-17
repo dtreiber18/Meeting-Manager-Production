@@ -5,6 +5,41 @@
 
 /* Angular Material theme already imported via angular.json */
 
+/* Quill Editor Styles - use relative imports */
+@import '../node_modules/quill/dist/quill.snow.css';
+@import '../node_modules/quill/dist/quill.bubble.css';
+
+/* Custom Quill styling for Material Design integration */
+.ql-toolbar {
+  border: 1px solid #e0e0e0 !important;
+  border-bottom: none !important;
+  border-radius: 4px 4px 0 0 !important;
+  background: #fafafa;
+}
+
+.ql-container {
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 0 0 4px 4px !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.ql-editor {
+  min-height: 120px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.ql-editor.ql-blank::before {
+  color: #9e9e9e;
+  font-style: normal;
+}
+
+/* Make sure Quill integrates well with our forms */
+quill-editor {
+  display: block;
+  width: 100%;
+}
+
 /* Import professional form enhancements */
 @import 'styles/form-enhancement.scss';
 

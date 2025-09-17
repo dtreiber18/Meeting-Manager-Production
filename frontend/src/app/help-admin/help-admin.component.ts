@@ -76,7 +76,7 @@ export class HelpAdminComponent implements OnInit {
   priorities = ['low', 'medium', 'high', 'urgent'];
   statuses = ['open', 'in-progress', 'waiting-for-customer', 'resolved', 'closed'];
 
-  // Quill Editor configuration - clean and simple
+  // Quill Editor configuration - clean and simple editor for article descriptions
   editorConfig = {
     toolbar: [
       ['bold', 'italic', 'underline', 'strike'],
