@@ -114,7 +114,12 @@ export class HelpAdminComponent implements OnInit {
     automatic_uploads: false,
     valid_elements: '*[*]', // Allow all elements for flexibility
     extended_valid_elements: 'script[src|async|defer|type|charset]',
-    ...(environment.tinymceApiKey && { api_key: environment.tinymceApiKey }),
+    // Suppress API key warnings in development
+    license_key: 'gpl',
+    ...(environment.tinymceApiKey && { 
+      api_key: environment.tinymceApiKey,
+      license_key: undefined // Remove GPL license when using paid API key
+    }),
     setup: (editor: any) => {
       editor.on('change', () => {
         editor.save();
@@ -160,7 +165,12 @@ export class HelpAdminComponent implements OnInit {
     automatic_uploads: false,
     valid_elements: '*[*]', // Allow all elements for flexibility
     extended_valid_elements: 'script[src|async|defer|type|charset]',
-    ...(environment.tinymceApiKey && { api_key: environment.tinymceApiKey }),
+    // Suppress API key warnings in development
+    license_key: 'gpl',
+    ...(environment.tinymceApiKey && { 
+      api_key: environment.tinymceApiKey,
+      license_key: undefined // Remove GPL license when using paid API key
+    }),
     setup: (editor: any) => {
       editor.on('change', () => {
         editor.save();
