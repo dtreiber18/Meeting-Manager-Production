@@ -1,9 +1,11 @@
 .meeting-details-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 24px 24px 48px 24px; /* Add extra bottom padding */
   background-color: #f8fafc;
-  min-height: 100vh;
+  min-height: calc(100vh - 120px); /* Account for header/nav space */
+  position: relative; /* Ensure proper positioning */
+  overflow-x: hidden; /* Prevent horizontal overflow */
 }
 
 /* Loading and Error States */
@@ -64,6 +66,7 @@
   border-radius: 12px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  margin-bottom: 24px; /* Ensure spacing from container bottom */
 }
 
 /* Header Section */
@@ -474,8 +477,10 @@
 
 /* Footer */
 .meeting-footer {
-  padding: 20px 32px;
+  padding: 20px 32px 32px 32px; /* Extra bottom padding */
   background-color: #f8fafc;
+  margin-top: 24px; /* Ensure separation from content above */
+  border-top: 1px solid #e5e7eb; /* Visual separation */
   
   .timestamps {
     display: flex;
@@ -490,7 +495,8 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .meeting-details-container {
-    padding: 16px;
+    padding: 16px 16px 40px 16px; /* Adjusted mobile padding */
+    min-height: calc(100vh - 100px); /* Adjusted for mobile header */
   }
   
   .meeting-header {
@@ -538,7 +544,7 @@
   }
   
   .meeting-footer {
-    padding: 16px 20px;
+    padding: 16px 20px 32px 20px; /* Extra bottom padding for mobile */
     
     .timestamps {
       flex-direction: column;
