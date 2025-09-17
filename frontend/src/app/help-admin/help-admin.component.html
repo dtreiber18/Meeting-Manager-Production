@@ -90,11 +90,11 @@
 
             <div class="editor-section">
               <label class="editor-label">Description</label>
-              <editor
-                [init]="editorConfig"
+              <quill-editor
+                [modules]="editorConfig"
                 formControlName="description"
-                class="w-full">
-              </editor>
+                class="w-full bg-white">
+              </quill-editor>
               <div *ngIf="articleForm.get('description')?.invalid && articleForm.get('description')?.touched" 
                    class="text-red-600 text-sm mt-1">
                 Description is required (minimum 10 characters)
@@ -103,11 +103,11 @@
 
             <div class="editor-section">
               <label class="editor-label">Content</label>
-              <editor
-                [init]="contentEditorConfig"
+              <quill-editor
+                [modules]="contentEditorConfig"
                 formControlName="content"
-                class="w-full">
-              </editor>
+                class="w-full bg-white">
+              </quill-editor>
               <div *ngIf="articleForm.get('content')?.invalid && articleForm.get('content')?.touched" 
                    class="text-red-600 text-sm mt-1">
                 Content is required (minimum 50 characters)
@@ -247,11 +247,11 @@
 
             <div class="editor-section">
               <label class="editor-label">Answer</label>
-              <editor
-                [init]="editorConfig"
+              <quill-editor
+                [modules]="editorConfig"
                 formControlName="answer"
-                class="w-full">
-              </editor>
+                class="w-full bg-white">
+              </quill-editor>
               <div *ngIf="faqForm.get('answer')?.invalid && faqForm.get('answer')?.touched" 
                    class="text-red-600 text-sm mt-1">
                 Answer is required (minimum 10 characters)

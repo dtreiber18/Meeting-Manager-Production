@@ -15,11 +15,10 @@ import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatChipsModule } from '@angular/material/chips';
-import { EditorModule } from '@tinymce/tinymce-angular';
+import { QuillModule } from 'ngx-quill';
 
 import { HelpService, HelpArticle, FAQ } from '../help/help.service';
 import { HelpAdminService, SupportTicketFull } from '../services/help-admin.service';
-import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-help-admin',
@@ -41,7 +40,7 @@ import { environment } from '../../environments/environment';
     MatDialogModule,
     MatSlideToggleModule,
     MatChipsModule,
-    EditorModule
+    QuillModule
   ],
   templateUrl: './help-admin.component.html',
   styleUrls: ['./help-admin.component.scss']
@@ -77,105 +76,46 @@ export class HelpAdminComponent implements OnInit {
   priorities = ['low', 'medium', 'high', 'urgent'];
   statuses = ['open', 'in-progress', 'waiting-for-customer', 'resolved', 'closed'];
 
-  // TinyMCE configuration
+  // Quill Editor configuration - clean and simple
   editorConfig = {
-    base_url: '/tinymce', // Set base URL for TinyMCE assets
-    suffix: '.min', // Use minified versions in production
-    height: 300,
-    menubar: false, // Simplified for better UX
-    plugins: [
-      'advlist autolink lists link image charmap preview anchor',
-      'searchreplace visualblocks code fullscreen',
-      'insertdatetime table paste code help wordcount'
-    ],
     toolbar: [
-      'undo redo | formatselect | bold italic forecolor backcolor | \
-      alignleft aligncenter alignright alignjustify | \
-      bullist numlist outdent indent | removeformat | help'
+      ['bold', 'italic', 'underline', 'strike'],
+      ['blockquote', 'code-block'],
+      [{ 'header': 1 }, { 'header': 2 }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'script': 'sub'}, { 'script': 'super' }],
+      [{ 'indent': '-1'}, { 'indent': '+1' }],
+      [{ 'direction': 'rtl' }],
+      [{ 'size': ['small', false, 'large', 'huge'] }],
+      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'font': [] }],
+      [{ 'align': [] }],
+      ['clean'],
+      ['link']
     ],
-    content_style: `
-      body { 
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; 
-        font-size: 14px;
-        line-height: 1.6;
-        margin: 8px;
-      }
-      pre { background-color: #f4f4f4; padding: 10px; border-radius: 4px; }
-      blockquote { border-left: 4px solid #ccc; margin-left: 0; padding-left: 16px; }
-      h1, h2, h3, h4, h5, h6 { margin-top: 1rem; margin-bottom: 0.5rem; }
-      p { margin-bottom: 1rem; }
-      ul, ol { margin-bottom: 1rem; }
-    `,
-    branding: false,
-    promotion: false,
-    statusbar: false, // Remove status bar to clean up UI
-    resize: false, // Disable resize to maintain consistent layout
-    paste_data_images: false, // Disable for security in production
-    automatic_uploads: false,
-    valid_elements: '*[*]', // Allow all elements for flexibility
-    extended_valid_elements: 'script[src|async|defer|type|charset]',
-    // Suppress API key warnings in development
-    license_key: 'gpl',
-    ...(environment.tinymceApiKey && { 
-      api_key: environment.tinymceApiKey,
-      license_key: undefined // Remove GPL license when using paid API key
-    }),
-    setup: (editor: any) => {
-      editor.on('change', () => {
-        editor.save();
-      });
-    }
+    theme: 'snow'
   };
 
-  // Larger editor config for content
+  // Enhanced editor config for article content
   contentEditorConfig = {
-    base_url: '/tinymce', // Set base URL for TinyMCE assets
-    suffix: '.min', // Use minified versions in production
-    height: 400,
-    menubar: false, // Simplified for better UX
-    plugins: [
-      'advlist autolink lists link image charmap preview anchor',
-      'searchreplace visualblocks code fullscreen',
-      'insertdatetime table paste code help wordcount'
-    ],
     toolbar: [
-      'undo redo | formatselect | bold italic forecolor backcolor | \
-      alignleft aligncenter alignright alignjustify | \
-      bullist numlist outdent indent | removeformat | help',
-      'link image | table | code | fullscreen'
+      ['bold', 'italic', 'underline', 'strike'],
+      ['blockquote', 'code-block'],
+      [{ 'header': 1 }, { 'header': 2 }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'script': 'sub'}, { 'script': 'super' }],
+      [{ 'indent': '-1'}, { 'indent': '+1' }],
+      [{ 'direction': 'rtl' }],
+      [{ 'size': ['small', false, 'large', 'huge'] }],
+      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'font': [] }],
+      [{ 'align': [] }],
+      ['clean'],
+      ['link', 'image', 'video']
     ],
-    content_style: `
-      body { 
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; 
-        font-size: 14px;
-        line-height: 1.6;
-        margin: 8px;
-      }
-      pre { background-color: #f4f4f4; padding: 10px; border-radius: 4px; }
-      blockquote { border-left: 4px solid #ccc; margin-left: 0; padding-left: 16px; }
-      h1, h2, h3, h4, h5, h6 { margin-top: 1rem; margin-bottom: 0.5rem; }
-      p { margin-bottom: 1rem; }
-      ul, ol { margin-bottom: 1rem; }
-    `,
-    branding: false,
-    promotion: false,
-    statusbar: false, // Remove status bar to clean up UI
-    resize: false, // Disable resize to maintain consistent layout
-    paste_data_images: false, // Disable for security in production
-    automatic_uploads: false,
-    valid_elements: '*[*]', // Allow all elements for flexibility
-    extended_valid_elements: 'script[src|async|defer|type|charset]',
-    // Suppress API key warnings in development
-    license_key: 'gpl',
-    ...(environment.tinymceApiKey && { 
-      api_key: environment.tinymceApiKey,
-      license_key: undefined // Remove GPL license when using paid API key
-    }),
-    setup: (editor: any) => {
-      editor.on('change', () => {
-        editor.save();
-      });
-    }
+    theme: 'snow'
   };
   
   // Table columns
