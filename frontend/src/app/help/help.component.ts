@@ -15,72 +15,10 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject } from 'rxjs';
 import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { marked } from 'marked';
-import { HelpService } from './help.service';
-
-// Import interfaces and service
-export interface HelpArticle {
-  id: string;
-  title: string;
-  description: string;
-  content: string;
-  category: string;
-  tags: string[];
-  createdAt: Date;
-  updatedAt: Date;
-  viewCount: number;
-}
-
-export interface FAQ {
-  id: string;
-  question: string;
-  answer: string;
-  category: string;
-  tags: string[];
-  createdAt: Date;
-  viewCount: number;
-}
-
-export interface SearchResult {
-  id: string;
-  title: string;
-  snippet: string;
-  type: 'article' | 'faq';
-  category: string;
-  relevanceScore: number;
-}
-
-export interface SupportTicket {
-  subject: string;
-  description: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  category: 'technical' | 'account' | 'billing' | 'feature' | 'other';
-}
-
-export interface SupportTicketResponse {
-  id: string;
-  ticketNumber: string;
-  status: string;
-  createdAt: Date;
-}
+import { HelpService, HelpArticle, FAQ, SearchResult, SupportTicket, SupportTicketResponse } from './help.service';
 
 // Mock service for now - will be replaced with actual service
-class MockHelpService {
-  getHelpArticles() {
-    return new Subject<HelpArticle[]>();
-  }
-  
-  getFAQs() {
-    return new Subject<FAQ[]>();
-  }
-  
-  searchContent(query: string) {
-    return new Subject<SearchResult[]>();
-  }
-  
-  submitSupportTicket(ticket: SupportTicket) {
-    return new Subject<SupportTicketResponse>();
-  }
-}
+// REMOVED: Using real HelpService now instead of MockHelpService
 
 @Component({
   selector: 'app-help',
@@ -99,7 +37,7 @@ class MockHelpService {
     MatExpansionModule,
     MatProgressSpinnerModule
   ],
-  providers: [MockHelpService],
+  providers: [],
   templateUrl: './help.component.html',
   styleUrls: ['./help.component.scss']
 })
