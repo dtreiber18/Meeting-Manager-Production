@@ -10,7 +10,15 @@ A modern, enterprise-grade meeting management application built with Angular 17+
 
 ## 🔧 Recent Updates (September 2025)
 
-### ✅ **Free Quill Editor Integration (v2.4.1) - LATEST**
+### ✅ **API Configuration Fix & Development Environment Enhancement (v2.4.2) - LATEST**
+- **Fixed Development URL Issues**: Resolved localhost:8081 URL warnings and API configuration problems
+- **Proper Proxy Integration**: ApiConfigService now correctly uses Angular proxy configuration in development
+- **Environment-Aware URL Handling**: Development mode uses relative URLs (`/api`) for proxy, production uses absolute URLs
+- **Service Updates**: Updated all test services (CalendarService, UserTestService) to use ApiConfigService instead of hardcoded URLs
+- **URL Normalization Fix**: Fixed interceptor logic to only convert relative URLs in production, preserving proxy functionality in development
+- **Clean Development Experience**: Eliminated unnecessary URL conversion warnings and CORS issues in local development
+
+### ✅ **Free Quill Editor Integration (v2.4.1)**
 - **TinyMCE to Quill Migration**: Replaced TinyMCE with completely free and open-source Quill Editor
 - **Zero Licensing Costs**: Eliminated subscription fees and API key requirements for rich text editing
 - **Professional WYSIWYG Experience**: Maintained full formatting capabilities with modern, clean interface

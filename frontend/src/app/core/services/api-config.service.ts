@@ -20,18 +20,26 @@ export class ApiConfigService {
     console.log('🔧 Environment.production:', environment?.production);
     console.log('🔧 Environment.apiUrl:', environment?.apiUrl);
     
-    // Get the base API URL from environment, with robust fallback handling
+    // Get the base API URL from environment
     let apiUrl = environment?.apiUrl;
     
-    // Handle various environment loading issues
-    if (!apiUrl || apiUrl === '/api') {
-      // Default to development backend if environment is not properly loaded
-      apiUrl = 'http://localhost:8081/api';
-      console.warn('⚠️ ApiConfigService: Environment apiUrl missing or relative, using development default:', apiUrl);
-    } else if (!apiUrl.startsWith('http') && !environment?.production) {
-      // For development, convert relative URLs to absolute
-      apiUrl = 'http://localhost:8081/api';
-      console.warn('⚠️ ApiConfigService: Environment apiUrl was relative, converted to:', apiUrl);
+    // Handle environment loading issues with proper dev/prod logic
+    if (!apiUrl) {
+      if (environment?.production) {
+        // Production should have an explicit API URL
+        console.error('❌ ApiConfigService: No apiUrl configured for production!');
+        apiUrl = '/api'; // Fallback to relative
+      } else {
+        // Development: use relative URL for proxy
+        apiUrl = '/api';
+        console.log('✅ ApiConfigService: Using relative URL for development proxy');
+      }
+    } else if (apiUrl === '/api' && !environment?.production) {
+      // This is correct for development - keep the relative URL for proxy
+      console.log('✅ ApiConfigService: Using relative URL for development proxy');
+    } else if (!apiUrl.startsWith('http') && environment?.production) {
+      // Production with relative URL is problematic
+      console.error('❌ ApiConfigService: Production environment has relative apiUrl, this may not work properly');
     }
     
     this.baseApiUrl = apiUrl;
@@ -39,17 +47,19 @@ export class ApiConfigService {
   }
 
   private isValidApiUrl(url: string): boolean {
-    // Allow relative URLs in production, absolute URLs in development
+    // In development, relative URLs are correct (handled by proxy)
+    // In production, we need absolute URLs
     if (environment?.production) {
-      return true; // In production, relative URLs are okay
+      return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/');
+    } else {
+      return true; // In development, any URL format is acceptable
     }
-    return url.startsWith('http://') || url.startsWith('https://');
   }
 
   /**
    * Get the complete API URL for a given endpoint
    * @param endpoint - The API endpoint (e.g., 'meetings', 'users/profile')
-   * @returns Complete URL (e.g., 'http://localhost:8081/api/meetings')
+   * @returns Complete URL (e.g., '/api/meetings' in dev, full URL in prod)
    */
   getApiUrl(endpoint: string): string {
     // Remove leading slash if present to avoid double slashes
@@ -62,7 +72,7 @@ export class ApiConfigService {
 
   /**
    * Get the base API URL
-   * @returns Base API URL (e.g., 'http://localhost:8081/api')
+   * @returns Base API URL (e.g., '/api' in dev, full URL in prod)
    */
   getBaseApiUrl(): string {
     return this.baseApiUrl;
@@ -71,9 +81,14 @@ export class ApiConfigService {
   /**
    * Check if a URL is a relative API URL that should be converted
    * @param url - URL to check
-   * @returns true if it's a relative API URL
+   * @returns true if it's a relative API URL that needs conversion
    */
   isRelativeApiUrl(url: string): boolean {
+    // In development, we WANT relative URLs (for proxy), so don't flag them for conversion
+    if (!environment?.production) {
+      return false; // In development, keep relative URLs as-is
+    }
+    // In production, relative URLs might need to be converted to absolute
     return url.startsWith('/api/') || url.startsWith('api/');
   }
 
@@ -84,7 +99,7 @@ export class ApiConfigService {
    */
   normalizeUrl(url: string): string {
     if (this.isRelativeApiUrl(url)) {
-      console.warn(`⚠️ Converting relative URL '${url}' to full URL. Consider using getApiUrl() instead.`);
+      console.warn(`⚠️ Converting relative URL '${url}' to full URL. This should only happen in production.`);
       const endpoint = url.replace(/^\/api\//, '').replace(/^api\//, '');
       return this.getApiUrl(endpoint);
     }

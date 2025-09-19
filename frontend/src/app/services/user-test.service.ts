@@ -3,16 +3,17 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
+import { ApiConfigService } from '../core/services/api-config.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserTestService {
-  private readonly API_URL = 'http://localhost:8081/api'; // Direct backend URL for testing
 
   constructor(
     private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
+    private apiConfig: ApiConfigService
   ) {}
 
   /**
@@ -24,7 +25,7 @@ export class UserTestService {
       throw new Error('User not authenticated');
     }
 
-    const url = `${this.API_URL}/users/profile?email=${encodeURIComponent(currentUser.email)}`;
+    const url = `${this.apiConfig.getApiUrl('users/profile')}?email=${encodeURIComponent(currentUser.email)}`;
     console.log('Making user profile request to:', url);
 
     return this.http.get(url, { responseType: 'text' }).pipe(
@@ -71,7 +72,7 @@ export class UserTestService {
 
     console.log('Updating user profile with:', body);
 
-    return this.http.put(`${this.API_URL}/users/profile`, body).pipe(
+    return this.http.put(this.apiConfig.getApiUrl('users/profile'), body).pipe(
       catchError(error => {
         console.error('Error updating user profile:', error);
         throw error;

@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { ToastService } from './toast.service';
 import { AuthService } from '../../auth/auth.service';
+import { ApiConfigService } from '../../core/services/api-config.service';
 
 export interface Notification {
   id: string;
@@ -70,7 +71,6 @@ export class NotificationService {
   private unreadCountSubject = new BehaviorSubject<number>(0);
   public unreadCount$ = this.unreadCountSubject.asObservable();
   
-  private apiUrl = `${environment.apiUrl}/notifications`;
   private isPolling = false;
 
   // Pre-defined notification triggers
@@ -132,8 +132,10 @@ export class NotificationService {
   constructor(
     private http: HttpClient,
     private toastService: ToastService,
-    private authService: AuthService
+    private authService: AuthService,
+    private apiConfig: ApiConfigService
   ) {
+    console.log('🔧 NotificationService using ApiConfigService');
     this.initializeService();
   }
 
@@ -176,7 +178,7 @@ export class NotificationService {
    */
   async loadNotifications(): Promise<void> {
     try {
-      const notifications = await this.http.get<any[]>(`${this.apiUrl}`).toPromise();
+      const notifications = await this.http.get<any[]>(this.apiConfig.endpoints.notifications()).toPromise();
       if (notifications) {
         // Convert API response to proper Notification objects with Date conversion
         const convertedNotifications: Notification[] = notifications.map(n => ({
@@ -219,7 +221,7 @@ export class NotificationService {
    */
   async markAsRead(notificationId: string): Promise<void> {
     try {
-      await this.http.patch(`${this.apiUrl}/${notificationId}/read`, {}).toPromise();
+      await this.http.patch(this.apiConfig.endpoints.notification(notificationId) + '/read', {}).toPromise();
       
       // Update local state
       const notifications = this.notificationsSubject.value;
@@ -246,7 +248,7 @@ export class NotificationService {
    */
   async markAllAsRead(): Promise<void> {
     try {
-      await this.http.patch(`${this.apiUrl}/mark-all-read`, {}).toPromise();
+      await this.http.patch(this.apiConfig.getApiUrl('notifications/mark-all-read'), {}).toPromise();
       
       // Update local state
       const notifications = this.notificationsSubject.value;
@@ -267,7 +269,7 @@ export class NotificationService {
    */
   async deleteNotification(notificationId: string): Promise<void> {
     try {
-      await this.http.delete(`${this.apiUrl}/${notificationId}`).toPromise();
+      await this.http.delete(this.apiConfig.endpoints.notification(notificationId)).toPromise();
       
       // Update local state
       const notifications = this.notificationsSubject.value;
@@ -294,7 +296,7 @@ export class NotificationService {
         isRead: false
       };
 
-      await this.http.post(`${this.apiUrl}`, newNotification).toPromise();
+      await this.http.post(this.apiConfig.endpoints.notifications(), newNotification).toPromise();
       
       // Reload notifications to get the latest state
       this.loadNotifications();
@@ -446,7 +448,7 @@ export class NotificationService {
    */
   async updateNotificationTrigger(triggerId: string, updates: Partial<NotificationTrigger>): Promise<void> {
     try {
-      await this.http.patch(`${this.apiUrl}/triggers/${triggerId}`, updates).toPromise();
+      await this.http.patch(this.apiConfig.getApiUrl(`notifications/triggers/${triggerId}`), updates).toPromise();
       this.toastService.showSuccess('Notification settings updated');
     } catch (error) {
       console.error('Error updating notification trigger:', error);

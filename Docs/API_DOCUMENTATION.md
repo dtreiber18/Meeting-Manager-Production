@@ -7,7 +7,8 @@ The Meeting Manager backend provides a RESTful API built with Spring Boot 3.x, s
 ## 🔧 Base Configuration
 
 ### Server Details
-- **Base URL**: `http://localhost:8080/api`
+- **Base URL (Development)**: `http://localhost:8081/api` (backend server)
+- **Frontend Proxy**: `http://localhost:4200/api` (Angular dev server with proxy)
 - **Framework**: Spring Boot 3.2.8
 - **Java Version**: 17
 - **Database**: MySQL 8.0 + MongoDB
@@ -17,15 +18,39 @@ The Meeting Manager backend provides a RESTful API built with Spring Boot 3.x, s
 ```yaml
 # application.yml
 server:
-  servlet:
-    context-path: /api
-  port: 8080
+  port: 8081  # Backend runs on 8081
 
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/meeting_manager
     username: meetingmanager
     password: password
+```
+
+### Frontend Proxy Configuration
+```json
+// proxy.conf.json - Angular development proxy
+{
+  "/api/*": {
+    "target": "http://localhost:8081",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}
+```
+
+### API Configuration Service
+The frontend uses a centralized `ApiConfigService` that handles environment-aware URL management:
+
+**Development Mode**: Uses relative URLs (`/api`) that are proxied to backend
+**Production Mode**: Uses absolute URLs or server-relative paths
+
+```typescript
+// Example service usage
+this.http.get(this.apiConfig.getApiUrl('meetings'))
+// Development: /api/meetings (proxied to http://localhost:8081/api/meetings)
+// Production: /api/meetings (served by same server)
 ```
 
 ## 📋 API Endpoints

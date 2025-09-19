@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
+import { ApiConfigService } from '../core/services/api-config.service';
 
 export interface CalendarStatus {
   isConnected: boolean;
@@ -20,18 +21,18 @@ export interface CalendarAuthResponse {
   providedIn: 'root'
 })
 export class CalendarService {
-  private readonly API_URL = 'http://localhost:8081/api'; // Direct backend URL for testing
 
   constructor(
     private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
+    private apiConfig: ApiConfigService
   ) {}
 
   /**
    * Get Microsoft Graph authorization URL
    */
   getAuthUrl(): Observable<CalendarAuthResponse> {
-    return this.http.get<CalendarAuthResponse>(`${this.API_URL}/calendar/oauth/auth-url`)
+    return this.http.get<CalendarAuthResponse>(this.apiConfig.getApiUrl('calendar/oauth/auth-url'))
       .pipe(
         catchError(error => {
           console.error('Error getting calendar auth URL:', error);
@@ -59,7 +60,7 @@ export class CalendarService {
     // Get the JWT token headers using AuthService
     const headers = this.authService.getAuthHeaders();
 
-    return this.http.post(`${this.API_URL}/calendar/oauth/callback`, body, { headers })
+    return this.http.post(this.apiConfig.getApiUrl('calendar/oauth/callback'), body, { headers })
       .pipe(
         catchError(error => {
           console.error('Error handling OAuth callback:', error);
@@ -82,7 +83,7 @@ export class CalendarService {
       });
     }
 
-    const url = `${this.API_URL}/calendar/status?userEmail=${encodeURIComponent(currentUser.email)}`;
+    const url = `${this.apiConfig.getApiUrl('calendar/status')}?userEmail=${encodeURIComponent(currentUser.email)}`;
     console.log('Making calendar status request to:', url);
 
     return this.http.get(url, { responseType: 'text' }).pipe(
@@ -128,7 +129,7 @@ export class CalendarService {
       throw new Error('User not authenticated');
     }
 
-    return this.http.delete(`${this.API_URL}/calendar/disconnect`, {
+    return this.http.delete(this.apiConfig.getApiUrl('calendar/disconnect'), {
       params: { userEmail: currentUser.email }
     }).pipe(
       catchError(error => {
