@@ -102,6 +102,12 @@ public class Meeting {
     @Size(max = 1000)
     private String aiInsights; // JSON string for AI analysis results
 
+    @Enumerated(EnumType.STRING)
+    private MeetingSource source; // Source of the meeting
+
+    @Enumerated(EnumType.STRING)
+    private SourceType sourceType; // Type of source
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -213,6 +219,25 @@ public class Meeting {
         URGENT
     }
 
+    public enum MeetingSource {
+        MANUAL,
+        EMAIL,
+        CALENDAR_IMPORT,
+        API,
+        WEBHOOK,
+        N8N_WORKFLOW,
+        MICROSOFT_GRAPH,
+        GOOGLE_CALENDAR
+    }
+
+    public enum SourceType {
+        USER_CREATED,
+        AUTOMATED,
+        IMPORTED,
+        SYNCHRONIZED,
+        EXTERNAL_SYSTEM
+    }
+
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -288,6 +313,12 @@ public class Meeting {
 
     public String getAiInsights() { return aiInsights; }
     public void setAiInsights(String aiInsights) { this.aiInsights = aiInsights; }
+
+    public MeetingSource getSource() { return source; }
+    public void setSource(MeetingSource source) { this.source = source; }
+
+    public SourceType getSourceType() { return sourceType; }
+    public void setSourceType(SourceType sourceType) { this.sourceType = sourceType; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

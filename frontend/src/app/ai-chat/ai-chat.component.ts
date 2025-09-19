@@ -19,6 +19,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Message, PageType } from '../models/chat.model';
 import { ChatService } from '../services/chat.service';
+import { Meeting } from '../meetings/meeting.model';
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
@@ -397,6 +398,7 @@ import { Subject, takeUntil } from 'rxjs';
 export class AiChatComponent implements OnDestroy, AfterViewChecked {
   @Input() context = '';
   @Input() pageType: PageType = 'home';
+  @Input() meetingContext?: Meeting;
 
   @ViewChild('messagesContainer') messagesContainer!: ElementRef;
 
@@ -455,7 +457,7 @@ export class AiChatComponent implements OnDestroy, AfterViewChecked {
     this.shouldScrollToBottom = true;
 
     this.chatService
-      .generateAIResponse(messageText, this.pageType)
+      .generateAIResponse(messageText, this.pageType, this.meetingContext)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {

@@ -317,7 +317,8 @@ export class MeetingDetailsComponent implements OnInit {
         external: false,
         organizer: false,
         presenter: false,
-        attended: false
+        attended: false,
+        participantType: 'OTHER' as const
       };
       
       this.meeting.participants.push(newParticipant);

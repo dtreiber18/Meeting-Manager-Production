@@ -1,0 +1,359 @@
+package com.g37.meetingmanager.service;
+
+import com.g37.meetingmanager.model.PendingAction;
+import com.g37.meetingmanager.model.User;
+import com.g37.meetingmanager.repository.mongodb.PendingActionRepository;
+import com.g37.meetingmanager.repository.mysql.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@Transactional
+public class PendingActionService {
+
+    @Autowired
+    private PendingActionRepository pendingActionRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private NotificationService notificationService;
+
+    /**
+     * Get all pending actions for a specific meeting
+     */
+    public List<PendingAction> getPendingActionsByMeeting(Long meetingId) {
+        return pendingActionRepository.findByMeetingIdOrderByCreatedAtDesc(meetingId);
+    }
+
+    /**
+     * Get pending action by ID
+     */
+    public Optional<PendingAction> getPendingActionById(String id) {
+        return pendingActionRepository.findById(id);
+    }
+
+    /**
+     * Get pending actions assigned to a specific user
+     */
+    public List<PendingAction> getPendingActionsByAssignee(Long assigneeId) {
+        return pendingActionRepository.findByAssigneeIdOrderByDueDateAsc(assigneeId);
+    }
+
+    /**
+     * Get pending actions by status
+     */
+    public List<PendingAction> getPendingActionsByStatus(PendingAction.ActionStatus status) {
+        return pendingActionRepository.findByStatusOrderByCreatedAtDesc(status);
+    }
+
+    /**
+     * Get overdue pending actions
+     */
+    public List<PendingAction> getOverduePendingActions() {
+        return pendingActionRepository.findOverduePendingActions(LocalDateTime.now());
+    }
+
+    /**
+     * Get pending actions due soon (within specified days)
+     */
+    public List<PendingAction> getPendingActionsDueSoon(int days) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime future = now.plusDays(days);
+        return pendingActionRepository.findPendingActionsDueBetween(now, future);
+    }
+
+    /**
+     * Create a new pending action
+     */
+    public PendingAction createPendingAction(PendingAction pendingAction) {
+        // Set assignee information if assigneeId is provided
+        if (pendingAction.getAssigneeId() != null) {
+            Optional<User> assignee = userRepository.findById(pendingAction.getAssigneeId());
+            if (assignee.isPresent()) {
+                pendingAction.setAssigneeName(assignee.get().getFullName());
+                pendingAction.setAssigneeEmail(assignee.get().getEmail());
+            }
+        }
+
+        // Save the pending action
+        PendingAction savedAction = pendingActionRepository.save(pendingAction);
+
+        // Create notification for assignee if different from reporter
+        if (savedAction.getAssigneeId() != null && 
+            !savedAction.getAssigneeId().equals(savedAction.getReporterId())) {
+            notificationService.createActionItemAssignment(
+                savedAction.getAssigneeId(),
+                savedAction.getTitle(),
+                savedAction.getId(),
+                savedAction.getDueDate()
+            );
+        }
+
+        return savedAction;
+    }
+
+    /**
+     * Update an existing pending action
+     */
+    public PendingAction updatePendingAction(String id, PendingAction actionDetails) {
+        Optional<PendingAction> existingAction = pendingActionRepository.findById(id);
+        
+        if (existingAction.isEmpty()) {
+            throw new RuntimeException("Pending action not found with id: " + id);
+        }
+
+        PendingAction pendingAction = existingAction.get();
+
+        // Update basic fields
+        pendingAction.setTitle(actionDetails.getTitle());
+        pendingAction.setDescription(actionDetails.getDescription());
+        pendingAction.setPriority(actionDetails.getPriority());
+        pendingAction.setActionType(actionDetails.getActionType());
+        pendingAction.setDueDate(actionDetails.getDueDate());
+        pendingAction.setEstimatedHours(actionDetails.getEstimatedHours());
+        pendingAction.setActualHours(actionDetails.getActualHours());
+        pendingAction.setNotes(actionDetails.getNotes());
+        pendingAction.setTags(actionDetails.getTags());
+        pendingAction.setActionManagementSystems(actionDetails.getActionManagementSystems());
+
+        // Update assignee information if changed
+        if (actionDetails.getAssigneeId() != null && 
+            !actionDetails.getAssigneeId().equals(pendingAction.getAssigneeId())) {
+            Optional<User> assignee = userRepository.findById(actionDetails.getAssigneeId());
+            if (assignee.isPresent()) {
+                pendingAction.setAssigneeId(actionDetails.getAssigneeId());
+                pendingAction.setAssigneeName(assignee.get().getFullName());
+                pendingAction.setAssigneeEmail(assignee.get().getEmail());
+            }
+        }
+
+        pendingAction.updateTimestamp();
+
+        return pendingActionRepository.save(pendingAction);
+    }
+
+    /**
+     * Approve a pending action
+     */
+    public PendingAction approvePendingAction(String id, Long approvedById, String notes) {
+        Optional<PendingAction> existingAction = pendingActionRepository.findById(id);
+        
+        if (existingAction.isEmpty()) {
+            throw new RuntimeException("Pending action not found with id: " + id);
+        }
+
+        PendingAction pendingAction = existingAction.get();
+        pendingAction.approve(approvedById, notes);
+
+        PendingAction savedAction = pendingActionRepository.save(pendingAction);
+
+        // Notify assignee about approval
+        if (savedAction.getAssigneeId() != null) {
+            notificationService.createActionItemApproval(
+                savedAction.getAssigneeId(),
+                savedAction.getTitle(),
+                savedAction.getId(),
+                true // approved
+            );
+        }
+
+        // Trigger N8N workflow for approved action
+        triggerN8nWorkflow(savedAction);
+
+        return savedAction;
+    }
+
+    /**
+     * Reject a pending action
+     */
+    public PendingAction rejectPendingAction(String id, Long rejectedById, String notes) {
+        Optional<PendingAction> existingAction = pendingActionRepository.findById(id);
+        
+        if (existingAction.isEmpty()) {
+            throw new RuntimeException("Pending action not found with id: " + id);
+        }
+
+        PendingAction pendingAction = existingAction.get();
+        pendingAction.reject(rejectedById, notes);
+
+        PendingAction savedAction = pendingActionRepository.save(pendingAction);
+
+        // Notify assignee/reporter about rejection
+        if (savedAction.getAssigneeId() != null) {
+            notificationService.createActionItemApproval(
+                savedAction.getAssigneeId(),
+                savedAction.getTitle(),
+                savedAction.getId(),
+                false // rejected
+            );
+        }
+
+        return savedAction;
+    }
+
+    /**
+     * Mark pending action as completed
+     */
+    public PendingAction completePendingAction(String id, String completionNotes) {
+        Optional<PendingAction> existingAction = pendingActionRepository.findById(id);
+        
+        if (existingAction.isEmpty()) {
+            throw new RuntimeException("Pending action not found with id: " + id);
+        }
+
+        PendingAction pendingAction = existingAction.get();
+        pendingAction.complete(completionNotes);
+
+        PendingAction savedAction = pendingActionRepository.save(pendingAction);
+
+        // Notify reporter if different from assignee
+        if (savedAction.getReporterId() != null && 
+            !savedAction.getReporterId().equals(savedAction.getAssigneeId())) {
+            notificationService.createActionItemCompleted(
+                savedAction.getReporterId(),
+                savedAction.getTitle(),
+                savedAction.getId(),
+                savedAction.getAssigneeName()
+            );
+        }
+
+        return savedAction;
+    }
+
+    /**
+     * Delete a pending action
+     */
+    public void deletePendingAction(String id) {
+        if (!pendingActionRepository.existsById(id)) {
+            throw new RuntimeException("Pending action not found with id: " + id);
+        }
+        
+        pendingActionRepository.deleteById(id);
+    }
+
+    /**
+     * Get pending actions with pagination and filtering
+     */
+    public Page<PendingAction> getPendingActions(
+            Long userId,
+            Long organizationId,
+            List<PendingAction.ActionStatus> statuses,
+            Pageable pageable) {
+        
+        return pendingActionRepository.findByUserAndOrganizationAndStatuses(
+            userId, organizationId, statuses, pageable);
+    }
+
+    /**
+     * Search pending actions by text
+     */
+    public List<PendingAction> searchPendingActions(String searchText, Long organizationId) {
+        return pendingActionRepository.searchByTextAndOrganization(searchText, organizationId);
+    }
+
+    /**
+     * Get statistics for pending actions
+     */
+    public PendingActionStatistics getStatistics(Long userId) {
+        long total = pendingActionRepository.countByAssigneeId(userId);
+        long pending = pendingActionRepository.countByStatus(PendingAction.ActionStatus.NEW);
+        long active = pendingActionRepository.countByStatus(PendingAction.ActionStatus.ACTIVE);
+        long completed = pendingActionRepository.countByStatus(PendingAction.ActionStatus.COMPLETE);
+        long rejected = pendingActionRepository.countByStatus(PendingAction.ActionStatus.REJECTED);
+        long overdue = pendingActionRepository.countOverduePendingActions(LocalDateTime.now());
+
+        return new PendingActionStatistics(total, pending, active, completed, rejected, overdue);
+    }
+
+    /**
+     * Create pending actions from meeting action items
+     */
+    public List<PendingAction> createPendingActionsFromMeeting(Long meetingId, Long reporterId) {
+        // Implementation would depend on how you want to convert existing action items
+        // to pending actions. This is a placeholder for the conversion logic.
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    /**
+     * Bulk approve multiple pending actions
+     */
+    public List<PendingAction> bulkApprovePendingActions(List<String> ids, Long approvedById, String notes) {
+        return ids.stream()
+                .map(id -> approvePendingAction(id, approvedById, notes))
+                .toList();
+    }
+
+    /**
+     * Bulk reject multiple pending actions
+     */
+    public List<PendingAction> bulkRejectPendingActions(List<String> ids, Long rejectedById, String notes) {
+        return ids.stream()
+                .map(id -> rejectPendingAction(id, rejectedById, notes))
+                .toList();
+    }
+
+    /**
+     * Trigger N8N workflow for approved action
+     */
+    private void triggerN8nWorkflow(PendingAction pendingAction) {
+        // Implementation for N8N workflow trigger
+        // This would call the N8N Operations Manager workflow
+        // with the pending action details
+        
+        try {
+            // Placeholder for N8N integration
+            pendingAction.setN8nWorkflowStatus("TRIGGERED");
+            pendingAction.setN8nExecutionId("n8n_" + System.currentTimeMillis());
+            pendingActionRepository.save(pendingAction);
+        } catch (Exception e) {
+            // Log error and update status
+            pendingAction.setN8nWorkflowStatus("FAILED");
+            pendingActionRepository.save(pendingAction);
+        }
+    }
+
+    /**
+     * Statistics class for pending actions
+     */
+    public static class PendingActionStatistics {
+        private final long total;
+        private final long pending;
+        private final long active;
+        private final long completed;
+        private final long rejected;
+        private final long overdue;
+
+        public PendingActionStatistics(long total, long pending, long active, long completed, long rejected, long overdue) {
+            this.total = total;
+            this.pending = pending;
+            this.active = active;
+            this.completed = completed;
+            this.rejected = rejected;
+            this.overdue = overdue;
+        }
+
+        // Getters
+        public long getTotal() { return total; }
+        public long getPending() { return pending; }
+        public long getActive() { return active; }
+        public long getCompleted() { return completed; }
+        public long getRejected() { return rejected; }
+        public long getOverdue() { return overdue; }
+        public double getCompletionRate() { 
+            return total > 0 ? (double) completed / total * 100 : 0; 
+        }
+        public double getApprovalRate() {
+            long approvalRequests = pending + active + completed + rejected;
+            return approvalRequests > 0 ? (double) (active + completed) / approvalRequests * 100 : 0;
+        }
+    }
+}

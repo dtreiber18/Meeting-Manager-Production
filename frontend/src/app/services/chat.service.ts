@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, catchError } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
 import { PageType } from '../models/chat.model';
 import { MeetingService } from '../meetings/meeting.service';
 import { Meeting } from '../meetings/meeting.model';
 import { ApiConfigService } from '../core/services/api-config.service';
+import { MeetingAiAssistantService, MeetingAnalysis, ActionItemSuggestion } from './meeting-ai-assistant.service';
 
 export interface ChatRequest {
   message: string;
@@ -38,7 +39,8 @@ export class ChatService {
   constructor(
     private http: HttpClient,
     private meetingService: MeetingService,
-    private apiConfig: ApiConfigService
+    private apiConfig: ApiConfigService,
+    private aiAssistant: MeetingAiAssistantService
   ) {
     // Use production backend for deployed environments, otherwise use ApiConfigService
     if (window.location.hostname.includes('azurecontainerapps.io')) {
@@ -67,7 +69,8 @@ export class ChatService {
 
   generateAIResponse(
     userMessage: string,
-    pageType: PageType
+    pageType: PageType,
+    meetingContext?: Meeting
   ): Observable<string> {
     // Check if we're in a meeting creation flow
     if (this.meetingCreationState) {
@@ -78,6 +81,11 @@ export class ChatService {
     const lowerMessage = userMessage.toLowerCase();
     if (this.isMeetingCreationIntent(lowerMessage)) {
       return this.startMeetingCreation(userMessage);
+    }
+
+    // Use AI Assistant for meeting-specific queries
+    if (pageType === 'detail' && meetingContext) {
+      return this.aiAssistant.getMeetingContextualHelp(userMessage, meetingContext);
     }
 
     const request: ChatRequest = {
@@ -96,7 +104,10 @@ export class ChatService {
       catchError(error => {
         console.error('Chat API error:', error);
         console.log('Falling back to local response');
-        // Fallback to local response if API fails
+        // Enhanced fallback with AI assistant for meeting context
+        if (pageType === 'detail' && meetingContext) {
+          return this.aiAssistant.getMeetingContextualHelp(userMessage, meetingContext);
+        }
         return of(this.getContextualResponse(userMessage, pageType));
       })
     );
@@ -555,5 +566,40 @@ Would you like to:
 Just let me know how you'd like to proceed!`);
       })
     );
+  }
+
+  /**
+   * Get intelligent meeting analysis
+   */
+  getMeetingAnalysis(meeting: Meeting): Observable<MeetingAnalysis> {
+    return this.aiAssistant.analyzeMeeting(meeting);
+  }
+
+  /**
+   * Get smart action item suggestions
+   */
+  suggestActionItems(meeting: Meeting): Observable<ActionItemSuggestion[]> {
+    return this.aiAssistant.suggestActionItems(meeting);
+  }
+
+  /**
+   * Get intelligent scheduling assistance
+   */
+  getSchedulingSuggestions(participants: string[], meetingType: string): Observable<any> {
+    return this.aiAssistant.getSchedulingSuggestions(participants, meetingType);
+  }
+
+  /**
+   * Analyze meeting trends for dashboard insights
+   */
+  analyzeMeetingTrends(meetings: Meeting[]): Observable<any> {
+    return this.aiAssistant.getMeetingTrends(meetings);
+  }
+
+  /**
+   * Enhanced chat response for meeting details with intelligent context
+   */
+  getIntelligentMeetingHelp(query: string, meeting: Meeting): Observable<string> {
+    return this.aiAssistant.getMeetingContextualHelp(query, meeting);
   }
 }

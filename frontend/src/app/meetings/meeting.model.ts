@@ -138,25 +138,48 @@ export interface Participant {
   email: string;
   name: string;
   participantRole: string;
+  
+  // Enhanced classification system
+  participantType: 'CLIENT' | 'G37' | 'OTHER';
+  department?: string;
+  organization?: string;
+  title?: string;
+  phoneNumber?: string;
+  timezone?: string;
+  preferredLanguage?: string;
+  
+  // Status and attendance
   invitationStatus: string;
   attendanceStatus: string;
+  attended: boolean;
   isRequired: boolean;
+  
+  // Permissions and roles
   canEdit: boolean;
   canInviteOthers: boolean;
+  internal: boolean;
+  external: boolean;
+  organizer: boolean;
+  presenter: boolean;
+  
+  // Time tracking
   joinedAt?: string;
   leftAt?: string;
   attendanceDurationMinutes?: number;
   invitedAt: string;
   respondedAt?: string;
   lastReminderSentAt?: string;
+  
+  // Additional metadata
+  notes?: string;
+  avatar?: string;
+  linkedInProfile?: string;
+  companyWebsite?: string;
+  
+  // System fields
   createdAt: string;
   updatedAt: string;
   user?: User;
-  internal: boolean;
-  external: boolean;
-  organizer: boolean;
-  presenter: boolean;
-  attended: boolean;
 }
 
 export interface ActionItem {
