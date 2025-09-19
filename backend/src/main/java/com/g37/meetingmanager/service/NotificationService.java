@@ -218,6 +218,19 @@ public class NotificationService {
     }
     
     /**
+     * Create action item approval notification
+     */
+    public Notification createActionItemApproval(Long userId, String actionTitle, String actionId, boolean approved) {
+        String title = approved ? "Action Item Approved" : "Action Item Rejected";
+        String message = String.format("Action item \"%s\" has been %s", actionTitle, approved ? "approved" : "rejected");
+        String actionUrl = "/action-items/" + actionId;
+        String actionText = "View Details";
+        
+        return createNotification(userId, NotificationType.ACTION_ITEM_ASSIGNED, title, message, 
+                                NotificationPriority.NORMAL, actionUrl, actionText);
+    }
+
+    /**
      * Create action item completed notification
      */
     public Notification createActionItemCompleted(Long userId, String actionTitle, String actionId, String completedBy) {
