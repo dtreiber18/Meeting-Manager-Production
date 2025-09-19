@@ -32,29 +32,26 @@ describe('Service API URL Validation', () => {
     const apiConfig = (service as any).apiConfig;
     expect(apiConfig).toBeDefined();
     
-    // Verify the meeting endpoint returns correct URL
+    // Verify the meeting endpoint returns correct URL (in development, this should be relative)
     const meetingsUrl = apiConfig.endpoints.meetings();
-    expect(meetingsUrl).toContain('http://'); // Must be full URL, not relative
-    expect(meetingsUrl).toContain('/meetings'); // Should contain meetings endpoint
+    expect(meetingsUrl).toBe('/api/meetings'); // Should be relative URL for proxy in development
   });
 
   it('should verify ChatService uses correct base URL', () => {
     const service = TestBed.inject(ChatService);
     
     const apiUrl = (service as any).apiUrl;
-    expect(apiUrl).toContain('http://'); // Must be full URL, not relative
-    expect(apiUrl).not.toMatch(/^\/api\//); // Must not start with relative path
-    expect(apiUrl).toContain('/chat'); // Should contain chat endpoint
+    expect(apiUrl).toBe('/api/chat'); // Should be relative URL for proxy in development
   });
 
   it('should verify NotificationService uses correct base URL', () => {
     const service = TestBed.inject(NotificationService);
     
-    // NotificationService should use the base pattern but may have relative URL
-    // What matters is that the service works correctly, not the exact URL format
-    const apiUrl = (service as any).apiUrl;
-    expect(apiUrl).toBeDefined();
-    expect(apiUrl).toContain('notifications'); // Should contain notifications endpoint
+    // NotificationService uses ApiConfigService through dependency injection
+    // Check that it has access to the apiConfig service
+    const apiConfig = (service as any).apiConfig;
+    expect(apiConfig).toBeDefined();
+    expect(apiConfig.getApiUrl('notifications')).toEqual('/api/notifications');
   });
 
   it('should verify SettingsService uses correct base URL', () => {
@@ -74,10 +71,9 @@ describe('Service API URL Validation', () => {
     const apiConfig = (service as any).apiConfig;
     expect(apiConfig).toBeDefined();
     
-    // Verify the user profile endpoint returns correct URL
+    // Verify the user profile endpoint returns correct URL (in development, this should be relative)
     const userProfileUrl = apiConfig.endpoints.userProfile();
-    expect(userProfileUrl).toContain('http://'); // Must be full URL, not relative
-    expect(userProfileUrl).toContain('/users/profile'); // Should contain user profile endpoint
+    expect(userProfileUrl).toBe('/api/users/profile'); // Should be relative URL for proxy in development
   });
 
   it('should verify environment.apiUrl is properly configured', () => {

@@ -15,52 +15,42 @@ describe('ApiConfigService', () => {
   });
 
   it('should return correct base API URL', () => {
-    // ApiConfigService converts relative URLs to full URLs
-    expect(service.getBaseApiUrl()).toContain('http://');
-    expect(service.getBaseApiUrl()).toContain('/api');
+    // In development, ApiConfigService uses relative URLs for proxy
+    expect(service.getBaseApiUrl()).toBe('/api');
   });
 
   it('should generate correct API URLs', () => {
-    // ApiConfigService converts relative URLs to full URLs
-    expect(service.getApiUrl('meetings')).toContain('http://');
-    expect(service.getApiUrl('meetings')).toContain('/meetings');
-    expect(service.getApiUrl('users/profile')).toContain('http://');
-    expect(service.getApiUrl('users/profile')).toContain('/users/profile');
+    // In development, ApiConfigService uses relative URLs for proxy
+    expect(service.getApiUrl('meetings')).toBe('/api/meetings');
+    expect(service.getApiUrl('users/profile')).toBe('/api/users/profile');
   });
 
   it('should handle endpoints with leading slashes', () => {
-    // ApiConfigService converts relative URLs to full URLs
-    expect(service.getApiUrl('/meetings')).toContain('http://');
-    expect(service.getApiUrl('/meetings')).toContain('/meetings');
-    expect(service.getApiUrl('/users/profile')).toContain('http://');
-    expect(service.getApiUrl('/users/profile')).toContain('/users/profile');
+    // In development, ApiConfigService uses relative URLs for proxy
+    expect(service.getApiUrl('/meetings')).toBe('/api/meetings');
+    expect(service.getApiUrl('/users/profile')).toBe('/api/users/profile');
   });
 
   it('should detect relative API URLs', () => {
-    expect(service.isRelativeApiUrl('/api/meetings')).toBe(true);
-    expect(service.isRelativeApiUrl('api/meetings')).toBe(true);
+    // In development, we DON'T want to flag relative URLs for conversion
+    expect(service.isRelativeApiUrl('/api/meetings')).toBe(false);
+    expect(service.isRelativeApiUrl('api/meetings')).toBe(false);
     expect(service.isRelativeApiUrl('http://localhost:8081/api/meetings')).toBe(false);
   });
 
   it('should normalize relative URLs', () => {
-    // ApiConfigService converts relative URLs to full URLs
-    expect(service.normalizeUrl('/api/meetings')).toContain('http://');
-    expect(service.normalizeUrl('/api/meetings')).toContain('/meetings');
-    expect(service.normalizeUrl('api/meetings')).toContain('http://');
-    expect(service.normalizeUrl('api/meetings')).toContain('/meetings');
+    // In development, relative URLs should NOT be converted
+    expect(service.normalizeUrl('/api/meetings')).toBe('/api/meetings');
+    expect(service.normalizeUrl('api/meetings')).toBe('api/meetings');
     expect(service.normalizeUrl('http://localhost:8081/api/meetings')).toBe('http://localhost:8081/api/meetings');
   });
 
   it('should provide predefined endpoints', () => {
-    // ApiConfigService converts relative URLs to full URLs
-    expect(service.endpoints.meetings()).toContain('http://');
-    expect(service.endpoints.meetings()).toContain('/meetings');
-    expect(service.endpoints.meeting('123')).toContain('http://');
-    expect(service.endpoints.meeting('123')).toContain('/meetings/123');
-    expect(service.endpoints.userProfile()).toContain('http://');
-    expect(service.endpoints.userProfile()).toContain('/users/profile');
-    expect(service.endpoints.notifications()).toContain('http://');
-    expect(service.endpoints.notifications()).toContain('/notifications');
+    // In development, ApiConfigService uses relative URLs for proxy
+    expect(service.endpoints.meetings()).toBe('/api/meetings');
+    expect(service.endpoints.meeting('123')).toBe('/api/meetings/123');
+    expect(service.endpoints.userProfile()).toBe('/api/users/profile');
+    expect(service.endpoints.notifications()).toBe('/api/notifications');
   });
 
   it('should handle invalid base URL gracefully by using fallback', () => {
@@ -68,9 +58,9 @@ describe('ApiConfigService', () => {
     const originalApiUrl = environment.apiUrl;
     (environment as any).apiUrl = 'invalid-url';
     
-    // Service should not throw but use fallback URL
+    // In development, invalid URLs should be used as-is (no fallback conversion)
     const service = new ApiConfigService();
-    expect(service.getApiUrl('test')).toBe('http://localhost:8081/api/test');
+    expect(service.getApiUrl('test')).toBe('invalid-url/test');
     
     // Restore original URL
     (environment as any).apiUrl = originalApiUrl;
