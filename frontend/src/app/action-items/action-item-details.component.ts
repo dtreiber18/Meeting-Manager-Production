@@ -65,7 +65,7 @@ import {
   styleUrls: ['./action-item-details.component.scss']
 })
 export class ActionItemDetailsComponent implements OnInit, OnDestroy {
-  private destroy$ = new Subject<void>();
+  private readonly destroy$ = new Subject<void>();
   
   actionItem: ActionItem | null = null;
   isLoading = true;
@@ -88,11 +88,11 @@ export class ActionItemDetailsComponent implements OnInit, OnDestroy {
   formatDueDate = formatActionItemDueDate;
 
   constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    private actionItemService: ActionItemService,
-    private formBuilder: FormBuilder,
-    private dialog: MatDialog
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
+    private readonly actionItemService: ActionItemService,
+    private readonly formBuilder: FormBuilder,
+    private readonly dialog: MatDialog
   ) {
     this.editForm = this.createEditForm();
   }

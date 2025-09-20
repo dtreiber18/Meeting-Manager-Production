@@ -30,11 +30,22 @@ spring:
         use_sql_comments: true
         generate_statistics: false
   
-  # MongoDB Configuration
+  # MongoDB and Redis Configuration
   data:
     mongodb:
       uri: ${MONGODB_URI:mongodb://localhost:27017/meeting_manager}
       auto-index-creation: true
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
   
   # Security Configuration
   security:
@@ -43,19 +54,6 @@ spring:
         jwt:
           issuer-uri: ${OAUTH2_ISSUER_URI:}
           audiences: ${OAUTH2_AUDIENCES:}
-  
-  # Redis Configuration (for caching)
-  redis:
-    host: ${REDIS_HOST:localhost}
-    port: ${REDIS_PORT:6379}
-    password: ${REDIS_PASSWORD:}
-    timeout: 2000ms
-    lettuce:
-      pool:
-        max-active: 8
-        max-idle: 8
-        min-idle: 0
-        max-wait: -1ms
   
   # File Upload Configuration
   servlet:

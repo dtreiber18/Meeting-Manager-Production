@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, catchError } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 import { PageType } from '../models/chat.model';
 import { MeetingService } from '../meetings/meeting.service';
 import { Meeting } from '../meetings/meeting.model';
@@ -33,14 +33,14 @@ export interface MeetingCreationState {
   providedIn: 'root',
 })
 export class ChatService {
-  private apiUrl: string;
+  private readonly apiUrl: string;
   private meetingCreationState: MeetingCreationState | null = null;
 
   constructor(
-    private http: HttpClient,
-    private meetingService: MeetingService,
-    private apiConfig: ApiConfigService,
-    private aiAssistant: MeetingAiAssistantService
+    private readonly http: HttpClient,
+    private readonly meetingService: MeetingService,
+    private readonly apiConfig: ApiConfigService,
+    private readonly aiAssistant: MeetingAiAssistantService
   ) {
     // Use production backend for deployed environments, otherwise use ApiConfigService
     if (window.location.hostname.includes('azurecontainerapps.io')) {
@@ -253,7 +253,7 @@ export class ChatService {
         state.step = 'date';
         return of(`Perfect! I'll create a meeting called "${state.title}". When would you like to schedule it? Please provide a date and time (e.g., "Tomorrow at 2 PM" or "December 15th at 10:30 AM").`);
 
-      case 'date':
+      case 'date': {
         const dateTime = this.parseDateTimeFromMessage(userMessage);
         if (dateTime.startTime) {
           state.startTime = dateTime.startTime;
@@ -284,13 +284,14 @@ Just say the type you prefer.`);
 
 Please try again with one of these formats.`);
         }
+      }
 
       case 'type':
         state.meetingType = this.normalizeMeetingType(userMessage);
         state.step = 'participants';
         return of(`Got it! This will be a ${state.meetingType}. Who would you like to invite? You can list email addresses separated by commas, or say "just me" for a solo meeting.`);
 
-      case 'participants':
+      case 'participants': {
         if (lowerMessage.includes('just me') || lowerMessage.includes('only me') || lowerMessage.includes('no one')) {
           state.participants = [];
         } else {
@@ -301,6 +302,7 @@ Please try again with one of these formats.`);
           ? `I'll invite: ${state.participants.join(', ')}.` 
           : "This will be a solo meeting.";
         return of(`${participantText} Would you like to add a description or agenda for the meeting? (You can say "no description" to skip this step)`);
+      }
 
       case 'description':
         if (!lowerMessage.includes('no description') && !lowerMessage.includes('skip')) {
@@ -327,7 +329,8 @@ Please try again with one of these formats.`);
 
   private extractMeetingDataFromMessage(message: string): Partial<MeetingCreationState> {
     // Simple extraction - look for quoted text as title
-    const titleMatch = message.match(/"([^"]+)"/);
+    const titleRegex = /"([^"]+)"/;
+    const titleMatch = titleRegex.exec(message);
     return {
       title: titleMatch ? titleMatch[1] : undefined
     };
@@ -546,7 +549,7 @@ The meeting has been added to your calendar and you should see it in your meetin
         this.meetingCreationState = null; // Reset state
         
         let errorMessage = 'Unknown error';
-        if (error.error && error.error.message) {
+        if (error.error?.message) {
           errorMessage = error.error.message;
         } else if (error.message) {
           errorMessage = error.message;
@@ -585,14 +588,35 @@ Just let me know how you'd like to proceed!`);
   /**
    * Get intelligent scheduling assistance
    */
-  getSchedulingSuggestions(participants: string[], meetingType: string): Observable<any> {
+  getSchedulingSuggestions(participants: string[], meetingType: string): Observable<{
+    timeSlots: Array<{
+      start: string;
+      end: string;
+      confidence: number;
+      reasoning: string;
+    }>;
+    participants: Array<{
+      email: string;
+      name: string;
+      availability: 'available' | 'busy' | 'tentative' | 'unknown';
+    }>;
+    meetingType: string;
+    suggestedDuration: number;
+    locationSuggestion: string;
+  }> {
     return this.aiAssistant.getSchedulingSuggestions(participants, meetingType);
   }
 
   /**
    * Analyze meeting trends for dashboard insights
    */
-  analyzeMeetingTrends(meetings: Meeting[]): Observable<any> {
+  analyzeMeetingTrends(meetings: Meeting[]): Observable<{
+    attendancePatterns: Record<string, unknown>;
+    actionItemTrends: Record<string, unknown>;
+    meetingFrequency: Record<string, unknown>;
+    participantEngagement: Record<string, unknown>;
+    recommendations: string[];
+  }> {
     return this.aiAssistant.getMeetingTrends(meetings);
   }
 

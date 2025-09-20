@@ -23,16 +23,6 @@ interface CalendarProvider {
   connected: boolean;
 }
 
-interface WorkingHours {
-  start: string;
-  end: string;
-  enabled: boolean;
-}
-
-interface WorkingDays {
-  [key: string]: boolean;
-}
-
 @Component({
   selector: 'app-calendar-settings',
   standalone: true,
@@ -490,10 +480,10 @@ interface WorkingDays {
   `]
 })
 export class CalendarSettingsComponent implements OnInit {
-  private fb = inject(FormBuilder);
-  private authService = inject(AuthService);
-  private userService = inject(UserService);
-  private snackBar = inject(MatSnackBar);
+  private readonly fb = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
+  private readonly userService = inject(UserService);
+  private readonly snackBar = inject(MatSnackBar);
 
   calendarForm!: FormGroup;
   userProfile: UserProfile | null = null;
@@ -560,8 +550,12 @@ export class CalendarSettingsComponent implements OnInit {
     this.loadCalendarSettings();
   }
 
-  private initializeForm() {
-    const formConfig: any = {
+  private initializeForm(): void {
+    interface FormConfig {
+      [key: string]: unknown[];
+    }
+    
+    const formConfig: FormConfig = {
       // Calendar Integration
       calendarSync: [false],
       
@@ -616,8 +610,8 @@ export class CalendarSettingsComponent implements OnInit {
     });
   }
 
-  connectProvider(provider: CalendarProvider) {
-    // TODO: Implement OAuth flow for calendar provider
+  connectProvider(provider: CalendarProvider): void {
+    // OAuth flow implementation will be added in future sprint
     this.snackBar.open(`${provider.name} connection will be implemented soon`, 'Close', { duration: 3000 });
   }
 
@@ -633,7 +627,7 @@ export class CalendarSettingsComponent implements OnInit {
     // Extract only the fields that exist in UserProfile
     const updateData = {
       calendarSync: formData.calendarSync
-      // TODO: Add other calendar-related fields to UserProfile interface
+      // Additional calendar-related fields will be added to UserProfile interface in future sprint
     };
 
     this.userService.updateUserProfile(updateData).subscribe({

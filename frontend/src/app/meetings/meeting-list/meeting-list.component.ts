@@ -1,6 +1,6 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient, HttpClientModule, HttpErrorResponse } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,6 +10,15 @@ import { Meeting } from '../meeting.model';
 import { environment } from '../../../environments/environment';
 import { Subject, takeUntil } from 'rxjs';
 
+interface N8nEventData {
+  id?: string;
+  title?: string;
+  start?: string;
+  end?: string;
+  description?: string;
+  [key: string]: unknown;
+}
+
 @Component({
   selector: 'app-meeting-list',
   standalone: true,
@@ -17,15 +26,21 @@ import { Subject, takeUntil } from 'rxjs';
   templateUrl: './meeting-list.component.html',
   styleUrl: './meeting-list.component.scss'
 })
-export class MeetingListComponent implements OnDestroy {
-  meetings: (Meeting & { source?: 'mm' | 'n8n' })[] = [];
-  loading = true;
-  error = '';
-  displayedColumns = ['title', 'date', 'actions'];
+export class MeetingListComponent implements OnInit, OnDestroy {
+  @Input() meetings: Meeting[] = [];
+  @Output() meetingSelected = new EventEmitter<Meeting>();
+  @Output() meetingDeleted = new EventEmitter<number>();
 
-  private destroy$ = new Subject<void>();
+  loading = false;
+  error: string | null = null;
+  displayedColumns: string[] = ['title', 'date', 'type', 'participants', 'actions'];
 
-  constructor(private meetingService: MeetingService, private http: HttpClient) {
+  private readonly destroy$ = new Subject<void>();
+
+  constructor(private readonly meetingService: MeetingService, private readonly http: HttpClient) {
+  }
+
+  ngOnInit(): void {
     this.loadMeetings();
     
     // Subscribe to meeting updates
@@ -75,7 +90,7 @@ export class MeetingListComponent implements OnDestroy {
         mmCompleted = true;
         finalizeMeetings();
       },
-      error: (err: any) => {
+      error: (err: HttpErrorResponse) => {
         console.log('❌ Meeting Manager backend unavailable:', err);
         mmCompleted = true;
         finalizeMeetings();
@@ -86,22 +101,33 @@ export class MeetingListComponent implements OnDestroy {
     // n8n API call - only if environment enables it
     if (environment.enableN8nIntegration && environment.n8nWebhookUrl) {
       console.log('📞 Calling n8n webhook...');
-      this.http.post<any[]>(environment.n8nWebhookUrl, { action: 'get_events' }).subscribe({
-      next: (n8nData: any[]) => {
+      this.http.post<N8nEventData[]>(environment.n8nWebhookUrl, { action: 'get_events' }).subscribe({
+      next: (n8nData: N8nEventData[]) => {
         console.log('✅ n8n response:', n8nData);
         // Map n8n meetings to Meeting model as best as possible
-        n8nMeetings = (n8nData || []).map((ev: any) => ({
-          ...ev,
-          source: 'n8n',
-          // fallback for missing fields
-          title: ev.title || ev.meetingType || 'n8n Meeting',
-          date: ev.date || ev.meetingMetadata?.date || ev.startTime,
-          id: ev.id || ev.eventId || ev.meetingId || Math.random().toString(36).substring(2, 10)
-        }));
+        n8nMeetings = (n8nData || []).map((ev: N8nEventData) => ({
+          id: Number(ev.id || ev['eventId'] || ev['meetingId'] || Math.random() * 1000000),
+          title: (ev.title || ev['meetingType'] || 'n8n Meeting') as string,
+          description: ev.description || '',
+          startTime: ev.start || ev['startTime'] || new Date().toISOString(),
+          endTime: ev.end || ev['endTime'] || new Date().toISOString(),
+          meetingType: 'GENERAL',
+          status: 'SCHEDULED',
+          priority: 'MEDIUM',
+          isRecurring: false,
+          isPublic: false,
+          requiresApproval: false,
+          allowRecording: true,
+          autoTranscription: false,
+          aiAnalysisEnabled: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          source: 'n8n'
+        } as Meeting & { source: 'n8n' }));
         n8nCompleted = true;
         finalizeMeetings();
       },
-      error: (err: any) => {
+      error: (err: HttpErrorResponse) => {
         console.log('❌ n8n API error:', err);
         this.error = 'Only meetings created locally (within the tool) are currently visible due to lost connection.';
         n8nCompleted = true;

@@ -1,9 +1,24 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
 import { ApiConfigService } from '../core/services/api-config.service';
+
+export interface UserProfile {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  displayName?: string;
+  preferences?: Record<string, unknown>;
+}
+
+export interface UserProfileUpdate {
+  firstName?: string;
+  lastName?: string;
+  displayName?: string;
+  preferences?: Record<string, unknown>;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -11,15 +26,15 @@ import { ApiConfigService } from '../core/services/api-config.service';
 export class UserTestService {
 
   constructor(
-    private http: HttpClient,
-    private authService: AuthService,
-    private apiConfig: ApiConfigService
+    private readonly http: HttpClient,
+    private readonly authService: AuthService,
+    private readonly apiConfig: ApiConfigService
   ) {}
 
   /**
    * Get current user profile with detailed debugging
    */
-  getCurrentUserProfile(): Observable<any> {
+  getCurrentUserProfile(): Observable<UserProfile> {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
       throw new Error('User not authenticated');
@@ -34,22 +49,16 @@ export class UserTestService {
         try {
           const response = JSON.parse(responseText);
           console.log('Parsed response:', response);
-          return response;
+          return response as UserProfile;
         } catch (parseError) {
           console.error('JSON parse error:', parseError);
           console.error('Response text was:', responseText);
           throw parseError;
         }
       }),
-      catchError((error: any) => {
+      catchError((error: unknown) => {
         console.error('Error getting user profile:', error);
-        console.log('Error details:', {
-          status: error.status,
-          statusText: error.statusText,
-          error: error.error,
-          message: error.message,
-          url: error.url
-        });
+        console.log('Error details:', error);
         
         throw error;
       })
@@ -59,7 +68,7 @@ export class UserTestService {
   /**
    * Update user profile with debugging
    */
-  updateUserProfile(updates: any): Observable<any> {
+  updateUserProfile(updates: UserProfileUpdate): Observable<UserProfile> {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
       throw new Error('User not authenticated');
@@ -72,7 +81,7 @@ export class UserTestService {
 
     console.log('Updating user profile with:', body);
 
-    return this.http.put(this.apiConfig.getApiUrl('users/profile'), body).pipe(
+    return this.http.put<UserProfile>(this.apiConfig.getApiUrl('users/profile'), body).pipe(
       catchError(error => {
         console.error('Error updating user profile:', error);
         throw error;

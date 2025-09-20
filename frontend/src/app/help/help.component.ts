@@ -42,13 +42,13 @@ import { HelpService, HelpArticle, FAQ, SearchResult, SupportTicket, SupportTick
   styleUrls: ['./help.component.scss']
 })
 export class HelpComponent implements OnInit, OnDestroy {
-  private destroy$ = new Subject<void>();
+  private readonly destroy$ = new Subject<void>();
 
   // Current section navigation
-  currentSection: string = 'main';
+  currentSection = 'main';
   
   // Search functionality
-  searchQuery: string = '';
+  searchQuery = '';
   searchResults: SearchResult[] = [];
   searchSuggestions: string[] = [
     'How to create a meeting',
@@ -60,39 +60,39 @@ export class HelpComponent implements OnInit, OnDestroy {
     'Export meeting data',
     'Mobile app access'
   ];
-  showSuggestions: boolean = false;
+  showSuggestions = false;
 
   // Filter functionality
-  showFilters: boolean = false;
-  selectedCategory: string = '';
-  selectedContentType: string = '';
-  sortBy: string = 'relevance';
+  showFilters = false;
+  selectedCategory = '';
+  selectedContentType = '';
+  sortBy = 'relevance';
 
   // Content data
   helpArticles: HelpArticle[] = [];
   faqs: FAQ[] = [];
   faqCategories: string[] = ['General', 'Meetings', 'Action Items', 'Account', 'Technical'];
-  selectedFAQCategory: string = 'General';
+  selectedFAQCategory = 'General';
 
   // Support ticket form
-  showTicketForm: boolean = false;
+  showTicketForm = false;
   supportTicketForm: FormGroup;
-  isSubmittingTicket: boolean = false;
+  isSubmittingTicket = false;
 
   // Loading states
-  isLoading: boolean = false;
+  isLoading = false;
   
   // Error states
-  hasError: boolean = false;
-  errorMessage: string = '';
-  retryAttempts: number = 0;
-  maxRetryAttempts: number = 3;
+  hasError = false;
+  errorMessage = '';
+  retryAttempts = 0;
+  maxRetryAttempts = 3;
 
   constructor(
-    private helpService: HelpService,
-    private formBuilder: FormBuilder,
-    private snackBar: MatSnackBar,
-    private router: Router
+    private readonly helpService: HelpService,
+    private readonly formBuilder: FormBuilder,
+    private readonly snackBar: MatSnackBar,
+    private readonly router: Router
   ) {
     this.supportTicketForm = this.formBuilder.group({
       subject: ['', [Validators.required, Validators.minLength(5)]],
@@ -151,7 +151,7 @@ export class HelpComponent implements OnInit, OnDestroy {
         this.isLoading = false;
         this.retryAttempts = 0;
       },
-      error: (error: any) => {
+      error: (error: unknown) => {
         console.error('Error loading help articles:', error);
         this.handleLoadError('Failed to load help articles. Please check your connection and try again.');
       }
@@ -164,7 +164,7 @@ export class HelpComponent implements OnInit, OnDestroy {
       next: (faqs: FAQ[]) => {
         this.faqs = faqs;
       },
-      error: (error: any) => {
+      error: (error: unknown) => {
         console.error('Error loading FAQs:', error);
         this.handleLoadError('Failed to load FAQ content. Please check your connection and try again.');
       }
@@ -230,7 +230,7 @@ export class HelpComponent implements OnInit, OnDestroy {
         this.currentSection = 'search-results';
         this.isLoading = false;
       },
-      error: (error: any) => {
+      error: (error: unknown) => {
         console.error('Error searching content:', error);
         this.isLoading = false;
         this.snackBar.open('Search failed. Please check your connection and try again.', 'Close', {
@@ -313,7 +313,7 @@ export class HelpComponent implements OnInit, OnDestroy {
     this.helpService.submitSupportTicket(ticket).pipe(
       takeUntil(this.destroy$)
     ).subscribe({
-      next: (response: SupportTicketResponse) => {
+      next: (_response: SupportTicketResponse) => {
         this.snackBar.open('Support ticket submitted successfully! You will receive a confirmation email.', 'Close', {
           duration: 5000,
           panelClass: ['success-snackbar']
@@ -321,7 +321,7 @@ export class HelpComponent implements OnInit, OnDestroy {
         this.cancelTicketForm();
         this.isSubmittingTicket = false;
       },
-      error: (error: any) => {
+      error: (error: unknown) => {
         console.error('Error submitting ticket:', error);
         this.snackBar.open('Error submitting ticket. Please try again or contact support directly.', 'Close', {
           duration: 5000,

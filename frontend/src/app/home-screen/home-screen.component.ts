@@ -1,13 +1,12 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { Meeting, FilterConfig, Participant, ActionItem } from '../meetings/meeting.model';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatDialogModule } from '@angular/material/dialog';
 import { FormsModule } from '@angular/forms';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
@@ -48,8 +47,8 @@ export class HomeScreenComponent implements OnInit {
   localFilterConfig!: FilterConfig;
 
   constructor(
-    private dialog: MatDialog,
-    private documentService: DocumentService
+    private readonly dialog: MatDialog,
+    private readonly documentService: DocumentService
   ) {}
 
   ngOnInit() {
@@ -70,65 +69,102 @@ export class HomeScreenComponent implements OnInit {
     return this.meetings.find(m => m.isJustCompleted);
   }
 
+  private matchesSearchQuery(meeting: Meeting, query: string): boolean {
+    const lowerQuery = query.toLowerCase();
+    
+    // Basic text fields
+    if (meeting.title?.toLowerCase().includes(lowerQuery) ||
+        meeting.subject?.toLowerCase().includes(lowerQuery) ||
+        meeting.summary?.toLowerCase().includes(lowerQuery) ||
+        meeting.description?.toLowerCase().includes(lowerQuery)) {
+      return true;
+    }
+
+    // Participants
+    if (meeting.participants.some((p: Participant) => 
+      p.name.toLowerCase().includes(lowerQuery) || 
+      p.email?.toLowerCase().includes(lowerQuery)
+    )) {
+      return true;
+    }
+
+    // Action items
+    if (meeting.actionItems.some((ai: ActionItem) => 
+      ai.description.toLowerCase().includes(lowerQuery) || 
+      ai.title?.toLowerCase().includes(lowerQuery) ||
+      ai.assignee?.firstName?.toLowerCase().includes(lowerQuery) ||
+      ai.assignedTo?.toLowerCase().includes(lowerQuery)
+    )) {
+      return true;
+    }
+
+    // Next steps
+    if (meeting.nextSteps) {
+      if (typeof meeting.nextSteps === 'string' && meeting.nextSteps.toLowerCase().includes(lowerQuery)) {
+        return true;
+      }
+      if (Array.isArray(meeting.nextSteps) && 
+          meeting.nextSteps.some(step => step?.toLowerCase().includes(lowerQuery))) {
+        return true;
+      }
+    }
+
+    // Other fields
+    if (meeting.details?.toLowerCase().includes(lowerQuery) ||
+        this.formatMeetingType(meeting.meetingType || meeting.type).toLowerCase().includes(lowerQuery)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private matchesFilters(meeting: Meeting): boolean {
+    // Date range filter
+    if (this.localFilterConfig.dateRange?.start && this.localFilterConfig.dateRange?.end) {
+      const meetingDate = new Date(meeting.startTime);
+      const startDate = new Date(this.localFilterConfig.dateRange.start);
+      const endDate = new Date(this.localFilterConfig.dateRange.end);
+      if (meetingDate < startDate || meetingDate > endDate) return false;
+    }
+
+    // Meeting type filter
+    if ((this.localFilterConfig.meetingType ?? []).length > 0) {
+      if (!(this.localFilterConfig.meetingType ?? []).includes(meeting.meetingType)) return false;
+    }
+
+    // Participants filter
+    if ((this.localFilterConfig.participants ?? []).length > 0) {
+      const hasParticipant = (this.localFilterConfig.participants ?? []).some((participantName: string) =>
+        meeting.participants.some((p: Participant) => p.name.toLowerCase().includes(participantName.toLowerCase()))
+      );
+      if (!hasParticipant) return false;
+    }
+
+    // Action items filter
+    if (this.localFilterConfig.hasActionItems === true && meeting.actionItems.length === 0) {
+      return false;
+    }
+
+    // Recording filter
+    if (this.localFilterConfig.hasRecording === true && !meeting.recordingUrl) {
+      return false;
+    }
+
+    return true;
+  }
+
   applyFilters(meetingList: Meeting[]): Meeting[] {
     const query = this.searchQuery.toLowerCase().trim();
     
-    const filtered = meetingList.filter((meeting: Meeting) => {
+    return meetingList.filter((meeting: Meeting) => {
       // Search query filter - only apply if there's actually a search query
-      if (query) {
-        const matchesSearch = (
-          (meeting.title && meeting.title.toLowerCase().includes(query)) ||
-          (meeting.subject && meeting.subject.toLowerCase().includes(query)) ||
-          (meeting.summary && meeting.summary.toLowerCase().includes(query)) ||
-          (meeting.description && meeting.description.toLowerCase().includes(query)) ||
-          meeting.participants.some((p: Participant) => 
-            p.name.toLowerCase().includes(query) || 
-            (p.email && p.email.toLowerCase().includes(query))
-          ) ||
-          meeting.actionItems.some((ai: ActionItem) => 
-            ai.description.toLowerCase().includes(query) || 
-            (ai.title && ai.title.toLowerCase().includes(query)) ||
-            (ai.assignee?.firstName && ai.assignee.firstName.toLowerCase().includes(query)) ||
-            (ai.assignedTo && ai.assignedTo.toLowerCase().includes(query))
-          ) ||
-          (meeting.nextSteps && typeof meeting.nextSteps === 'string' && meeting.nextSteps.toLowerCase().includes(query)) ||
-          (meeting.nextSteps && Array.isArray(meeting.nextSteps) && meeting.nextSteps.some(step => step && step.toLowerCase().includes(query))) ||
-          (meeting.details && meeting.details.toLowerCase().includes(query)) ||
-          this.formatMeetingType(meeting.meetingType || meeting.type).toLowerCase().includes(query)
-        );
-        
-        if (!matchesSearch) return false;
-      }
-      // Date range filter
-      if (this.localFilterConfig.dateRange?.start && this.localFilterConfig.dateRange?.end) {
-        const meetingDate = new Date(meeting.startTime);
-        const startDate = new Date(this.localFilterConfig.dateRange.start ?? '');
-        const endDate = new Date(this.localFilterConfig.dateRange.end ?? '');
-        if (meetingDate < startDate || meetingDate > endDate) return false;
-      }
-      // Meeting type filter
-      if ((this.localFilterConfig.meetingType ?? []).length > 0) {
-        if (!(this.localFilterConfig.meetingType ?? []).includes(meeting.meetingType)) return false;
-      }
-      // Participants filter
-      if ((this.localFilterConfig.participants ?? []).length > 0) {
-        const hasParticipant = (this.localFilterConfig.participants ?? []).some((participantName: string) =>
-          meeting.participants.some((p: Participant) => p.name.toLowerCase().includes(participantName.toLowerCase()))
-        );
-        if (!hasParticipant) return false;
-      }
-      // Action items filter
-      if (this.localFilterConfig.hasActionItems === true && meeting.actionItems.length === 0) {
+      if (query && !this.matchesSearchQuery(meeting, query)) {
         return false;
       }
-      // Recording filter
-      if (this.localFilterConfig.hasRecording === true && !meeting.recordingUrl) {
-        return false;
-      }
-      return true;
+
+      // Apply other filters
+      return this.matchesFilters(meeting);
     });
-    
-    return filtered;
   }
 
   get filteredMeetings(): Meeting[] {
@@ -164,7 +200,7 @@ export class HomeScreenComponent implements OnInit {
     );
   }
 
-  handleFilterChange(key: keyof FilterConfig, value: any) {
+  handleFilterChange(key: keyof FilterConfig, value: string | boolean | string[] | { start: string; end: string }) {
     // Avoid object spread in template, do it here
     const dateRange = {
       start: this.localFilterConfig.dateRange?.start ?? '',
@@ -177,25 +213,36 @@ export class HomeScreenComponent implements OnInit {
       hasActionItems: this.localFilterConfig.hasActionItems,
       hasRecording: this.localFilterConfig.hasRecording
     };
+    
     if (key === 'dateRange') {
-      newConfig.dateRange = {
-        start: value.start ?? '',
-        end: value.end ?? ''
-      };
-    } else {
-      (newConfig as any)[key] = value;
+      newConfig.dateRange = value as { start: string; end: string };
+    } else if (key === 'meetingType') {
+      newConfig.meetingType = value as string[];
+    } else if (key === 'participants') {
+      newConfig.participants = value as string[];
+    } else if (key === 'hasActionItems') {
+      newConfig.hasActionItems = value as boolean;
+    } else if (key === 'hasRecording') {
+      newConfig.hasRecording = value as boolean;
     }
+    
     this.localFilterConfig = newConfig;
     this.filterChange.emit(newConfig);
   }
 
   setDateRangeStart(start: string) {
-    const dateRange = { ...this.localFilterConfig.dateRange, start };
+    const dateRange = { 
+      start, 
+      end: this.localFilterConfig.dateRange?.end ?? '' 
+    };
     this.handleFilterChange('dateRange', dateRange);
   }
 
   setDateRangeEnd(end: string) {
-    const dateRange = { ...this.localFilterConfig.dateRange, end };
+    const dateRange = { 
+      start: this.localFilterConfig.dateRange?.start ?? '', 
+      end 
+    };
     this.handleFilterChange('dateRange', dateRange);
   }
 
@@ -221,12 +268,12 @@ export class HomeScreenComponent implements OnInit {
     this.meetings.forEach((meeting: Meeting) => {
       meeting.participants.forEach((p: Participant) => participants.add(p.name));
     });
-    return Array.from(participants).sort();
+    return Array.from(participants).sort((a, b) => a.localeCompare(b));
   }
 
   getAllMeetingTypes(): string[] {
     const types = new Set(this.meetings.map(m => m.meetingType));
-    return Array.from(types).sort();
+    return Array.from(types).sort((a, b) => a.localeCompare(b));
   }
 
   onSearchInput(value: string) {

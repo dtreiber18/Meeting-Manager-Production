@@ -5,9 +5,9 @@ import { catchError, filter, take, switchMap } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 
 let isRefreshing = false;
-let refreshTokenSubject: BehaviorSubject<any> = new BehaviorSubject<any>(null);
+const refreshTokenSubject: BehaviorSubject<string | null> = new BehaviorSubject<string | null>(null);
 
-export const authInterceptor: HttpInterceptorFn = (request: HttpRequest<any>, next: HttpHandlerFn): Observable<HttpEvent<any>> => {
+export const authInterceptor: HttpInterceptorFn = (request: HttpRequest<unknown>, next: HttpHandlerFn): Observable<HttpEvent<unknown>> => {
   const authService = inject(AuthService);
 
   // Skip auth header for auth endpoints
@@ -36,7 +36,7 @@ export const authInterceptor: HttpInterceptorFn = (request: HttpRequest<any>, ne
   );
 };
 
-function addAuthHeader(request: HttpRequest<any>, authService: AuthService): HttpRequest<any> {
+function addAuthHeader(request: HttpRequest<unknown>, authService: AuthService): HttpRequest<unknown> {
   const token = authService.getToken();
   console.log('🔐 Token from service:', token ? `${token.substring(0, 10)}...` : 'null');
   
@@ -55,7 +55,7 @@ function addAuthHeader(request: HttpRequest<any>, authService: AuthService): Htt
   return newRequest;
 }
 
-function handle401Error(request: HttpRequest<any>, next: HttpHandlerFn, authService: AuthService): Observable<HttpEvent<any>> {
+function handle401Error(request: HttpRequest<unknown>, next: HttpHandlerFn, authService: AuthService): Observable<HttpEvent<unknown>> {
   if (!isRefreshing) {
     isRefreshing = true;
     refreshTokenSubject.next(null);
@@ -88,12 +88,12 @@ function isAuthEndpoint(url: string): boolean {
 // Keep the class version for backward compatibility
 @Injectable()
 export class AuthInterceptor {
-  private isRefreshing = false;
-  private refreshTokenSubject: BehaviorSubject<any> = new BehaviorSubject<any>(null);
+  private readonly isRefreshing = false;
+  private readonly refreshTokenSubject: BehaviorSubject<string | null> = new BehaviorSubject<string | null>(null);
 
-  constructor(private authService: AuthService) {}
+  constructor(private readonly authService: AuthService) {}
 
-  intercept(request: HttpRequest<any>, next: any): Observable<HttpEvent<any>> {
+  intercept(request: HttpRequest<unknown>, next: { handle: (req: HttpRequest<unknown>) => Observable<HttpEvent<unknown>> }): Observable<HttpEvent<unknown>> {
     return authInterceptor(request, next.handle.bind(next));
   }
 }

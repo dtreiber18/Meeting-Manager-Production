@@ -18,7 +18,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { QuillModule } from 'ngx-quill';
 
 import { HelpService, HelpArticle, FAQ } from '../help/help.service';
-import { HelpAdminService, SupportTicketFull } from '../services/help-admin.service';
+import { HelpAdminService, SupportTicketFull, HelpFaq } from '../services/help-admin.service';
 
 @Component({
   selector: 'app-help-admin',
@@ -124,11 +124,11 @@ export class HelpAdminComponent implements OnInit {
   ticketColumns = ['ticketNumber', 'subject', 'priority', 'status', 'createdAt', 'actions'];
 
   constructor(
-    private formBuilder: FormBuilder,
-    private dialog: MatDialog,
-    private snackBar: MatSnackBar,
-    private helpService: HelpService,
-    private helpAdminService: HelpAdminService
+    private readonly formBuilder: FormBuilder,
+    private readonly dialog: MatDialog,
+    private readonly snackBar: MatSnackBar,
+    private readonly helpService: HelpService,
+    private readonly helpAdminService: HelpAdminService
   ) {
     this.initializeForms();
   }
@@ -249,7 +249,7 @@ export class HelpAdminComponent implements OnInit {
     this.showArticleForm = true;
   }
 
-  editArticle(article: any): void {
+  editArticle(article: HelpArticle): void {
     this.editingArticle = article;
     this.articleForm.patchValue({
       title: article.title,
@@ -306,14 +306,14 @@ export class HelpAdminComponent implements OnInit {
     }, 1000);
   }
 
-  deleteArticle(article: any): void {
+  deleteArticle(article: HelpArticle): void {
     if (confirm(`Are you sure you want to delete "${article.title}"?`)) {
       this.articles = this.articles.filter(a => a.id !== article.id);
       this.snackBar.open('Article deleted successfully!', 'Close', { duration: 3000 });
     }
   }
 
-  toggleArticlePublished(article: any): void {
+  toggleArticlePublished(article: HelpArticle): void {
     article.isPublished = !article.isPublished;
     const status = article.isPublished ? 'published' : 'unpublished';
     this.snackBar.open(`Article ${status} successfully!`, 'Close', { duration: 3000 });
@@ -326,7 +326,7 @@ export class HelpAdminComponent implements OnInit {
     this.showFaqForm = true;
   }
 
-  editFaq(faq: any): void {
+  editFaq(faq: HelpFaq): void {
     this.editingFaq = faq;
     this.faqForm.patchValue({
       question: faq.question,
@@ -378,7 +378,7 @@ export class HelpAdminComponent implements OnInit {
     }, 1000);
   }
 
-  deleteFaq(faq: any): void {
+  deleteFaq(faq: HelpFaq): void {
     if (confirm(`Are you sure you want to delete this FAQ?`)) {
       this.faqs = this.faqs.filter(f => f.id !== faq.id);
       this.snackBar.open('FAQ deleted successfully!', 'Close', { duration: 3000 });
@@ -386,14 +386,15 @@ export class HelpAdminComponent implements OnInit {
   }
 
   // File upload
-  onFileUpload(event: any): void {
-    const file = event.target.files[0];
+  onFileUpload(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const file = target?.files?.[0];
     if (file) {
       this.uploadFile(file);
     }
   }
 
-  private uploadFile(file: File): void {
+  private uploadFile(_file: File): void {
     this.isLoading = true;
     
     // Mock file upload - replace with actual API call
@@ -404,8 +405,9 @@ export class HelpAdminComponent implements OnInit {
   }
 
   // Bulk import
-  importArticles(event: any): void {
-    const file = event.target.files[0];
+  importArticles(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const file = target?.files?.[0];
     if (file) {
       this.isLoading = true;
       
@@ -418,8 +420,9 @@ export class HelpAdminComponent implements OnInit {
     }
   }
 
-  importFaqs(event: any): void {
-    const file = event.target.files[0];
+  importFaqs(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const file = target?.files?.[0];
     if (file) {
       this.isLoading = true;
       

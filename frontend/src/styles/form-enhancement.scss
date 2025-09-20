@@ -283,45 +283,6 @@
   }
 }
 
-// Form Field Variants
-.professional-form-field {
-  // Primary variant (default blue theme)
-  &.variant-primary .mat-mdc-form-field.mat-focused {
-    .mat-mdc-text-field-wrapper {
-      border-color: #2563eb;
-      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.15);
-    }
-    
-    .mat-mdc-form-field-label {
-      color: #2563eb;
-    }
-  }
-  
-  // Success variant (green theme)
-  &.variant-success .mat-mdc-form-field.mat-focused {
-    .mat-mdc-text-field-wrapper {
-      border-color: #10b981;
-      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.15);
-    }
-    
-    .mat-mdc-form-field-label {
-      color: #10b981;
-    }
-  }
-  
-  // Warning variant (amber theme)
-  &.variant-warning .mat-mdc-form-field.mat-focused {
-    .mat-mdc-text-field-wrapper {
-      border-color: #f59e0b;
-      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
-    }
-    
-    .mat-mdc-form-field-label {
-      color: #f59e0b;
-    }
-  }
-}
-
 // Form Container Styling
 .professional-form-container {
   .form-section {
@@ -425,33 +386,6 @@
   }
 }
 
-// Form Grid Improvements
-.professional-form-grid {
-  display: grid;
-  gap: 20px;
-  
-  &.grid-cols-1 {
-    grid-template-columns: 1fr;
-  }
-  
-  &.grid-cols-2 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  &.grid-cols-3 {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
-  // Responsive behavior
-  @media (max-width: 768px) {
-    &.grid-cols-2,
-    &.grid-cols-3 {
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
-  }
-}
-
 // Loading State for Forms
 .form-loading-overlay {
   position: relative;
@@ -464,6 +398,7 @@
     right: 0;
     bottom: 0;
     background: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.85); // Fallback for browsers without backdrop-filter
     -webkit-backdrop-filter: blur(2px);
     backdrop-filter: blur(2px);
     display: flex;
@@ -471,6 +406,11 @@
     justify-content: center;
     border-radius: 16px;
     z-index: 10;
+    
+    // Fallback for browsers that don't support backdrop-filter
+    @supports not (backdrop-filter: blur(2px)) {
+      background: rgba(255, 255, 255, 0.9);
+    }
   }
 }
 

@@ -13,39 +13,11 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { ToastService } from '../shared/services/toast.service';
 import { AuthService, User } from '../auth/auth.service';
-import { CalendarService } from '../services/calendar.service';
-import { UserService } from '../services/user.service';
-import { Subject, takeUntil } from 'rxjs';
+import { CalendarService, CalendarStatus } from '../services/calendar.service';
+import { UserService, UserProfile } from '../services/user.service';
+import { Subject, takeUntil, lastValueFrom } from 'rxjs';
 
-interface UserPreferences {
-  // Personal Information
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber?: string;
-  jobTitle?: string;
-  department?: string;
-  bio?: string;
-  
-  // Display & Language
-  language: string;
-  timezone: string;
-  dateFormat: string;
-  timeFormat: string;
-  theme: string;
-  
-  // Notifications
-  emailNotifications: boolean;
-  pushNotifications: boolean;
-  meetingReminders: boolean;
-  actionItemReminders: boolean;
-  weeklyDigest: boolean;
-  
-  // Privacy
-  profileVisibility: string;
-  showOnlineStatus: boolean;
-  allowDirectMessages: boolean;
-}
+// Preferences component for managing user settings
 
 @Component({
   selector: 'app-preferences',
@@ -69,7 +41,7 @@ interface UserPreferences {
   styleUrls: ['./preferences.component.scss']
 })
 export class PreferencesComponent implements OnInit, OnDestroy {
-  private destroy$ = new Subject<void>();
+  private readonly destroy$ = new Subject<void>();
   
   profileForm!: FormGroup;
   displayForm!: FormGroup;
@@ -79,7 +51,7 @@ export class PreferencesComponent implements OnInit, OnDestroy {
   isLoading = false;
   isSaving = false;
   currentUser: User | null = null;
-  calendarStatus: any = null;
+  calendarStatus: CalendarStatus | null = null;
   
   // Options for dropdowns
   languageOptions = [
@@ -127,11 +99,11 @@ export class PreferencesComponent implements OnInit, OnDestroy {
   ];
 
   constructor(
-    private fb: FormBuilder,
-    private toastService: ToastService,
-    private authService: AuthService,
-    private calendarService: CalendarService,
-    private userService: UserService
+    private readonly fb: FormBuilder,
+    private readonly toastService: ToastService,
+    private readonly authService: AuthService,
+    private readonly calendarService: CalendarService,
+    private readonly userService: UserService
   ) {
     console.log('🎨 PreferencesComponent - Constructor called');
     console.log('🎨 PreferencesComponent - Services initialized:', {
@@ -225,7 +197,8 @@ export class PreferencesComponent implements OnInit, OnDestroy {
     try {
       console.log('🎨 PreferencesComponent - Loading user profile from API...');
       this.isLoading = true;
-      const userProfile = await this.userService.getUserProfile().toPromise();
+      
+      const userProfile = await lastValueFrom(this.userService.getUserProfile());
       console.log('🎨 PreferencesComponent - User profile loaded:', userProfile);
       
       if (userProfile) {
@@ -249,7 +222,7 @@ export class PreferencesComponent implements OnInit, OnDestroy {
     }
   }
 
-  private populateFormsWithUserData(user: User | any): void {
+  private populateFormsWithUserData(user: User | UserProfile): void {
     console.log('🎨 Theme Loading - Populating forms with user data:', user);
     console.log('🎨 Theme Loading - User theme value:', user.theme);
     
@@ -284,32 +257,29 @@ export class PreferencesComponent implements OnInit, OnDestroy {
 
     // Notification preferences
     this.notificationForm.patchValue({
-      emailNotifications: user.emailNotifications ?? true,
-      pushNotifications: user.pushNotifications ?? true,
-      meetingReminders: user.meetingReminders ?? true,
-      actionItemReminders: user.actionItemReminders ?? true,
-      weeklyDigest: user.weeklyDigest ?? false
+      emailNotifications: ('emailNotifications' in user) ? user.emailNotifications ?? true : true,
+      pushNotifications: ('pushNotifications' in user) ? user.pushNotifications ?? true : true,
+      meetingReminders: ('meetingReminders' in user) ? user.meetingReminders ?? true : true,
+      actionItemReminders: ('actionItemReminders' in user) ? user.actionItemReminders ?? true : true,
+      weeklyDigest: ('weeklyDigest' in user) ? user.weeklyDigest ?? false : false
     });
 
     // Privacy settings
     this.privacyForm.patchValue({
-      profileVisibility: user.profileVisibility || 'organization',
-      showOnlineStatus: user.showOnlineStatus ?? true,
-      allowDirectMessages: user.allowDirectMessages ?? true
+      profileVisibility: ('profileVisibility' in user) ? user.profileVisibility || 'organization' : 'organization',
+      showOnlineStatus: ('showOnlineStatus' in user) ? user.showOnlineStatus ?? true : true,
+      allowDirectMessages: ('allowDirectMessages' in user) ? user.allowDirectMessages ?? true : true
     });
   }
 
   private async loadCalendarStatus(): Promise<void> {
     try {
       this.isLoading = true;
-      this.calendarStatus = await this.calendarService.getCalendarStatus().toPromise();
-    } catch (error: any) {
+      this.calendarStatus = await lastValueFrom(this.calendarService.getCalendarStatus());
+    } catch (error: unknown) {
       console.error('Error checking calendar status:', error);
-      if (error.status === 404 || (error.error && error.error.error === 'User not found')) {
-        this.calendarStatus = { isConnected: false, userEmail: '', isExpired: false };
-      } else {
-        this.calendarStatus = { isConnected: false, userEmail: '', isExpired: false };
-      }
+      // Set default status on any error
+      this.calendarStatus = { isConnected: false, userEmail: '', isExpired: false };
     } finally {
       this.isLoading = false;
     }
@@ -326,7 +296,7 @@ export class PreferencesComponent implements OnInit, OnDestroy {
       const formData = this.profileForm.value;
       console.log('Saving profile:', formData);
       
-      await this.userService.updateUserProfile(formData).toPromise();
+      await lastValueFrom(this.userService.updateUserProfile(formData));
       
       this.toastService.showSuccess('Profile updated successfully');
     } catch (error) {
@@ -389,7 +359,7 @@ export class PreferencesComponent implements OnInit, OnDestroy {
       console.log('🎨 Theme Saving - Calling userService.updateUserProfile()...');
       
       // Save all display settings to the backend
-      const result = await this.userService.updateUserProfile(updateData).toPromise();
+      const result = await lastValueFrom(this.userService.updateUserProfile(updateData));
       console.log('🎨 Theme Saving - Backend response received:', result);
       
       // Apply theme changes immediately
@@ -403,7 +373,7 @@ export class PreferencesComponent implements OnInit, OnDestroy {
       setTimeout(async () => {
         try {
           console.log('🎨 Theme Saving - Verification: Loading updated profile...');
-          const updatedProfile = await this.userService.getUserProfile().toPromise();
+          const updatedProfile = await lastValueFrom(this.userService.getUserProfile());
           console.log('🎨 Theme Saving - Verification: Updated profile from backend:', updatedProfile);
           console.log('🎨 Theme Saving - Verification: Theme in updated profile:', updatedProfile?.theme);
         } catch (error) {
@@ -456,11 +426,11 @@ export class PreferencesComponent implements OnInit, OnDestroy {
       const formData = this.notificationForm.value;
       console.log('Saving notification settings:', formData);
       
-      await this.userService.updateNotificationPreferences({
+      await lastValueFrom(this.userService.updateNotificationPreferences({
         emailNotifications: formData.emailNotifications,
         smsNotifications: formData.pushNotifications,
         meetingReminders: formData.meetingReminders
-      }).toPromise();
+      }));
       
       this.toastService.showSuccess('Notification preferences updated successfully');
     } catch (error) {
@@ -480,11 +450,10 @@ export class PreferencesComponent implements OnInit, OnDestroy {
     this.isSaving = true;
     try {
       const formData = this.privacyForm.value;
-      // TODO: Implement actual API call to save privacy settings
       console.log('Saving privacy settings:', formData);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Save privacy settings via user profile update
+      await lastValueFrom(this.userService.updateUserProfile(formData));
       
       this.toastService.showSuccess('Privacy settings updated successfully');
     } catch (error) {
@@ -498,8 +467,8 @@ export class PreferencesComponent implements OnInit, OnDestroy {
   // Calendar Integration Methods
   async connectCalendar(): Promise<void> {
     try {
-      const authUrl = await this.calendarService.getAuthUrl().toPromise();
-      if (authUrl && authUrl.authUrl) {
+      const authUrl = await lastValueFrom(this.calendarService.getAuthUrl());
+      if (authUrl?.authUrl) {
         window.location.href = authUrl.authUrl;
       }
     } catch (error) {
@@ -510,7 +479,7 @@ export class PreferencesComponent implements OnInit, OnDestroy {
 
   async disconnectCalendar(): Promise<void> {
     try {
-      await this.calendarService.disconnectCalendar().toPromise();
+      await lastValueFrom(this.calendarService.disconnectCalendar());
       this.calendarStatus = { isConnected: false, userEmail: '', isExpired: false };
       this.toastService.showSuccess('Calendar disconnected successfully');
     } catch (error) {
@@ -531,7 +500,7 @@ export class PreferencesComponent implements OnInit, OnDestroy {
 
   getErrorMessage(form: FormGroup, fieldName: string): string {
     const field = form.get(fieldName);
-    if (!field || !field.errors) return '';
+    if (!field?.errors) return '';
 
     if (field.hasError('required')) return `${fieldName} is required`;
     if (field.hasError('email')) return 'Invalid email address';

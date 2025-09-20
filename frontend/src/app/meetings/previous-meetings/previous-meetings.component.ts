@@ -17,8 +17,8 @@ type ViewMode = 'grid' | 'list';
   styleUrls: ['./previous-meetings.component.scss']
 })
 export class PreviousMeetingsComponent implements OnInit, OnDestroy {
-  private destroy$ = new Subject<void>();
-  private searchSubject = new Subject<string>();
+  private readonly destroy$ = new Subject<void>();
+  private readonly searchSubject = new Subject<string>();
   
   meetings: Meeting[] = [];
   filteredMeetings: Meeting[] = [];
@@ -39,8 +39,8 @@ export class PreviousMeetingsComponent implements OnInit, OnDestroy {
   allParticipants: string[] = [];
 
   constructor(
-    private meetingService: MeetingService,
-    private router: Router
+    private readonly meetingService: MeetingService,
+    private readonly router: Router
   ) {
     // Setup search debouncing
     this.searchSubject.pipe(
@@ -127,14 +127,18 @@ export class PreviousMeetingsComponent implements OnInit, OnDestroy {
 
   private setupFilterOptions(): void {
     // Extract unique meeting types
-    this.allMeetingTypes = [...new Set(this.meetings.map(m => m.type))].sort();
+    const uniqueTypes = [...new Set(this.meetings.map(m => m.type))];
+    uniqueTypes.sort((a, b) => a.localeCompare(b));
+    this.allMeetingTypes = uniqueTypes;
     
     // Extract unique participants
     const participantSet = new Set<string>();
     this.meetings.forEach(meeting => {
       meeting.participants.forEach(p => participantSet.add(p.name));
     });
-    this.allParticipants = Array.from(participantSet).sort();
+    const uniqueParticipants = Array.from(participantSet);
+    uniqueParticipants.sort((a, b) => a.localeCompare(b));
+    this.allParticipants = uniqueParticipants;
   }
 
   private applyFilters(): void {
@@ -146,17 +150,17 @@ export class PreviousMeetingsComponent implements OnInit, OnDestroy {
       filtered = filtered.filter(meeting => {
         return (
           meeting.title.toLowerCase().includes(query) ||
-          (meeting.summary && meeting.summary.toLowerCase().includes(query)) ||
-          (meeting.details && meeting.details.toLowerCase().includes(query)) ||
+          meeting.summary?.toLowerCase().includes(query) ||
+          meeting.details?.toLowerCase().includes(query) ||
           meeting.participants.some(p => 
             p.name.toLowerCase().includes(query) || 
             p.email.toLowerCase().includes(query)
           ) ||
           meeting.actionItems.some(ai => 
             ai.description.toLowerCase().includes(query) || 
-            (ai.assignee?.firstName && ai.assignee.firstName.toLowerCase().includes(query))
+            ai.assignee?.firstName?.toLowerCase().includes(query)
           ) ||
-          (meeting.nextSteps && meeting.nextSteps.toLowerCase().includes(query)) ||
+          meeting.nextSteps?.toLowerCase().includes(query) ||
           this.formatMeetingType(meeting.meetingType).toLowerCase().includes(query)
         );
       });
@@ -201,12 +205,13 @@ export class PreviousMeetingsComponent implements OnInit, OnDestroy {
     }
 
     // Sort by date (newest first)
-    this.filteredMeetings = filtered.sort((a, b) => 
+    filtered.sort((a, b) => 
       new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
     );
+    this.filteredMeetings = filtered;
   }
 
-  onFilterChange(key: keyof FilterConfig, value: any): void {
+  onFilterChange(key: keyof FilterConfig, value: string | string[] | boolean | { start: string; end: string }): void {
     this.filterConfig = { ...this.filterConfig, [key]: value };
     this.applyFilters();
   }

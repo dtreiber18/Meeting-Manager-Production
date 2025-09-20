@@ -2,10 +2,11 @@ import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ModalService, ModalConfig } from '../modal.service';
+import { Participant } from '../../../meetings/meeting.model';
 
 export interface ParticipantEditData {
-  participant: any;
-  onSave: (participant: any) => void;
+  participant: Participant;
+  onSave: (participant: Participant) => void;
 }
 
 @Component({
@@ -107,12 +108,12 @@ export interface ParticipantEditData {
   styleUrls: ['./participant-edit-modal.component.scss']
 })
 export class ParticipantEditModalComponent implements OnInit {
-  @Input() participant: any;
+  @Input() participant: Participant | undefined;
   @Input() config?: ModalConfig;
   @Input() modalService?: ModalService;
-  @Input() onSave?: (participant: any) => void;
+  @Input() onSave?: (participant: Participant) => void;
 
-  editData: any = {};
+  editData: Partial<Participant> = {};
 
   ngOnInit() {
     // Create a copy of the participant data for editing
@@ -124,25 +125,35 @@ export class ParticipantEditModalComponent implements OnInit {
     }
   }
 
-  onOverlayClick(event: Event) {
+  onOverlayClick(_event: Event) {
     if (!this.config?.disableClose) {
       this.cancel();
     }
   }
 
   save() {
+    if (!this.editData || !this.participant) {
+      return;
+    }
+    
     // Update attended flag based on attendance status
     this.editData.attended = this.editData.attendanceStatus === 'attended';
     
     // Update timestamps
     this.editData.updatedAt = new Date().toISOString();
     
+    // Create the updated participant
+    const updatedParticipant: Participant = {
+      ...this.participant,
+      ...this.editData
+    };
+    
     if (this.onSave) {
-      this.onSave(this.editData);
+      this.onSave(updatedParticipant);
     }
     
     if (this.modalService) {
-      this.modalService.saveModal(this.editData);
+      this.modalService.saveModal(updatedParticipant);
     }
   }
 

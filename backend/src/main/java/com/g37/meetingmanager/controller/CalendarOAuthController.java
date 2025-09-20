@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/calendar")
+@RequestMapping("/calendar-oauth")
 @CrossOrigin(origins = "*")
 public class CalendarOAuthController {
     

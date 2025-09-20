@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
-import { AuthService, User } from '../auth/auth.service';
+import { catchError, map } from 'rxjs/operators';
+import { AuthService } from '../auth/auth.service';
 import { ApiConfigService } from '../core/services/api-config.service';
 
 export interface UserProfile {
@@ -38,15 +38,20 @@ export interface UserProfile {
   allowDirectMessages?: boolean;
 }
 
+export interface ApiResponse {
+  success: boolean;
+  message?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
 
   constructor(
-    private http: HttpClient,
-    private authService: AuthService,
-    private apiConfig: ApiConfigService
+    private readonly http: HttpClient,
+    private readonly authService: AuthService,
+    private readonly apiConfig: ApiConfigService
   ) {
     console.log('🔧 UserService using ApiConfigService');
   }
@@ -72,16 +77,20 @@ export class UserService {
           throw new Error('Invalid response format');
         }
       }),
-      catchError((error: any) => {
+      catchError((error: unknown) => {
         console.error('Error getting user profile:', error);
         
+        // Type guard for HTTP error response
+        const httpError = error as { error?: string };
+        
         // If the response has a body but Angular treated it as an error
-        if (error.error && typeof error.error === 'string') {
+        if (httpError.error && typeof httpError.error === 'string') {
           try {
-            const parsed = JSON.parse(error.error) as UserProfile;
+            const parsed = JSON.parse(httpError.error) as UserProfile;
             console.log('Extracted user profile from error body:', parsed);
             return of(parsed);
-          } catch (e) {
+          } catch (parseError) {
+            console.error('Failed to parse error response:', parseError);
             // Fall through to default handling
           }
         }
@@ -130,16 +139,20 @@ export class UserService {
           throw new Error('Invalid response format');
         }
       }),
-      catchError((error: any) => {
+      catchError((error: unknown) => {
         console.error('Error updating user profile:', error);
         
+        // Type guard for HTTP error response
+        const httpError = error as { error?: string };
+        
         // If the response has a body but Angular treated it as an error
-        if (error.error && typeof error.error === 'string') {
+        if (httpError.error && typeof httpError.error === 'string') {
           try {
-            const parsed = JSON.parse(error.error) as UserProfile;
+            const parsed = JSON.parse(httpError.error) as UserProfile;
             console.log('Extracted updated profile from error body:', parsed);
             return of(parsed);
-          } catch (e) {
+          } catch (parseError) {
+            console.error('Failed to parse error response:', parseError);
             // Fall through to error throwing
           }
         }
@@ -152,7 +165,7 @@ export class UserService {
   /**
    * Update user timezone
    */
-  updateTimezone(timezone: string): Observable<any> {
+  updateTimezone(timezone: string): Observable<ApiResponse> {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
       throw new Error('User not authenticated');
@@ -165,12 +178,13 @@ export class UserService {
       map((response: string) => {
         try {
           return response ? JSON.parse(response) : { success: true };
-        } catch (e) {
+        } catch (parseError) {
+          console.error('Failed to parse timezone response:', parseError);
           // If not valid JSON, treat as success
           return { success: true };
         }
       }),
-      catchError((error: any) => {
+      catchError((error: unknown) => {
         console.error('Error updating timezone:', error);
         throw error;
       })
@@ -180,7 +194,7 @@ export class UserService {
   /**
    * Update user language
    */
-  updateLanguage(language: string): Observable<any> {
+  updateLanguage(language: string): Observable<ApiResponse> {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
       throw new Error('User not authenticated');
@@ -193,12 +207,13 @@ export class UserService {
       map((response: string) => {
         try {
           return response ? JSON.parse(response) : { success: true };
-        } catch (e) {
+        } catch (parseError) {
+          console.error('Failed to parse language response:', parseError);
           // If not valid JSON, treat as success
           return { success: true };
         }
       }),
-      catchError((error: any) => {
+      catchError((error: unknown) => {
         console.error('Error updating language:', error);
         throw error;
       })
@@ -212,7 +227,7 @@ export class UserService {
     emailNotifications?: boolean;
     smsNotifications?: boolean;
     meetingReminders?: boolean;
-  }): Observable<any> {
+  }): Observable<ApiResponse> {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
       throw new Error('User not authenticated');
@@ -230,12 +245,13 @@ export class UserService {
       map((response: string) => {
         try {
           return response ? JSON.parse(response) : { success: true };
-        } catch (e) {
+        } catch (parseError) {
+          console.error('Failed to parse notification preferences response:', parseError);
           // If not valid JSON, treat as success
           return { success: true };
         }
       }),
-      catchError((error: any) => {
+      catchError((error: unknown) => {
         console.error('Error updating notification preferences:', error);
         throw error;
       })

@@ -1,11 +1,16 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
+import { Component } from '@angular/core';
 import { MeetingService } from '../../meetings/meeting.service';
 import { ChatService } from '../../services/chat.service';
 import { NotificationService } from '../../shared/services/notification.service';
 import { SettingsService } from '../../services/settings.service';
 import { UserService } from '../../services/user.service';
 import { environment } from '../../../environments/environment';
+
+@Component({ template: '' })
+class DummyComponent { }
 
 /**
  * Integration tests to ensure all services use correct API URLs
@@ -20,7 +25,11 @@ describe('Service API URL Validation', () => {
         ChatService,
         NotificationService,
         SettingsService,
-        UserService
+        UserService,
+        provideRouter([
+          { path: 'auth', component: DummyComponent },
+          { path: 'auth/callback', component: DummyComponent }
+        ])
       ]
     });
   });
@@ -29,7 +38,8 @@ describe('Service API URL Validation', () => {
     const service = TestBed.inject(MeetingService);
     
     // MeetingService uses ApiConfigService, so check if it has access to it
-    const apiConfig = (service as any).apiConfig;
+    // Using bracket notation to access private property for testing
+    const apiConfig = service['apiConfig'];
     expect(apiConfig).toBeDefined();
     
     // Verify the meeting endpoint returns correct URL (in development, this should be relative)
@@ -40,7 +50,7 @@ describe('Service API URL Validation', () => {
   it('should verify ChatService uses correct base URL', () => {
     const service = TestBed.inject(ChatService);
     
-    const apiUrl = (service as any).apiUrl;
+    const apiUrl = service['apiUrl'];
     expect(apiUrl).toBe('/api/chat'); // Should be relative URL for proxy in development
   });
 
@@ -49,7 +59,7 @@ describe('Service API URL Validation', () => {
     
     // NotificationService uses ApiConfigService through dependency injection
     // Check that it has access to the apiConfig service
-    const apiConfig = (service as any).apiConfig;
+    const apiConfig = service['apiConfig'];
     expect(apiConfig).toBeDefined();
     expect(apiConfig.getApiUrl('notifications')).toEqual('/api/notifications');
   });
@@ -59,7 +69,7 @@ describe('Service API URL Validation', () => {
     
     // SettingsService should use the base pattern but may have relative URL
     // What matters is that the service works correctly, not the exact URL format
-    const apiUrl = (service as any).API_URL;
+    const apiUrl = service['API_URL'];
     expect(apiUrl).toBeDefined();
     expect(apiUrl).toContain('settings'); // Should contain settings endpoint
   });
@@ -68,7 +78,7 @@ describe('Service API URL Validation', () => {
     const service = TestBed.inject(UserService);
     
     // UserService uses ApiConfigService, so check if it has access to it
-    const apiConfig = (service as any).apiConfig;
+    const apiConfig = service['apiConfig'];
     expect(apiConfig).toBeDefined();
     
     // Verify the user profile endpoint returns correct URL (in development, this should be relative)
@@ -95,17 +105,17 @@ describe('Service API URL Validation', () => {
       TestBed.inject(UserService)
     ];
 
-    services.forEach((service: any, index) => {
+    services.forEach((service) => {
       const serviceName = service.constructor.name;
       
       // For services that use ApiConfigService, check that they have it
       if (serviceName === 'MeetingService' || serviceName === 'UserService') {
-        expect((service as any).apiConfig).toBeDefined(`${serviceName} should use ApiConfigService`);
+        expect((service as unknown as Record<string, unknown>)['apiConfig']).toBeDefined();
       }
       
       // Check for obvious relative URL mistakes (but allow legitimate patterns)
       Object.getOwnPropertyNames(service).forEach(prop => {
-        const value = (service as any)[prop];
+        const value = (service as unknown as Record<string, unknown>)[prop];
         if (typeof value === 'string' && value.includes('/api/')) {
           // Only fail for obviously wrong patterns
           if (value === '/api' || value.startsWith('api/')) {

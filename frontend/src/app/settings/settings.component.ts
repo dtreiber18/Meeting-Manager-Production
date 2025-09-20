@@ -1,6 +1,6 @@
-import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject, InjectionToken } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,13 +10,10 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
-import { MatDialogModule } from '@angular/material/dialog';
-import { FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
-import { MatDialog } from '@angular/material/dialog';
-import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
-import { InjectionToken } from '@angular/core';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil, firstValueFrom } from 'rxjs';
 import { ToastService } from '../shared/services/toast.service';
-import { CalendarService } from '../services/calendar.service';
+import { CalendarService, CalendarStatus } from '../services/calendar.service';
 
 // Interfaces
 export interface App {
@@ -113,7 +110,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   destinationApps: App[] = [];
 
   // Calendar Integration
-  calendarStatus: any = null;
+  calendarStatus: CalendarStatus | null = null;
   isLoadingCalendar = false;
 
   // Field Mapping Configuration
@@ -127,16 +124,16 @@ export class SettingsComponent implements OnInit, OnDestroy {
   ];
 
   // Subjects for reactive updates
-  private fieldMappingSubject = new Subject<{key: string, value: string}>();
-  private destroy$ = new Subject<void>();
+  private readonly fieldMappingSubject = new Subject<{key: string, value: string}>();
+  private readonly destroy$ = new Subject<void>();
 
   constructor(
-    private fb: FormBuilder,
-    private snackBar: MatSnackBar,
-    private dialog: MatDialog,
-    private calendarService: CalendarService,
-    private toastService: ToastService,
-    @Inject(SETTINGS_SERVICE_TOKEN) private settingsService: SettingsService
+    private readonly fb: FormBuilder,
+    private readonly snackBar: MatSnackBar,
+    private readonly dialog: MatDialog,
+    private readonly calendarService: CalendarService,
+    private readonly toastService: ToastService,
+    @Inject(SETTINGS_SERVICE_TOKEN) private readonly settingsService: SettingsService
   ) {
     this.initializeForms();
   }
@@ -309,16 +306,12 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private async loadCalendarStatus(): Promise<void> {
     try {
       this.isLoadingCalendar = true;
-      this.calendarStatus = await this.calendarService.getCalendarStatus().toPromise();
-    } catch (error: any) {
+      this.calendarStatus = await firstValueFrom(this.calendarService.getCalendarStatus());
+    } catch (error: unknown) {
       console.error('Error checking calendar status:', error);
       
-      // Handle authentication errors gracefully
-      if (error.status === 404 || (error.error && error.error.error === 'User not found')) {
-        this.calendarStatus = { isConnected: false, userEmail: '', isExpired: false };
-      } else {
-        this.calendarStatus = { isConnected: false, userEmail: '', isExpired: false };
-      }
+      // Handle authentication errors gracefully - set default disconnected state
+      this.calendarStatus = { isConnected: false, userEmail: '', isExpired: false };
     } finally {
       this.isLoadingCalendar = false;
     }
@@ -574,9 +567,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     if (!this.selectedApp) return;
 
     // Initialize fieldMapping if it doesn't exist
-    if (!this.selectedApp.fieldMapping) {
-      this.selectedApp.fieldMapping = {};
-    }
+    this.selectedApp.fieldMapping ??= {};
 
     // Update UI immediately for responsiveness
     this.selectedApp.fieldMapping[key] = value;
@@ -635,8 +626,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
   // Calendar Integration Methods
   async connectCalendar(): Promise<void> {
     try {
-      const authUrl = await this.calendarService.getAuthUrl().toPromise();
-      if (authUrl && authUrl.authUrl) {
+      const authUrl = await firstValueFrom(this.calendarService.getAuthUrl());
+      if (authUrl?.authUrl) {
         // Redirect current window to Microsoft OAuth (no popup)
         window.location.href = authUrl.authUrl;
       }
@@ -648,7 +639,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
   async disconnectCalendar(): Promise<void> {
     try {
-      await this.calendarService.disconnectCalendar().toPromise();
+      await firstValueFrom(this.calendarService.disconnectCalendar());
       this.calendarStatus = { isConnected: false, userEmail: '', isExpired: false };
       this.showSuccessMessage('Calendar disconnected successfully');
     } catch (error) {

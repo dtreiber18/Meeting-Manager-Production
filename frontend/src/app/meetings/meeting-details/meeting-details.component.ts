@@ -4,13 +4,22 @@ import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { MeetingService } from '../meeting.service';
-import { Meeting } from '../meeting.model';
+import { Meeting, Participant, ActionItem } from '../meeting.model';
 import { environment } from '../../../environments/environment';
 import { ModalService } from '../../shared/modal/modal.service';
 import { ModalContainerComponent } from '../../shared/modal/modal-container/modal-container.component';
 import { ParticipantEditModalComponent } from '../../shared/modal/participant-edit-modal/participant-edit-modal.component';
 import { MeetingEditModalComponent } from '../../shared/modal/meeting-edit-modal/meeting-edit-modal.component';
 import { DocumentUploadDialogComponent } from '../../shared/document-upload-dialog/document-upload-dialog.component';
+
+interface N8nEventData {
+  id?: string;
+  title?: string;
+  start?: string;
+  end?: string;
+  description?: string;
+  [key: string]: unknown;
+}
 
 @Component({
   selector: 'app-meeting-details',
@@ -28,12 +37,12 @@ export class MeetingDetailsComponent implements OnInit {
   isEditing = false; // Add edit mode state
 
   constructor(
-    private route: ActivatedRoute, 
-    private router: Router,
-    private meetingService: MeetingService,
-    private http: HttpClient,
-    private modalService: ModalService,
-    private dialog: MatDialog
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
+    private readonly meetingService: MeetingService,
+    private readonly http: HttpClient,
+    private readonly modalService: ModalService,
+    private readonly dialog: MatDialog
   ) {}
 
   ngOnInit() {
@@ -86,7 +95,7 @@ export class MeetingDetailsComponent implements OnInit {
     console.log('📞 Fetching n8n meeting details for ID:', this.meetingId);
     
     // First try to get individual meeting details
-    this.http.post<any>(environment.n8nWebhookUrl, { 
+    this.http.post<N8nEventData>(environment.n8nWebhookUrl, { 
       action: 'get_event_details', 
       event_id: this.meetingId 
     }).subscribe({
@@ -113,7 +122,7 @@ export class MeetingDetailsComponent implements OnInit {
   loadN8nMeetingFromList() {
     console.log('📞 Fetching n8n meeting from list API...');
     // Get all meetings and find the one we need
-    this.http.post<any>(environment.n8nWebhookUrl, { 
+    this.http.post<N8nEventData[]>(environment.n8nWebhookUrl, { 
       action: 'get_events'
     }).subscribe({
       next: (response) => {
@@ -123,14 +132,19 @@ export class MeetingDetailsComponent implements OnInit {
         
         if (response && Array.isArray(response)) {
           // Find the meeting by ID (try multiple ID formats)
-          meetingData = response.find(meeting => 
-            meeting.id === this.meetingId || 
-            meeting.id === parseInt(this.meetingId || '0') ||
-            meeting.eventId === this.meetingId ||
-            meeting.meetingId === this.meetingId
-          );
+          const meetingIdNum = parseInt(this.meetingId || '0');
+          meetingData = response.find(meeting => {
+            // Check different possible ID fields from the response
+            const meetingId = meeting?.id;
+            return (
+              (typeof meetingId === 'number' && meetingId === meetingIdNum) ||
+              (typeof meetingId === 'string' && meetingId === this.meetingId) ||
+              (meeting as Record<string, string>)['eventId'] === this.meetingId ||
+              (meeting as Record<string, string>)['meetingId'] === this.meetingId
+            );
+          });
           console.log('🔍 Found meeting in list:', meetingData);
-        } else if (response && response.id === this.meetingId) {
+        } else if (response && (response as Record<string, string>)['id'] === this.meetingId) {
           // Single meeting response
           meetingData = response;
         }
@@ -149,26 +163,26 @@ export class MeetingDetailsComponent implements OnInit {
     });
   }
 
-  createN8nMeetingFromData(n8nData: any) {
+  createN8nMeetingFromData(n8nData: Record<string, unknown>) {
     console.log('✅ Creating n8n meeting from real data:', n8nData);
     this.meeting = {
       id: parseInt(this.meetingId || '0') || 0,
-      title: n8nData.title || n8nData.meetingType || 'Untitled n8n Meeting',
-      description: n8nData.description || n8nData.summary || '',
+      title: (n8nData['title'] || n8nData['meetingType'] || 'Untitled n8n Meeting') as string,
+      description: (n8nData['description'] || n8nData['summary'] || '') as string,
       source: 'n8n',
-      meetingType: n8nData.meetingType || 'other',
+      meetingType: (n8nData['meetingType'] || 'other') as string,
       status: 'completed',
       priority: 'medium',
       isRecurring: false,
-      startTime: n8nData.date || n8nData.meetingMetadata?.date || n8nData.startTime || new Date().toISOString(),
-      endTime: n8nData.endTime || new Date().toISOString(),
+      startTime: (n8nData['date'] || (n8nData['meetingMetadata'] as Record<string, unknown>)?.['date'] || n8nData['startTime'] || new Date().toISOString()) as string,
+      endTime: (n8nData['endTime'] || new Date().toISOString()) as string,
       isPublic: false,
       requiresApproval: false,
       allowRecording: false,
       autoTranscription: false,
       aiAnalysisEnabled: false,
-      createdAt: n8nData.createdAt || new Date().toISOString(),
-      updatedAt: n8nData.updatedAt || new Date().toISOString(),
+      createdAt: (n8nData['createdAt'] || new Date().toISOString()) as string,
+      updatedAt: (n8nData['updatedAt'] || new Date().toISOString()) as string,
       organization: {
         id: 0,
         name: 'n8n External',
@@ -199,16 +213,16 @@ export class MeetingDetailsComponent implements OnInit {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       },
-      participants: n8nData.attendees || [],
-      actionItems: n8nData.actionItems || [],
+      participants: (n8nData['attendees'] || []) as Participant[],
+      actionItems: (n8nData['actionItems'] || []) as ActionItem[],
       notes: [],
       attachments: [],
-      details: n8nData.keyDecisions || n8nData.nextSteps || n8nData.description || 'n8n meeting details',
-      durationInMinutes: n8nData.duration || 60,
+      details: (n8nData['keyDecisions'] || n8nData['nextSteps'] || n8nData['description'] || 'n8n meeting details') as string,
+      durationInMinutes: (n8nData['duration'] || 60) as number,
       upcoming: false,
       inProgress: false,
-      subject: n8nData.title || n8nData.meetingType || 'n8n Meeting',
-      type: n8nData.meetingType || 'other'
+      subject: (n8nData['title'] || n8nData['meetingType'] || 'n8n Meeting') as string,
+      type: (n8nData['meetingType'] || 'other') as string
     } as unknown as Meeting & { source: 'n8n' };
     this.loading = false;
   }
@@ -219,27 +233,32 @@ export class MeetingDetailsComponent implements OnInit {
     this.loading = false;
   }
 
-  handleN8nApiError(error: any) {
+  handleN8nApiError(error: unknown) {
     console.error('❌ n8n API completely unavailable:', error);
-    if (error.status === 0) {
+    
+    const httpError = error as {status?: number};
+    
+    if (httpError.status === 0) {
       this.error = 'Unable to connect to n8n. Please check your internet connection and try again.';
-    } else if (error.status >= 500) {
+    } else if (httpError.status && httpError.status >= 500) {
       this.error = 'n8n server error. Please try again later.';
     } else {
-      this.error = `Failed to load meeting from n8n (${error.status}). The meeting data may be temporarily unavailable.`;
+      this.error = `Failed to load meeting from n8n (${httpError.status || 'unknown'}). The meeting data may be temporarily unavailable.`;
     }
     this.loading = false;
   }
 
-  handleError(error: any) {
-    if (error.status === 0) {
+  handleError(error: unknown) {
+    const httpError = error as {status?: number};
+    
+    if (httpError.status === 0) {
       this.error = 'Unable to connect to server. Please check your internet connection.';
-    } else if (error.status === 404) {
+    } else if (httpError.status === 404) {
       this.error = `Meeting with ID ${this.meetingId} not found.`;
-    } else if (error.status >= 500) {
+    } else if (httpError.status && httpError.status >= 500) {
       this.error = 'Server error. Please try again later.';
     } else {
-      this.error = `Failed to load meeting details (${error.status})`;
+      this.error = `Failed to load meeting details (${httpError.status || 'unknown'})`;
     }
     this.loading = false;
   }
@@ -272,23 +291,23 @@ export class MeetingDetailsComponent implements OnInit {
       }
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result: unknown) => {
       if (result) {
         console.log('Document uploaded successfully for meeting:', this.meeting?.id, result);
         // Could refresh meeting details or show success message
         // You might want to add the uploaded document to the meeting's attachments list
-        if (this.meeting && result) {
+        if (this.meeting) {
           if (!this.meeting.attachments) {
             this.meeting.attachments = [];
           }
-          this.meeting.attachments.push(result);
+          this.meeting.attachments.push(result as {name: string; url: string});
         }
       }
     });
   }
 
   addParticipant() {
-    // TODO: Implement add participant functionality
+    // Add participant functionality - opens modal/form
     console.log('Add participant functionality - will open modal/form');
     // For now, show a simple prompt
     const name = prompt('Enter participant name:');
@@ -326,7 +345,7 @@ export class MeetingDetailsComponent implements OnInit {
     }
   }
 
-  removeParticipant(participant: any) {
+  removeParticipant(participant: Participant) {
     if (this.meeting && this.meeting.participants) {
       const index = this.meeting.participants.indexOf(participant);
       if (index > -1) {
@@ -337,7 +356,7 @@ export class MeetingDetailsComponent implements OnInit {
   }
 
   addActionItem() {
-    // TODO: Implement add action item functionality
+    // Add action item functionality - opens modal/form
     console.log('Add action item functionality - will open modal/form');
     // For now, show a simple prompt
     const title = prompt('Enter action item title:');
@@ -372,7 +391,7 @@ export class MeetingDetailsComponent implements OnInit {
     }
   }
 
-  removeActionItem(actionItem: any) {
+  removeActionItem(actionItem: ActionItem) {
     if (this.meeting && this.meeting.actionItems) {
       const index = this.meeting.actionItems.indexOf(actionItem);
       if (index > -1) {
@@ -382,14 +401,14 @@ export class MeetingDetailsComponent implements OnInit {
     }
   }
 
-  async editParticipant(participant: any) {
+  async editParticipant(participant: Participant) {
     try {
       const result = await this.modalService.openModal({
         title: 'Edit Participant',
         component: ParticipantEditModalComponent,
         data: { 
           participant: participant,
-          onSave: (updatedParticipant: any) => this.updateParticipant(updatedParticipant)
+          onSave: (updatedParticipant: Participant) => this.updateParticipant(updatedParticipant)
         },
         width: '500px'
       });
@@ -402,7 +421,7 @@ export class MeetingDetailsComponent implements OnInit {
     }
   }
 
-  updateParticipant(updatedParticipant: any) {
+  updateParticipant(updatedParticipant: Participant) {
     if (this.meeting && this.meeting.participants) {
       const index = this.meeting.participants.findIndex(p => p.id === updatedParticipant.id);
       if (index > -1) {
@@ -435,7 +454,7 @@ export class MeetingDetailsComponent implements OnInit {
 
   updateMeetingField(field: string, value: string) {
     if (this.meeting) {
-      (this.meeting as any)[field] = value;
+      (this.meeting as unknown as Record<string, unknown>)[field] = value;
       this.meeting.updatedAt = new Date().toISOString();
       console.log(`Updated meeting ${field}:`, value);
     }

@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
-import { AuthService, User } from '../auth/auth.service';
+import { AuthService } from '../auth/auth.service';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthTestHelper {
   
-  constructor(private authService: AuthService) {}
+  constructor(private readonly authService: AuthService) {}
 
   /**
    * Test authentication flow with demo credentials
@@ -15,10 +16,10 @@ export class AuthTestHelper {
     try {
       console.log('Testing demo login...');
       
-      const result = await this.authService.login({
+      const result = await lastValueFrom(this.authService.login({
         email: 'demo@acme.com',
         password: 'password123'
-      }).toPromise();
+      }));
 
       if (result) {
         console.log('Login successful:', result);

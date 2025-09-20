@@ -83,7 +83,7 @@
               <div class="form-row">
                 <mat-form-field appearance="outline">
                   <mat-label>Title</mat-label>
-                  <input matInput formControlName="title" maxlength="500">
+                  <input matInput formControlName="title" maxlength="500" placeholder="Enter action item title">
                   <mat-error *ngIf="editForm.get('title')?.hasError('required')">
                     Title is required
                   </mat-error>
@@ -134,7 +134,7 @@
             </div>
             <mat-form-field *ngIf="isEditing" appearance="outline" class="full-width">
               <mat-label>Description</mat-label>
-              <textarea matInput formControlName="description" rows="4" [formGroup]="editForm"></textarea>
+              <textarea matInput formControlName="description" rows="4" [formGroup]="editForm" placeholder="Enter action item description"></textarea>
             </mat-form-field>
           </mat-card-content>
         </mat-card>
@@ -169,14 +169,14 @@
               <div class="form-row">
                 <mat-form-field appearance="outline">
                   <mat-label>Due Date</mat-label>
-                  <input matInput [matDatepicker]="duePicker" formControlName="dueDate">
+                  <input matInput [matDatepicker]="duePicker" formControlName="dueDate" placeholder="Select due date">
                   <mat-datepicker-toggle matSuffix [for]="duePicker"></mat-datepicker-toggle>
                   <mat-datepicker #duePicker></mat-datepicker>
                 </mat-form-field>
                 
                 <mat-form-field appearance="outline">
                   <mat-label>Start Date</mat-label>
-                  <input matInput [matDatepicker]="startPicker" formControlName="startDate">
+                  <input matInput [matDatepicker]="startPicker" formControlName="startDate" placeholder="Select start date">
                   <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
                   <mat-datepicker #startPicker></mat-datepicker>
                 </mat-form-field>
@@ -185,12 +185,12 @@
               <div class="form-row">
                 <mat-form-field appearance="outline">
                   <mat-label>Estimated Hours</mat-label>
-                  <input matInput type="number" formControlName="estimatedHours" min="0">
+                  <input matInput type="number" formControlName="estimatedHours" min="0" placeholder="Enter estimated hours">
                 </mat-form-field>
                 
                 <mat-form-field appearance="outline">
                   <mat-label>Actual Hours</mat-label>
-                  <input matInput type="number" formControlName="actualHours" min="0">
+                  <input matInput type="number" formControlName="actualHours" min="0" placeholder="Enter actual hours">
                 </mat-form-field>
               </div>
             </div>
@@ -217,12 +217,12 @@
             <div *ngIf="isEditing" [formGroup]="editForm">
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Notes</mat-label>
-                <textarea matInput formControlName="notes" rows="3"></textarea>
+                <textarea matInput formControlName="notes" rows="3" placeholder="Enter any additional notes"></textarea>
               </mat-form-field>
               
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Completion Notes</mat-label>
-                <textarea matInput formControlName="completionNotes" rows="3"></textarea>
+                <textarea matInput formControlName="completionNotes" rows="3" placeholder="Enter completion notes"></textarea>
               </mat-form-field>
             </div>
           </mat-card-content>
@@ -302,7 +302,7 @@
                 <label>Assigned To</label>
                 <div class="assignee-info">
                   <div class="assignee-avatar">
-                    {{ actionItem.assignee.firstName?.charAt(0) }}{{ actionItem.assignee.lastName?.charAt(0) }}
+                    {{ actionItem.assignee.firstName.charAt(0) }}{{ actionItem.assignee.lastName.charAt(0) }}
                   </div>
                   <div class="assignee-details">
                     <span class="assignee-name">{{ actionItem.assignee.firstName }} {{ actionItem.assignee.lastName }}</span>

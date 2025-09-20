@@ -373,10 +373,10 @@ interface TimezoneOption {
   `]
 })
 export class PreferencesComponent implements OnInit {
-  private fb = inject(FormBuilder);
-  private authService = inject(AuthService);
-  private userService = inject(UserService);
-  private snackBar = inject(MatSnackBar);
+  private readonly fb = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
+  private readonly userService = inject(UserService);
+  private readonly snackBar = inject(MatSnackBar);
 
   preferencesForm!: FormGroup;
   userProfile: UserProfile | null = null;

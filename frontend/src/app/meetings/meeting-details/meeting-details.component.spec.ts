@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { RouterTestingModule } from '@angular/router/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MeetingDetailsComponent } from './meeting-details.component';
 import { MeetingService } from '../meeting.service';
@@ -94,7 +93,7 @@ describe('MeetingDetailsComponent', () => {
     mockMeetingService.meetingsUpdated$ = new Subject<boolean>().asObservable();
 
     await TestBed.configureTestingModule({
-      imports: [MeetingDetailsComponent, HttpClientTestingModule, RouterTestingModule],
+      imports: [MeetingDetailsComponent, HttpClientTestingModule],
       providers: [
         { provide: ActivatedRoute, useValue: mockActivatedRoute },
         { provide: Router, useValue: mockRouter },

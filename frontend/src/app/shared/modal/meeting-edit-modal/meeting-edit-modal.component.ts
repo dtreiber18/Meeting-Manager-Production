@@ -2,9 +2,10 @@ import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ModalService, ModalConfig } from '../modal.service';
+import { Meeting } from '../../../meetings/meeting.model';
 
 export interface MeetingEditData {
-  meeting: any;
+  meeting: Meeting;
   field: 'description' | 'summary' | 'nextSteps';
   onSave: (field: string, value: string) => void;
 }
@@ -58,14 +59,14 @@ export interface MeetingEditData {
   styleUrls: ['./meeting-edit-modal.component.scss']
 })
 export class MeetingEditModalComponent implements OnInit {
-  @Input() meeting: any;
+  @Input() meeting: Meeting | undefined;
   @Input() field: 'description' | 'summary' | 'nextSteps' = 'description';
   @Input() config?: ModalConfig;
   @Input() modalService?: ModalService;
   @Input() onSave?: (field: string, value: string) => void;
 
-  editValue: string = '';
-  originalValue: string = '';
+  editValue = '';
+  originalValue = '';
 
   ngOnInit() {
     // Get the current value of the field
@@ -126,7 +127,7 @@ export class MeetingEditModalComponent implements OnInit {
     return this.editValue.trim() !== this.originalValue.trim();
   }
 
-  onOverlayClick(event: Event) {
+  onOverlayClick(_event: Event) {
     if (!this.config?.disableClose) {
       this.cancel();
     }

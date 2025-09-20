@@ -406,12 +406,12 @@ export class AiChatComponent implements OnDestroy, AfterViewChecked {
   messages: Message[] = [];
   inputText = '';
   isLoading = false;
-  private destroy$ = new Subject<void>();
+  private readonly destroy$ = new Subject<void>();
   private shouldScrollToBottom = false;
 
   constructor(
-    private chatService: ChatService,
-    private cdr: ChangeDetectorRef
+    private readonly chatService: ChatService,
+    private readonly cdr: ChangeDetectorRef
   ) {}
 
   ngOnDestroy(): void {

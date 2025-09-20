@@ -1,11 +1,18 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, interval } from 'rxjs';
+import { BehaviorSubject, Observable, interval, lastValueFrom } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../environments/environment';
 import { ToastService } from './toast.service';
 import { AuthService } from '../../auth/auth.service';
 import { ApiConfigService } from '../../core/services/api-config.service';
+
+export interface NotificationData {
+  [key: string]: string | number | boolean | Date | undefined;
+}
+
+export interface NotificationConditions {
+  [key: string]: string | number | boolean | Date | string[] | undefined;
+}
 
 export interface Notification {
   id: string;
@@ -13,7 +20,7 @@ export interface Notification {
   type: NotificationType;
   title: string;
   message: string;
-  data?: any;
+  data?: NotificationData;
   isRead: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -50,7 +57,7 @@ export interface NotificationTrigger {
   description: string;
   type: NotificationType;
   isEnabled: boolean;
-  conditions: any;
+  conditions: NotificationConditions;
   template: NotificationTemplate;
 }
 
@@ -65,16 +72,16 @@ export interface NotificationTemplate {
   providedIn: 'root'
 })
 export class NotificationService {
-  private notificationsSubject = new BehaviorSubject<Notification[]>([]);
-  public notifications$ = this.notificationsSubject.asObservable();
+  private readonly notificationsSubject = new BehaviorSubject<Notification[]>([]);
+  public readonly notifications$ = this.notificationsSubject.asObservable();
   
-  private unreadCountSubject = new BehaviorSubject<number>(0);
-  public unreadCount$ = this.unreadCountSubject.asObservable();
+  private readonly unreadCountSubject = new BehaviorSubject<number>(0);
+  public readonly unreadCount$ = this.unreadCountSubject.asObservable();
   
   private isPolling = false;
 
   // Pre-defined notification triggers
-  private defaultTriggers: NotificationTrigger[] = [
+  private readonly defaultTriggers: NotificationTrigger[] = [
     {
       id: '1',
       name: 'Meeting Reminder',
@@ -130,10 +137,10 @@ export class NotificationService {
   ];
 
   constructor(
-    private http: HttpClient,
-    private toastService: ToastService,
-    private authService: AuthService,
-    private apiConfig: ApiConfigService
+    private readonly http: HttpClient,
+    private readonly toastService: ToastService,
+    private readonly authService: AuthService,
+    private readonly apiConfig: ApiConfigService
   ) {
     console.log('🔧 NotificationService using ApiConfigService');
     this.initializeService();
@@ -141,13 +148,28 @@ export class NotificationService {
 
   private initializeService(): void {
     // Start polling when user is authenticated
-    this.authService.isAuthenticated$.subscribe(isAuth => {
-      if (isAuth && !this.isPolling) {
-        this.startPolling();
-      } else if (!isAuth && this.isPolling) {
-        this.stopPolling();
+    this.authService.isAuthenticated$.subscribe({
+      next: (isAuth) => {
+        this.handleAuthenticationState(isAuth);
       }
     });
+  }
+
+  private handleAuthenticationState(isAuthenticated: boolean): void {
+    this.updatePollingBasedOnAuth(isAuthenticated);
+  }
+
+  private updatePollingBasedOnAuth(isAuthenticated: boolean): void {
+    const shouldPoll = isAuthenticated && !this.isPolling;
+    const shouldStop = !isAuthenticated && this.isPolling;
+    
+    if (shouldPoll) {
+      this.startPolling();
+    }
+    
+    if (shouldStop) {
+      this.stopPolling();
+    }
   }
 
   /**
@@ -178,13 +200,13 @@ export class NotificationService {
    */
   async loadNotifications(): Promise<void> {
     try {
-      const notifications = await this.http.get<any[]>(this.apiConfig.endpoints.notifications()).toPromise();
+      const notifications = await lastValueFrom(this.http.get<Notification[]>(this.apiConfig.endpoints.notifications()));
       if (notifications) {
         // Convert API response to proper Notification objects with Date conversion
         const convertedNotifications: Notification[] = notifications.map(n => ({
           id: n.id.toString(),
           userId: n.userId.toString(),
-          type: n.type as NotificationType,
+          type: n.type,
           title: n.title,
           message: n.message,
           data: n.data,
@@ -192,7 +214,7 @@ export class NotificationService {
           createdAt: new Date(n.createdAt),
           updatedAt: new Date(n.updatedAt),
           expiresAt: n.expiresAt ? new Date(n.expiresAt) : undefined,
-          priority: n.priority as NotificationPriority,
+          priority: n.priority,
           actionUrl: n.actionUrl,
           actionText: n.actionText
         }));
@@ -221,7 +243,7 @@ export class NotificationService {
    */
   async markAsRead(notificationId: string): Promise<void> {
     try {
-      await this.http.patch(this.apiConfig.endpoints.notification(notificationId) + '/read', {}).toPromise();
+      await lastValueFrom(this.http.patch(this.apiConfig.endpoints.notification(notificationId) + '/read', {}));
       
       // Update local state
       const notifications = this.notificationsSubject.value;
@@ -248,7 +270,7 @@ export class NotificationService {
    */
   async markAllAsRead(): Promise<void> {
     try {
-      await this.http.patch(this.apiConfig.getApiUrl('notifications/mark-all-read'), {}).toPromise();
+      await lastValueFrom(this.http.patch(this.apiConfig.getApiUrl('notifications/mark-all-read'), {}));
       
       // Update local state
       const notifications = this.notificationsSubject.value;
@@ -269,7 +291,7 @@ export class NotificationService {
    */
   async deleteNotification(notificationId: string): Promise<void> {
     try {
-      await this.http.delete(this.apiConfig.endpoints.notification(notificationId)).toPromise();
+      await lastValueFrom(this.http.delete(this.apiConfig.endpoints.notification(notificationId)));
       
       // Update local state
       const notifications = this.notificationsSubject.value;
@@ -296,7 +318,7 @@ export class NotificationService {
         isRead: false
       };
 
-      await this.http.post(this.apiConfig.endpoints.notifications(), newNotification).toPromise();
+      await lastValueFrom(this.http.post(this.apiConfig.endpoints.notifications(), newNotification));
       
       // Reload notifications to get the latest state
       this.loadNotifications();
@@ -448,7 +470,7 @@ export class NotificationService {
    */
   async updateNotificationTrigger(triggerId: string, updates: Partial<NotificationTrigger>): Promise<void> {
     try {
-      await this.http.patch(this.apiConfig.getApiUrl(`notifications/triggers/${triggerId}`), updates).toPromise();
+      await lastValueFrom(this.http.patch(this.apiConfig.getApiUrl(`notifications/triggers/${triggerId}`), updates));
       this.toastService.showSuccess('Notification settings updated');
     } catch (error) {
       console.error('Error updating notification trigger:', error);

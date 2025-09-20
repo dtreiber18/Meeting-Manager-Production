@@ -1,6 +1,5 @@
-<!-- eslint-disable @angular-eslint/template/accessibility-label-for -->
-<div class="settings-container max-w-7xl mx-auto p-6 space-y-6" role="main" aria-label="Settings Page"
-  title="Application Settings" aria-describedby="settings-description">
+<main class="settings-container max-w-7xl mx-auto p-6 space-y-6" aria-label="Settings Page"
+  aria-describedby="settings-description">
   <div id="settings-description" class="sr-only">Application settings and configuration page</div>
   <!-- Page Header -->
   <div class="mb-8">
@@ -183,8 +182,9 @@
               </div>
 
               <!-- Loading State with Skeleton -->
-              <div *ngIf="isLoading" class="space-y-4" role="status" aria-live="polite"
-                [attr.aria-label]="'Loading source applications'">
+              <output *ngIf="isLoading" class="space-y-4" aria-live="polite"
+                [attr.aria-label]="'Loading source applications'"
+                for="sources-loading">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div *ngFor="let item of [1,2,3]" class="skeleton-card">
                     <div class="animate-pulse">
@@ -199,7 +199,7 @@
                     </div>
                   </div>
                 </div>
-              </div>
+              </output>
 
               <!-- Error State -->
               <div *ngIf="loadError && !isLoading" class="text-center py-12" role="alert">
@@ -213,11 +213,12 @@
               </div>
 
               <!-- Source Apps Grid -->
-              <div *ngIf="!isLoading && !loadError" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                role="list" [attr.aria-labelledby]="'sources-title'">
-                <mat-card *ngFor="let app of sourceApps; trackBy: trackByAppId"
+              <ul *ngIf="!isLoading && !loadError" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                [attr.aria-labelledby]="'sources-title'">
+                <li *ngFor="let app of sourceApps; trackBy: trackByAppId">
+                <mat-card 
                   class="app-card source-card cursor-pointer hover:shadow-lg transition-all duration-200"
-                  [attr.tabindex]="0" role="listitem"
+                  [attr.tabindex]="0"
                   [attr.aria-label]="'Configure ' + (app.name || 'unnamed source') + ' application. Status: ' + (app.isActive ? 'Active' : 'Inactive')"
                   (click)="onAppClick(app)" (keydown.enter)="onAppClick(app)"
                   (keydown.space)="$event.preventDefault(); onAppClick(app)">
@@ -244,7 +245,8 @@
                     </div>
                   </mat-card-content>
                 </mat-card>
-              </div>
+                </li>
+              </ul>
 
               <!-- Empty State -->
               <div *ngIf="!isLoading && !loadError && sourceApps.length === 0" class="text-center py-12">
@@ -269,7 +271,10 @@
                   <div class="flex items-center space-x-4">
                     <mat-checkbox [(ngModel)]="selectedApp!.isActive"
                       (change)="updateApp({ isActive: selectedApp!.isActive })" color="primary"
-                      [attr.aria-label]="'Toggle application active status'" name="appActiveStatus">
+                      [id]="'app-active-checkbox'"
+                      [attr.aria-label]="'Toggle application active status'" 
+                      name="appActiveStatus"
+                      title="Toggle application active status">
                       Active
                     </mat-checkbox>
                     <button mat-button color="warn" type="button" (click)="confirmDeleteApp()"
@@ -387,8 +392,9 @@
                     <mat-card-subtitle>Map fields from {{ selectedApp?.name || 'this application' }} to our platform</mat-card-subtitle>
                   </mat-card-header>
                   <mat-card-content>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" role="group"
+                    <fieldset class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
                       [attr.aria-labelledby]="'field-mapping-title'">
+                      <legend class="sr-only">Field Mapping Configuration</legend>
                       <mat-form-field *ngFor="let field of fieldMappingConfig; trackBy: trackByFieldKey"
                         appearance="outline">
                         <mat-label>{{ field.label }}</mat-label>
@@ -400,7 +406,7 @@
                           {{ field.hint || 'Map this field to your data source' }}
                         </mat-hint>
                       </mat-form-field>
-                    </div>
+                    </fieldset>
                   </mat-card-content>
                 </mat-card>
             </div>
@@ -426,8 +432,9 @@
               </div>
 
               <!-- Loading State -->
-              <div *ngIf="isLoading" class="space-y-4" role="status" aria-live="polite"
-                [attr.aria-label]="'Loading destination applications'">
+              <output *ngIf="isLoading" class="space-y-4" aria-live="polite"
+                [attr.aria-label]="'Loading destination applications'"
+                for="destinations-loading">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div *ngFor="let item of [1,2,3]" class="skeleton-card">
                     <div class="animate-pulse">
@@ -442,14 +449,15 @@
                     </div>
                   </div>
                 </div>
-              </div>
+              </output>
 
               <!-- Destination Apps Grid -->
-              <div *ngIf="!isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" role="list"
+              <ul *ngIf="!isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                 [attr.aria-labelledby]="'destinations-title'">
-                <mat-card *ngFor="let app of destinationApps; trackBy: trackByAppId"
+                <li *ngFor="let app of destinationApps; trackBy: trackByAppId">
+                <mat-card 
                   class="app-card destination-card cursor-pointer hover:shadow-lg transition-all duration-200"
-                  [attr.tabindex]="0" role="listitem"
+                  [attr.tabindex]="0"
                   [attr.aria-label]="'Configure ' + (app.name || 'unnamed destination') + ' application. Status: ' + (app.isActive ? 'Active' : 'Inactive')"
                   (click)="onAppClick(app)" (keydown.enter)="onAppClick(app)"
                   (keydown.space)="$event.preventDefault(); onAppClick(app)">
@@ -476,7 +484,8 @@
                     </div>
                   </mat-card-content>
                 </mat-card>
-              </div>
+                </li>
+              </ul>
 
               <!-- Empty State -->
               <div *ngIf="!isLoading && destinationApps.length === 0" class="text-center py-12">
@@ -513,10 +522,11 @@
                 <p class="section-description">Connect your Outlook calendar to automatically sync meetings and events</p>
 
                 <!-- Loading State -->
-                <div *ngIf="isLoadingCalendar" class="flex items-center justify-center py-12" role="status" aria-live="polite">
+                <output *ngIf="isLoadingCalendar" class="flex items-center justify-center py-12" aria-live="polite"
+                  for="calendar-loading">
                   <mat-icon class="animate-spin text-4xl text-blue-500 mr-4" [attr.aria-hidden]="true">refresh</mat-icon>
                   <span class="text-lg text-gray-600">Checking calendar status...</span>
-                </div>
+                </output>
 
                 <!-- Calendar Status Display -->
                 <div *ngIf="!isLoadingCalendar && calendarStatus" class="space-y-6">
@@ -631,4 +641,4 @@
       </mat-tab>
     </mat-tab-group>
   </mat-card>
-</div>
+</main>

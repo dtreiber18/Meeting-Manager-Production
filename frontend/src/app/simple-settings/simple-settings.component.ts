@@ -415,8 +415,8 @@ export class SimpleSettingsComponent implements OnInit {
   ];
 
   constructor(
-    private route: ActivatedRoute,
-    private router: Router
+    private readonly route: ActivatedRoute,
+    private readonly router: Router
   ) {}
 
   ngOnInit() {
@@ -431,7 +431,7 @@ export class SimpleSettingsComponent implements OnInit {
     }
   }
 
-  onTabChange(event: any) {
+  onTabChange(event: { index: number }) {
     const routes = ['/settings', '/settings/calendar', '/settings/preferences', '/settings', '/settings'];
     this.router.navigate([routes[event.index]]);
   }

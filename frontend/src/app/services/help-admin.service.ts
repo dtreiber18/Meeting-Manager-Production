@@ -4,7 +4,8 @@ import { Observable } from 'rxjs';
 import { HelpArticle, FAQ } from '../help/help.service';
 
 export interface HelpFaq extends FAQ {
-  // Add any admin-specific fields
+  sortOrder?: number;
+  isPublished?: boolean;
 }
 
 export interface SupportTicketFull {

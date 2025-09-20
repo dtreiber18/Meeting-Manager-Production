@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 export interface HelpArticle {
@@ -51,13 +51,20 @@ export interface SupportTicketResponse {
   createdAt: Date;
 }
 
+export interface HelpStatistics {
+  totalArticles: number;
+  totalFAQs: number;
+  totalViews: number;
+  popularArticles: HelpArticle[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class HelpService {
-  private apiUrl = `${environment.apiUrl}/api/help`;
+  private readonly apiUrl = `${environment.apiUrl}/api/help`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   /**
    * Get all help articles
@@ -185,8 +192,8 @@ export class HelpService {
   /**
    * Get help statistics
    */
-  getHelpStatistics(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/statistics`).pipe(
+  getHelpStatistics(): Observable<HelpStatistics> {
+    return this.http.get<HelpStatistics>(`${this.apiUrl}/statistics`).pipe(
       catchError(error => {
         console.error('Error fetching help statistics:', error);
         return of({

@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { RouterTestingModule } from '@angular/router/testing';
+import { provideRouter } from '@angular/router';
 import { MeetingService } from './meetings/meeting.service';
 import { AuthService } from './auth/auth.service';
 import { of, Subject, BehaviorSubject } from 'rxjs';
@@ -36,10 +36,10 @@ describe('AppComponent', () => {
     await TestBed.configureTestingModule({
       imports: [
         AppComponent,
-        HttpClientTestingModule,
-        RouterTestingModule
+        HttpClientTestingModule
       ],
       providers: [
+        provideRouter([]),
         { provide: MeetingService, useValue: mockMeetingService },
         { provide: AuthService, useValue: mockAuthService }
       ]

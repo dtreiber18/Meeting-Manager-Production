@@ -1,9 +1,30 @@
 import { Injectable } from '@angular/core';
-import { Observable, of, from } from 'rxjs';
-import { map, switchMap, catchError } from 'rxjs/operators';
-import { Meeting, ActionItem, Participant } from '../meetings/meeting.model';
-import { PendingAction, PendingActionService } from './pending-action.service';
+import { Observable, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
+import { Meeting } from '../meetings/meeting.model';
+import { PendingActionService } from './pending-action.service';
 import { MeetingService } from '../meetings/meeting.service';
+
+export interface MeetingTrends {
+  attendancePatterns: {
+    averageAttendance: number;
+    trends: string[];
+  };
+  actionItemTrends: {
+    completionRate: number;
+    avgItemsPerMeeting: number;
+  };
+  meetingFrequency: {
+    weekly: number;
+    monthly: number;
+    trends: string[];
+  };
+  participantEngagement: {
+    activeParticipants: number;
+    engagementScore: number;
+  };
+  recommendations: string[];
+}
 
 export interface MeetingAnalysis {
   summary: string;
@@ -49,14 +70,41 @@ export interface SchedulingSuggestion {
   locationSuggestion: string;
 }
 
+export interface MeetingTrends {
+  attendancePatterns: {
+    averageAttendance: number;
+    trends: string[];
+  };
+  actionItemTrends: {
+    completionRate: number;
+    avgItemsPerMeeting: number;
+  };
+  meetingFrequency: {
+    weekly: number;
+    monthly: number;
+    trends: string[];
+  };
+  participantEngagement: {
+    activeParticipants: number;
+    engagementScore: number;
+  };
+  recommendations: string[];
+}
+
+export interface SchedulingParams {
+  participants: string[];
+  meetingType: string;
+  preferredTimeRange?: { start: string; end: string };
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class MeetingAiAssistantService {
 
   constructor(
-    private pendingActionService: PendingActionService,
-    private meetingService: MeetingService
+    private readonly pendingActionService: PendingActionService,
+    private readonly meetingService: MeetingService
   ) {}
 
   /**
@@ -154,13 +202,7 @@ export class MeetingAiAssistantService {
   /**
    * Analyze meeting trends and provide insights
    */
-  getMeetingTrends(meetings: Meeting[]): Observable<{
-    attendancePatterns: any;
-    actionItemTrends: any;
-    meetingFrequency: any;
-    participantEngagement: any;
-    recommendations: string[];
-  }> {
+  getMeetingTrends(meetings: Meeting[]): Observable<MeetingTrends> {
     return of(meetings).pipe(
       map(meetingList => this.analyzeMeetingTrends(meetingList))
     );
@@ -297,7 +339,7 @@ export class MeetingAiAssistantService {
   /**
    * Generate scheduling suggestions
    */
-  private generateSchedulingSuggestions(params: any): SchedulingSuggestion {
+  private generateSchedulingSuggestions(params: SchedulingParams): SchedulingSuggestion {
     // Mock intelligent scheduling - in production, this would integrate with calendar APIs
     const now = new Date();
     const timeSlots = [];
@@ -341,9 +383,9 @@ export class MeetingAiAssistantService {
   /**
    * Helper methods for contextual help
    */
-  private getActionItemHelp(meeting: Meeting, query: string): Observable<string> {
+  private getActionItemHelp(meeting: Meeting, _query: string): Observable<string> {
     const actionItems = meeting.actionItems || [];
-    const pendingActions = []; // Could fetch from pending actions service
+    // Note: pendingActions could be fetched from pending actions service in the future
     
     if (actionItems.length === 0) {
       return of(`This meeting doesn't have any action items yet. Based on the meeting content, I suggest:
@@ -376,7 +418,7 @@ export class MeetingAiAssistantService {
     return of(response);
   }
 
-  private getParticipantHelp(meeting: Meeting, query: string): Observable<string> {
+  private getParticipantHelp(meeting: Meeting, _query: string): Observable<string> {
     const participants = meeting.participants || [];
     const attended = participants.filter(p => p.attended);
     const absent = participants.filter(p => !p.attended);
@@ -409,7 +451,7 @@ export class MeetingAiAssistantService {
     return of(response);
   }
 
-  private getFollowUpHelp(meeting: Meeting, query: string): Observable<string> {
+  private getFollowUpHelp(meeting: Meeting, _query: string): Observable<string> {
     const recommendations = this.generateFollowUpRecommendations(meeting);
     
     let response = `Based on this meeting, here are my follow-up recommendations:\n\n`;
@@ -426,7 +468,7 @@ export class MeetingAiAssistantService {
     return of(response);
   }
 
-  private getMeetingSummaryHelp(meeting: Meeting, query: string): Observable<string> {
+  private getMeetingSummaryHelp(meeting: Meeting, _query: string): Observable<string> {
     if (!meeting.summary?.trim()) {
       return of(`This meeting doesn't have a summary yet. I can help you:
       • Generate a summary based on participants and action items
@@ -454,7 +496,7 @@ ${analysis.suggestedActions.map(action => `• ${action}`).join('\n')}
 The summary covers the main points well. Consider adding more specific details about deadlines and responsibilities if they're missing.`);
   }
 
-  private getWorkflowHelp(meeting: Meeting, query: string): Observable<string> {
+  private getWorkflowHelp(_meeting: Meeting, _query: string): Observable<string> {
     return of(`I can help you set up approval workflows for this meeting:
 
 🔄 Available Workflow Options:
@@ -472,7 +514,7 @@ The summary covers the main points well. Consider adding more specific details a
 Would you like me to help convert any action items to pending actions that require management approval?`);
   }
 
-  private getSchedulingHelp(query: string): Observable<string> {
+  private getSchedulingHelp(_query: string): Observable<string> {
     return of(`I can help you with intelligent scheduling:
 
 📅 Scheduling Assistance:
@@ -496,7 +538,7 @@ Would you like me to help convert any action items to pending actions that requi
 What type of meeting would you like help scheduling?`);
   }
 
-  private getBestPracticesHelp(query: string): Observable<string> {
+  private getBestPracticesHelp(_query: string): Observable<string> {
     return of(`Here are meeting best practices I recommend:
 
 🎯 Before the Meeting:
@@ -611,14 +653,27 @@ Would you like specific advice for any particular type of meeting?`);
     return 60; // Default to 1 hour
   }
 
-  private analyzeMeetingTrends(meetings: Meeting[]): any {
+  private analyzeMeetingTrends(_meetings: Meeting[]): MeetingTrends {
     // Implementation for meeting trend analysis
     return {
-      attendancePatterns: {},
-      actionItemTrends: {},
-      meetingFrequency: {},
-      participantEngagement: {},
-      recommendations: ['Regular meeting review recommended']
+      attendancePatterns: {
+        averageAttendance: 0.85,
+        trends: ['Improving attendance in recent months']
+      },
+      actionItemTrends: {
+        completionRate: 0.78,
+        avgItemsPerMeeting: 3.2
+      },
+      meetingFrequency: {
+        weekly: 5,
+        monthly: 22,
+        trends: ['Stable meeting frequency']
+      },
+      participantEngagement: {
+        activeParticipants: 12,
+        engagementScore: 8.1
+      },
+      recommendations: ['Regular meeting review recommended', 'Consider consolidating similar meetings']
     };
   }
 

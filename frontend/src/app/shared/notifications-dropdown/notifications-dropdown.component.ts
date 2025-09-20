@@ -32,18 +32,18 @@ import { takeUntil } from 'rxjs/operators';
   styleUrls: ['./notifications-dropdown.component.scss']
 })
 export class NotificationsDropdownComponent implements OnInit, OnDestroy {
-  @Input() maxDisplayItems: number = 5;
+  @Input() maxDisplayItems = 5;
   @Output() notificationClick = new EventEmitter<Notification>();
   @Output() markAllAsRead = new EventEmitter<void>();
 
-  private destroy$ = new Subject<void>();
+  private readonly destroy$ = new Subject<void>();
   
   notifications$: Observable<Notification[]>;
   unreadCount$: Observable<number>;
   displayNotifications: Notification[] = [];
   hasMoreNotifications = false;
 
-  constructor(private notificationService: NotificationService) {
+  constructor(private readonly notificationService: NotificationService) {
     this.notifications$ = this.notificationService.notifications$;
     this.unreadCount$ = this.notificationService.unreadCount$;
   }
@@ -54,8 +54,9 @@ export class NotificationsDropdownComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(notifications => {
         // Sort by creation date (newest first) and limit display
-        const sortedNotifications = notifications
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        // Sort notifications by creation date (newest first)
+        const sortedNotifications = [...notifications];
+        sortedNotifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         
         this.displayNotifications = sortedNotifications.slice(0, this.maxDisplayItems);
         this.hasMoreNotifications = sortedNotifications.length > this.maxDisplayItems;

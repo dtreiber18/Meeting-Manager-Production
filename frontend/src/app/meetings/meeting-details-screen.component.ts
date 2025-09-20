@@ -1,24 +1,16 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatExpansionModule } from '@angular/material/expansion';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { Meeting, ActionItem, Participant } from './meeting.model';
 import { PendingAction, PendingActionService } from '../services/pending-action.service';
 import { AiChatComponent } from '../ai-chat/ai-chat.component';
 import { MeetingIntelligencePanelComponent } from '../ai-chat/meeting-intelligence-panel.component';
 import { ActionItemSuggestion } from '../services/meeting-ai-assistant.service';
+
+type ParticipantType = 'CLIENT' | 'G37' | 'OTHER';
 
 @Component({
   selector: 'app-meeting-details-screen',
@@ -27,7 +19,7 @@ import { ActionItemSuggestion } from '../services/meeting-ai-assistant.service';
   templateUrl: './meeting-details-screen.component.html',
   styleUrls: ['./meeting-details-screen.component.scss']
 })
-export class MeetingDetailsScreenComponent {
+export class MeetingDetailsScreenComponent implements OnInit {
   @Input() meeting!: Meeting;
   @Output() back = new EventEmitter<void>();
   @Output() meetingUpdate = new EventEmitter<Meeting>();
@@ -93,7 +85,7 @@ export class MeetingDetailsScreenComponent {
     estimatedHours: undefined
   };
 
-  constructor(private pendingActionService: PendingActionService) {}
+  constructor(private readonly pendingActionService: PendingActionService) {}
 
   ngOnInit(): void {
     this.editedMeeting = { ...this.meeting };
@@ -133,10 +125,13 @@ export class MeetingDetailsScreenComponent {
       return;
     }
 
+    const title = this.newPendingAction.title.trim();
+    const description = this.newPendingAction.description.trim();
+
     const pendingAction: Omit<PendingAction, 'id'> = {
       meetingId: this.meeting.id,
-      title: this.newPendingAction.title!,
-      description: this.newPendingAction.description!,
+      title,
+      description,
       actionType: this.newPendingAction.actionType || 'TASK',
       status: this.newPendingAction.approvalRequired ? 'PENDING_APPROVAL' : 'NEW',
       priority: this.newPendingAction.priority || 'MEDIUM',
@@ -347,10 +342,13 @@ export class MeetingDetailsScreenComponent {
       return;
     }
 
+    const title = this.newActionItem.title.trim();
+    const description = this.newActionItem.description.trim();
+
     const actionItem: ActionItem = {
       id: Date.now(), // Temporary ID for frontend - backend will assign real ID
-      title: this.newActionItem.title!,
-      description: this.newActionItem.description!,
+      title,
+      description,
       assignee: this.newActionItem.assignee,
       dueDate: this.newActionItem.dueDate || '',
       priority: this.newActionItem.priority || 'MEDIUM',
@@ -407,10 +405,13 @@ export class MeetingDetailsScreenComponent {
       return;
     }
 
+    const name = this.newParticipant.name.trim();
+    const email = this.newParticipant.email.trim();
+
     const participant: Participant = {
       id: Date.now(), // Temporary ID for frontend - backend will assign real ID
-      name: this.newParticipant.name!,
-      email: this.newParticipant.email!,
+      name,
+      email,
       participantRole: this.newParticipant.participantRole || 'ATTENDEE',
       participantType: this.newParticipant.participantType || 'OTHER',
       invitationStatus: 'PENDING',
@@ -540,8 +541,8 @@ export class MeetingDetailsScreenComponent {
       filtered = filtered.filter(p => 
         p.name.toLowerCase().includes(search) || 
         p.email.toLowerCase().includes(search) ||
-        (p.organization && p.organization.toLowerCase().includes(search)) ||
-        (p.title && p.title.toLowerCase().includes(search))
+        p.organization?.toLowerCase().includes(search) ||
+        p.title?.toLowerCase().includes(search)
       );
     }
 
@@ -551,7 +552,7 @@ export class MeetingDetailsScreenComponent {
   /**
    * Get participants by type for classification view
    */
-  getParticipantsByType(type: 'CLIENT' | 'G37' | 'OTHER'): Participant[] {
+  getParticipantsByType(type: ParticipantType): Participant[] {
     const participants = this.filteredParticipants.length > 0 ? this.filteredParticipants : this.editedMeeting.participants;
     return participants.filter(p => (p.participantType || 'OTHER') === type);
   }
@@ -559,7 +560,7 @@ export class MeetingDetailsScreenComponent {
   /**
    * Get attendance statistics for a participant type
    */
-  getAttendanceStats(type: 'CLIENT' | 'G37' | 'OTHER'): { attended: number; absent: number } {
+  getAttendanceStats(type: ParticipantType): { attended: number; absent: number } {
     const participants = this.getParticipantsByType(type);
     return {
       attended: participants.filter(p => p.attended).length,
@@ -570,7 +571,7 @@ export class MeetingDetailsScreenComponent {
   /**
    * Handle drag and drop for participant reorganization
    */
-  onParticipantDrop(event: CdkDragDrop<Participant[]>, targetType: 'CLIENT' | 'G37' | 'OTHER'): void {
+  onParticipantDrop(event: CdkDragDrop<Participant[]>, targetType: ParticipantType): void {
     if (event.previousContainer === event.container) {
       // Reorder within the same container
       moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
@@ -616,10 +617,11 @@ export class MeetingDetailsScreenComponent {
    * Edit participant details
    */
   editParticipant(participant: Participant): void {
-    // TODO: Implement participant editing modal or inline editing
+    // Implementation stub: Open participant editing modal or inline editing
     console.log('Edit participant:', participant);
-    // This could open a modal with detailed participant information
+    // This functionality would open a modal with detailed participant information
     // including organization, title, contact details, etc.
+    // For now, this is a placeholder implementation
   }
 
   handleDeleteActionItem(id: number) {
@@ -643,13 +645,13 @@ export class MeetingDetailsScreenComponent {
   }
 
   get sortedAttended() {
-    return this.editedMeeting.participants.filter(p => p.attended).map(p => p.name).sort();
+    return this.editedMeeting.participants.filter(p => p.attended).map(p => p.name).sort((a, b) => a.localeCompare(b));
   }
   get sortedAbsent() {
-    return this.editedMeeting.participants.filter(p => !p.attended).map(p => p.name).sort();
+    return this.editedMeeting.participants.filter(p => !p.attended).map(p => p.name).sort((a, b) => a.localeCompare(b));
   }
   get allParticipants() {
-    return this.editedMeeting.participants.map(p => p.name).sort();
+    return this.editedMeeting.participants.map(p => p.name).sort((a, b) => a.localeCompare(b));
   }
 
   /**

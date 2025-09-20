@@ -60,7 +60,8 @@ import {
   styleUrls: ['./action-item-list.component.scss']
 })
 export class ActionItemListComponent implements OnInit, OnDestroy {
-  private destroy$ = new Subject<void>();
+  private readonly destroy$ = new Subject<void>();
+  private readonly searchSubject$ = new Subject<string>();
   
   actionItems: ActionItem[] = [];
   isLoading = true;
@@ -88,7 +89,7 @@ export class ActionItemListComponent implements OnInit, OnDestroy {
   isDueSoon = isActionItemDueSoon;
   formatDueDate = formatActionItemDueDate;
 
-  constructor(private actionItemService: ActionItemService) {}
+  constructor(private readonly actionItemService: ActionItemService) {}
 
   ngOnInit(): void {
     this.loadActionItems();
@@ -101,7 +102,16 @@ export class ActionItemListComponent implements OnInit, OnDestroy {
   }
 
   private setupSearchDebouncing(): void {
-    // Implement search debouncing if needed
+    this.searchSubject$
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(searchQuery => {
+        this.searchQuery = searchQuery;
+        this.loadActionItems();
+      });
   }
 
   loadActionItems(): void {
@@ -156,7 +166,7 @@ export class ActionItemListComponent implements OnInit, OnDestroy {
   }
 
   onSearchChange(): void {
-    this.loadActionItems();
+    this.searchSubject$.next(this.searchQuery);
   }
 
   onFilterChange(): void {
