@@ -8,7 +8,6 @@ import com.g37.meetingmanager.service.MicrosoftGraphOAuthService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -22,12 +21,16 @@ import java.util.Map;
 public class AuthController {
 
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+    
+    // Constants for repeated literals
+    private static final String MESSAGE_KEY = "message";
+    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String USER_NOT_FOUND_MSG = "User not found or inactive";
 
     private final AuthService authService;
     private final JwtService jwtService;
     private final MicrosoftGraphOAuthService microsoftGraphOAuthService;
 
-    @Autowired
     public AuthController(AuthService authService, 
                          JwtService jwtService, 
                          MicrosoftGraphOAuthService microsoftGraphOAuthService) {
@@ -37,7 +40,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<Object> login(@Valid @RequestBody LoginRequest request) {
         try {
             log.info("Login attempt for email: {}", request.getEmail());
             
@@ -64,23 +67,23 @@ public class AuthController {
         } catch (BadCredentialsException e) {
             log.warn("Login failed for email: {} - {}", request.getEmail(), e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Invalid email or password"));
+                    .body(Map.of(MESSAGE_KEY, "Invalid email or password"));
         } catch (Exception e) {
             log.error("Login error for email: {}", request.getEmail(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "Login failed. Please try again."));
+                    .body(Map.of(MESSAGE_KEY, "Login failed. Please try again."));
         }
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<Object> register(@Valid @RequestBody RegisterRequest request) {
         try {
             log.info("Registration attempt for email: {}", request.getEmail());
 
             // Check if user already exists
             if (authService.userExists(request.getEmail())) {
                 return ResponseEntity.status(HttpStatus.CONFLICT)
-                        .body(Map.of("message", "User with this email already exists"));
+                        .body(Map.of(MESSAGE_KEY, "User with this email already exists"));
             }
 
             User user = authService.registerUser(request);
@@ -101,22 +104,22 @@ public class AuthController {
         } catch (IllegalArgumentException e) {
             log.warn("Registration failed for email: {} - {}", request.getEmail(), e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", e.getMessage()));
+                    .body(Map.of(MESSAGE_KEY, e.getMessage()));
         } catch (Exception e) {
             log.error("Registration error for email: {}", request.getEmail(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "Registration failed. Please try again."));
+                    .body(Map.of(MESSAGE_KEY, "Registration failed. Please try again."));
         }
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refreshToken(@RequestBody TokenRefreshRequest request) {
+    public ResponseEntity<Object> refreshToken(@RequestBody TokenRefreshRequest request) {
         try {
             log.debug("Token refresh attempt");
 
             if (!jwtService.isValidRefreshToken(request.getRefreshToken())) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("message", "Invalid refresh token"));
+                        .body(Map.of(MESSAGE_KEY, "Invalid refresh token"));
             }
 
             String email = jwtService.getEmailFromRefreshToken(request.getRefreshToken());
@@ -124,7 +127,7 @@ public class AuthController {
 
             if (user == null || !user.getIsActive()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("message", "User not found or inactive"));
+                        .body(Map.of(MESSAGE_KEY, USER_NOT_FOUND_MSG));
             }
 
             String newToken = jwtService.generateToken(user);
@@ -142,20 +145,20 @@ public class AuthController {
         } catch (Exception e) {
             log.error("Token refresh error", e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Token refresh failed"));
+                    .body(Map.of(MESSAGE_KEY, "Token refresh failed"));
         }
     }
 
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Object> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
         try {
-            String token = authHeader.replace("Bearer ", "");
+            String token = authHeader.replace(BEARER_PREFIX, "");
             String email = jwtService.getEmailFromToken(token);
             User user = authService.findUserByEmail(email);
 
             if (user == null || !user.getIsActive()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("message", "User not found or inactive"));
+                        .body(Map.of(MESSAGE_KEY, USER_NOT_FOUND_MSG));
             }
 
             return ResponseEntity.ok(new UserDTO(user));
@@ -163,39 +166,39 @@ public class AuthController {
         } catch (Exception e) {
             log.error("Get current user error", e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Invalid token"));
+                    .body(Map.of(MESSAGE_KEY, "Invalid token"));
         }
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Map<String, String>> logout(@RequestHeader("Authorization") String authHeader) {
         try {
-            String token = authHeader.replace("Bearer ", "");
+            String token = authHeader.replace(BEARER_PREFIX, "");
             jwtService.invalidateToken(token);
             
             log.info("User logged out successfully");
-            return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
+            return ResponseEntity.ok(Map.of(MESSAGE_KEY, "Logged out successfully"));
 
         } catch (Exception e) {
             log.error("Logout error", e);
-            return ResponseEntity.ok(Map.of("message", "Logged out"));
+            return ResponseEntity.ok(Map.of(MESSAGE_KEY, "Logged out"));
         }
     }
 
     @GetMapping("/azure/login")
-    public ResponseEntity<?> azureLogin() {
+    public ResponseEntity<Map<String, String>> azureLogin() {
         try {
             String azureLoginUrl = authService.getAzureLoginUrl();
             return ResponseEntity.ok(Map.of("loginUrl", azureLoginUrl));
         } catch (Exception e) {
             log.error("Azure login URL generation error", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "Azure login not available"));
+                    .body(Map.of(MESSAGE_KEY, "Azure login not available"));
         }
     }
 
     @PostMapping("/azure/callback")
-    public ResponseEntity<?> azureCallback(@RequestBody AzureCallbackRequest request) {
+    public ResponseEntity<Object> azureCallback(@RequestBody AzureCallbackRequest request) {
         try {
             log.info("Azure callback received");
             
@@ -217,7 +220,7 @@ public class AuthController {
         } catch (Exception e) {
             log.error("Azure callback error", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Azure authentication failed"));
+                    .body(Map.of(MESSAGE_KEY, "Azure authentication failed"));
         }
     }
 
@@ -355,32 +358,32 @@ public class AuthController {
     }
 
     @GetMapping("/calendar/auth-url")
-    public ResponseEntity<?> getCalendarAuthUrl() {
+    public ResponseEntity<Map<String, String>> getCalendarAuthUrl() {
         try {
             String authUrl = microsoftGraphOAuthService.getAuthorizationUrl();
             if (authUrl != null) {
                 return ResponseEntity.ok(Map.of("authUrl", authUrl));
             } else {
-                return ResponseEntity.ok(Map.of("message", "Calendar integration not available"));
+                return ResponseEntity.ok(Map.of(MESSAGE_KEY, "Calendar integration not available"));
             }
         } catch (Exception e) {
             log.error("Error generating calendar auth URL", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "Failed to generate calendar authorization URL"));
+                    .body(Map.of(MESSAGE_KEY, "Failed to generate calendar authorization URL"));
         }
     }
 
     @PostMapping("/calendar/callback")
-    public ResponseEntity<?> calendarCallback(@RequestBody CalendarCallbackRequest request,
+    public ResponseEntity<Object> calendarCallback(@RequestBody CalendarCallbackRequest request,
                                              @RequestHeader("Authorization") String authHeader) {
         try {
-            String token = authHeader.replace("Bearer ", "");
+            String token = authHeader.replace(BEARER_PREFIX, "");
             String email = jwtService.getEmailFromToken(token);
             User user = authService.findUserByEmail(email);
 
             if (user == null || !user.getIsActive()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("message", "User not found or inactive"));
+                        .body(Map.of(MESSAGE_KEY, USER_NOT_FOUND_MSG));
             }
 
             Map<String, Object> tokenResponse = microsoftGraphOAuthService.exchangeCodeForToken(request.getCode());
@@ -393,19 +396,19 @@ public class AuthController {
                 
                 log.info("Calendar authorization successful for user: {}", user.getEmail());
                 return ResponseEntity.ok(Map.of(
-                    "message", "Calendar authorization successful",
+                    MESSAGE_KEY, "Calendar authorization successful",
                     "accessToken", accessToken,
                     "refreshToken", refreshToken
                 ));
             } else {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("message", "Failed to exchange authorization code"));
+                        .body(Map.of(MESSAGE_KEY, "Failed to exchange authorization code"));
             }
 
         } catch (Exception e) {
             log.error("Calendar callback error", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Calendar authorization failed"));
+                    .body(Map.of(MESSAGE_KEY, "Calendar authorization failed"));
         }
     }
 

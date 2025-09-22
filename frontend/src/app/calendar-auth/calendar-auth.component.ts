@@ -6,6 +6,20 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { CalendarService } from '../services/calendar.service';
+import { firstValueFrom } from 'rxjs';
+
+interface CalendarStatus {
+  isConnected: boolean;
+  userEmail?: string;
+  isExpired?: boolean;
+}
+
+interface CalendarError {
+  status: number;
+  error?: {
+    error: string;
+  };
+}
 
 @Component({
   selector: 'app-calendar-auth',
@@ -151,13 +165,13 @@ import { CalendarService } from '../services/calendar.service';
   `]
 })
 export class CalendarAuthComponent implements OnInit {
-  calendarStatus: any = null;
+  calendarStatus: CalendarStatus | null = null;
   loading = true;
 
   constructor(
-    private calendarService: CalendarService,
-    private router: Router,
-    private snackBar: MatSnackBar
+    private readonly calendarService: CalendarService,
+    private readonly router: Router,
+    private readonly snackBar: MatSnackBar
   ) {}
 
   ngOnInit() {
@@ -167,12 +181,13 @@ export class CalendarAuthComponent implements OnInit {
   async checkCalendarStatus() {
     try {
       this.loading = true;
-      this.calendarStatus = await this.calendarService.getCalendarStatus().toPromise();
-    } catch (error: any) {
+      this.calendarStatus = await firstValueFrom(this.calendarService.getCalendarStatus());
+    } catch (error: unknown) {
+      const calendarError = error as CalendarError;
       console.error('Error checking calendar status:', error);
       
       // Handle authentication errors
-      if (error.status === 404 || (error.error && error.error.error === 'User not found')) {
+      if (calendarError.status === 404 || (calendarError.error?.error === 'User not found')) {
         // User is not authenticated or doesn't exist
         this.calendarStatus = { isConnected: false, userEmail: '', isExpired: false };
         this.snackBar.open('Please log in to check calendar status', 'Close', { 
@@ -192,8 +207,8 @@ export class CalendarAuthComponent implements OnInit {
 
   async connectCalendar() {
     try {
-      const authUrl = await this.calendarService.getAuthUrl().toPromise();
-      if (authUrl && authUrl.authUrl) {
+      const authUrl = await firstValueFrom(this.calendarService.getAuthUrl());
+      if (authUrl?.authUrl) {
         // Redirect current window to Microsoft OAuth (no popup)
         window.location.href = authUrl.authUrl;
       }
@@ -207,7 +222,7 @@ export class CalendarAuthComponent implements OnInit {
 
   async disconnectCalendar() {
     try {
-      await this.calendarService.disconnectCalendar().toPromise();
+      await firstValueFrom(this.calendarService.disconnectCalendar());
       this.calendarStatus = { isConnected: false };
       this.snackBar.open('Calendar disconnected successfully', 'Close', { 
         duration: 3000 

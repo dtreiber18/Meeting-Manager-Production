@@ -225,7 +225,12 @@
         <div *ngFor="let participant of meeting.participants" 
              class="participant-card"
              [class.editable]="isEditing"
-             (click)="isEditing ? editParticipant(participant) : null">
+             (click)="isEditing ? editParticipant(participant) : null"
+             (keydown.enter)="isEditing ? editParticipant(participant) : null"
+             (keydown.space)="isEditing ? editParticipant(participant) : null"
+             [tabindex]="isEditing ? 0 : -1"
+             [attr.role]="isEditing ? 'button' : null"
+             [attr.aria-label]="isEditing ? 'Edit participant ' + participant.name : null">
           <div class="participant-avatar">
             {{ getInitials(participant.name) }}
           </div>

@@ -4,7 +4,6 @@ import com.g37.meetingmanager.dto.*;
 import com.g37.meetingmanager.model.*;
 import com.g37.meetingmanager.repository.mysql.*;
 import com.g37.meetingmanager.service.HelpService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -15,20 +14,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class HelpServiceImpl implements HelpService {
 
-    @Autowired
-    private HelpArticleRepository articleRepository;
+    private final HelpArticleRepository articleRepository;
+    private final HelpFAQRepository faqRepository;
+    private final SupportTicketRepository ticketRepository;
 
-    @Autowired
-    private HelpFAQRepository faqRepository;
-
-    @Autowired
-    private SupportTicketRepository ticketRepository;
+    public HelpServiceImpl(HelpArticleRepository articleRepository,
+                          HelpFAQRepository faqRepository,
+                          SupportTicketRepository ticketRepository) {
+        this.articleRepository = articleRepository;
+        this.faqRepository = faqRepository;
+        this.ticketRepository = ticketRepository;
+    }
 
     // ===============================
     // Help Articles
@@ -39,7 +40,7 @@ public class HelpServiceImpl implements HelpService {
         return articleRepository.findByIsPublishedTrueOrderBySortOrderAscCreatedAtDesc()
                 .stream()
                 .map(this::convertToArticleDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -47,7 +48,7 @@ public class HelpServiceImpl implements HelpService {
         return articleRepository.findByCategoryAndIsPublishedTrueOrderBySortOrderAscCreatedAtDesc(category)
                 .stream()
                 .map(this::convertToArticleDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -98,7 +99,7 @@ public class HelpServiceImpl implements HelpService {
         return faqRepository.findByIsPublishedTrueOrderBySortOrderAscCreatedAtDesc()
                 .stream()
                 .map(this::convertToFAQDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -106,7 +107,7 @@ public class HelpServiceImpl implements HelpService {
         return faqRepository.findByCategoryAndIsPublishedTrueOrderBySortOrderAscCreatedAtDesc(category)
                 .stream()
                 .map(this::convertToFAQDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -223,7 +224,7 @@ public class HelpServiceImpl implements HelpService {
         return ticketRepository.findBySubmittedByOrderByCreatedAtDesc(userId)
                 .stream()
                 .map(this::convertToTicketDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -588,7 +589,7 @@ public class HelpServiceImpl implements HelpService {
                 .stream()
                 .limit(limit)
                 .map(this::convertToArticleDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override

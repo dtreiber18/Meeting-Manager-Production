@@ -12,13 +12,15 @@
           #articleFileInput 
           (change)="importArticles($event)" 
           accept=".json,.csv" 
-          style="display: none">
+          class="hidden"
+          aria-label="Import articles from file">
         <input 
           type="file" 
           #faqFileInput 
           (change)="importFaqs($event)" 
           accept=".json,.csv" 
-          style="display: none">
+          class="hidden"
+          aria-label="Import FAQs from file">
         
         <button 
           (click)="articleFileInput.click()"
@@ -89,8 +91,9 @@
             </div>
 
             <div class="editor-section">
-              <label class="editor-label">Description</label>
+              <label class="editor-label" for="article-description">Description</label>
               <quill-editor
+                id="article-description"
                 [modules]="editorConfig"
                 formControlName="description"
                 class="w-full bg-white">
@@ -102,8 +105,9 @@
             </div>
 
             <div class="editor-section">
-              <label class="editor-label">Content</label>
+              <label class="editor-label" for="article-content">Content</label>
               <quill-editor
+                id="article-content"
                 [modules]="contentEditorConfig"
                 formControlName="content"
                 class="w-full bg-white">
@@ -246,8 +250,9 @@
             </mat-form-field>
 
             <div class="editor-section">
-              <label class="editor-label">Answer</label>
+              <label class="editor-label" for="faq-answer">Answer</label>
               <quill-editor
+                id="faq-answer"
                 [modules]="editorConfig"
                 formControlName="answer"
                 class="w-full bg-white">

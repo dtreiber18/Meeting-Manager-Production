@@ -82,7 +82,7 @@ body .app-header .brand-icon {
 }
 
 /* Suppress -ms-high-contrast warnings by providing modern alternatives */
-@supports (forced-colors: active) {
+@supports (forced-colors: active) and (forced-color-adjust: auto) {
   .mat-icon, .mat-button, .mat-toolbar {
     forced-color-adjust: auto;
   }

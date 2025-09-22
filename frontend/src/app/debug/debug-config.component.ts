@@ -4,6 +4,33 @@ import { AuthService } from '../auth/auth.service';
 import { CommonModule } from '@angular/common';
 import { environment } from '../../environments/environment';
 
+interface EnvironmentInfo {
+  production: boolean;
+  apiUrl: string;
+  wsUrl?: string;
+  [key: string]: unknown;
+}
+
+interface ApiConfig {
+  baseUrl: string;
+  isLocalhost: boolean;
+  currentOrigin: string;
+}
+
+interface AuthState {
+  isAuthenticated: boolean;
+  currentUser: unknown;
+}
+
+interface EndpointsInfo {
+  meetings: string;
+  meeting: string;
+  userProfile: string;
+  notifications: string;
+  settings: string;
+  chat: string;
+}
+
 /**
  * Debugging component to verify environment and API configuration
  * This can be temporarily added to routes to debug issues
@@ -42,14 +69,14 @@ import { environment } from '../../environments/environment';
   `
 })
 export class DebugConfigComponent implements OnInit {
-  environmentInfo: any = {};
-  apiConfig: any = {};
-  authState: any = {};
-  endpoints: any = {};
+  environmentInfo: EnvironmentInfo = {} as EnvironmentInfo;
+  apiConfig: ApiConfig = {} as ApiConfig;
+  authState: AuthState = {} as AuthState;
+  endpoints: EndpointsInfo = {} as EndpointsInfo;
 
   constructor(
-    private apiConfigService: ApiConfigService,
-    private authService: AuthService
+    private readonly apiConfigService: ApiConfigService,
+    private readonly authService: AuthService
   ) {}
 
   ngOnInit() {

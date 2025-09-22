@@ -190,7 +190,11 @@ public class HelpArticle {
      * Increment view count
      */
     public void incrementViewCount() {
-        this.viewCount = (this.viewCount == null ? 0 : this.viewCount) + 1;
+        if (this.viewCount == null) {
+            this.viewCount = 1;
+        } else {
+            this.viewCount = this.viewCount + 1;
+        }
     }
     
     @Override

@@ -414,7 +414,7 @@ export class MeetingDetailsComponent implements OnInit {
       });
 
       if (result.action === 'save' && result.data) {
-        this.updateParticipant(result.data);
+        this.updateParticipant(result.data.participant);
       }
     } catch (error) {
       console.error('Error opening participant edit modal:', error);
@@ -444,8 +444,9 @@ export class MeetingDetailsComponent implements OnInit {
         width: '600px'
       });
 
-      if (result.action === 'save' && result.data) {
-        this.updateMeetingField(result.data.field, result.data.value);
+      if (result.action === 'save' && result.data?.field && result.data?.meeting) {
+        const fieldValue = (result.data.meeting as unknown as Record<string, unknown>)[result.data.field] as string;
+        this.updateMeetingField(result.data.field, fieldValue);
       }
     } catch (error) {
       console.error('Error opening meeting edit modal:', error);

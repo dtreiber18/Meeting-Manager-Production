@@ -50,9 +50,9 @@ export class AppComponent implements OnDestroy {
     hasRecording: false
   };
 
-  private destroy$ = new Subject<void>();
-  private router = inject(Router);
-  private injector = inject(Injector);
+  private readonly destroy$ = new Subject<void>();
+  private readonly router = inject(Router);
+  private readonly injector = inject(Injector);
   public authService = inject(AuthService); // Made public for template access
   private meetingService?: MeetingService; // Lazy-loaded service
   private meetingServiceInitialized = false; // Track initialization state

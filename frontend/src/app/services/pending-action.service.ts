@@ -38,7 +38,7 @@ export interface PendingAction {
   n8nWorkflowId?: string;
   n8nExecutionId?: string;
   n8nWorkflowStatus?: 'PENDING' | 'TRIGGERED' | 'SUCCESS' | 'FAILED';
-  n8nExecutionResults?: Record<string, any>;
+  n8nExecutionResults?: Record<string, unknown>;
   
   // External system tracking
   actionManagementSystems?: string[];
@@ -65,9 +65,9 @@ export interface PendingActionStatistics {
   providedIn: 'root'
 })
 export class PendingActionService {
-  private apiUrl = '/api/pending-actions';
+  private readonly apiUrl = '/api/pending-actions';
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   /**
    * Get all pending actions for a specific meeting
@@ -200,7 +200,13 @@ export class PendingActionService {
       });
     }
 
-    return this.http.get<any>(this.apiUrl, { params });
+    return this.http.get<{
+      content: PendingAction[];
+      totalElements: number;
+      totalPages: number;
+      size: number;
+      number: number;
+    }>(this.apiUrl, { params });
   }
 
   /**

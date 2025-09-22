@@ -103,7 +103,7 @@
         box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
       }
 
-      &:readonly {
+      &[readonly] {
         background-color: #f9fafb;
         color: #6b7280;
       }

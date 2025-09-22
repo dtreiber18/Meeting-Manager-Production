@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, throwError, of } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Observable, throwError, of, firstValueFrom } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
 
@@ -25,8 +25,8 @@ export class CalendarService {
   private readonly API_URL = environment.apiUrl;
 
   constructor(
-    private http: HttpClient,
-    private authService: AuthService
+    private readonly http: HttpClient,
+    private readonly authService: AuthService
   ) {}
 
   /**
@@ -45,7 +45,7 @@ export class CalendarService {
   /**
    * Handle OAuth callback with authorization code
    */
-  handleOAuthCallback(code: string): Observable<any> {
+  handleOAuthCallback(code: string): Observable<CalendarAuthResponse> {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
       return throwError(() => new Error('User not authenticated'));
@@ -61,8 +61,7 @@ export class CalendarService {
     // Get the JWT token headers using AuthService
     const headers = this.authService.getAuthHeaders();
 
-    return this.http.post(`${this.API_URL}/calendar/oauth/callback`, body, { headers })
-      .pipe(
+    return this.http.post<CalendarAuthResponse>(`/api/calendar/oauth/callback`, body, { headers }).pipe(
         catchError(error => {
           console.error('Error handling OAuth callback:', error);
           return throwError(() => error);
@@ -97,7 +96,7 @@ export class CalendarService {
             throw new Error('Invalid response format');
           }
         }),
-        catchError((error: any) => {
+        catchError((error: HttpErrorResponse) => {
           console.error('Error getting calendar status:', error);
           console.log('Error details:', {
             status: error.status,
@@ -112,8 +111,9 @@ export class CalendarService {
               const parsed = JSON.parse(error.error) as CalendarStatus;
               console.log('Extracted calendar status from error body:', parsed);
               return of(parsed);
-            } catch (e) {
-              // Fall through to default handling
+            } catch (parseError) {
+              // Log the parse error and fall through to default handling
+              console.warn('Could not parse error response as JSON:', parseError);
             }
           }
           
@@ -131,7 +131,7 @@ export class CalendarService {
   /**
    * Disconnect calendar integration
    */
-  disconnectCalendar(): Observable<any> {
+  disconnectCalendar(): Observable<void> {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
       return throwError(() => new Error('User not authenticated'));
@@ -144,8 +144,9 @@ export class CalendarService {
       map((response: string) => {
         try {
           return response ? JSON.parse(response) : { success: true };
-        } catch (e) {
+        } catch (jsonError) {
           // If not valid JSON, treat as success
+          console.warn('Response is not valid JSON, treating as success:', jsonError);
           return { success: true };
         }
       }),
@@ -161,8 +162,8 @@ export class CalendarService {
    */
   async connectCalendar(): Promise<void> {
     try {
-      const authResponse = await this.getAuthUrl().toPromise();
-      if (authResponse && authResponse.authUrl) {
+      const authResponse = await firstValueFrom(this.getAuthUrl());
+      if (authResponse?.authUrl) {
         // Open the authorization URL in a new window
         window.open(authResponse.authUrl, 'calendar-auth', 'width=600,height=600');
         

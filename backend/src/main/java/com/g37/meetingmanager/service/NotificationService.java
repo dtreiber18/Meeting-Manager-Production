@@ -6,7 +6,6 @@ import com.g37.meetingmanager.model.NotificationPriority;
 import com.g37.meetingmanager.repository.mysql.NotificationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,9 +21,14 @@ import java.util.Optional;
 public class NotificationService {
     
     private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);
+    private static final String ACTION_ITEMS_URL = "/action-items/";
+    private static final String VIEW_DETAILS_TEXT = "View Details";
     
-    @Autowired
-    private NotificationRepository notificationRepository;
+    private final NotificationRepository notificationRepository;
+    
+    public NotificationService(NotificationRepository notificationRepository) {
+        this.notificationRepository = notificationRepository;
+    }
     
     /**
      * Get all notifications for a user
@@ -87,12 +91,11 @@ public class NotificationService {
     /**
      * Create a notification with additional data
      */
-    public Notification createNotification(Long userId, NotificationType type, String title, 
-                                         String message, NotificationPriority priority, 
-                                         String actionUrl, String actionText, String data) {
+    public Notification createNotificationWithData(Long userId, NotificationType type, String title, 
+                                                  String message, NotificationPriority priority, String data) {
         logger.info("Creating notification with data for user {}: {}", userId, title);
         
-        Notification notification = new Notification(userId, type, title, message, priority, actionUrl, actionText);
+        Notification notification = new Notification(userId, type, title, message, priority, null, null);
         notification.setData(data);
         return notificationRepository.save(notification);
     }
@@ -102,11 +105,10 @@ public class NotificationService {
      */
     public Notification createNotificationWithExpiration(Long userId, NotificationType type, String title, 
                                                         String message, NotificationPriority priority, 
-                                                        String actionUrl, String actionText, 
                                                         LocalDateTime expiresAt) {
         logger.info("Creating expiring notification for user {}: {} (expires: {})", userId, title, expiresAt);
         
-        Notification notification = new Notification(userId, type, title, message, priority, actionUrl, actionText);
+        Notification notification = new Notification(userId, type, title, message, priority, null, null);
         notification.setExpiresAt(expiresAt);
         return notificationRepository.save(notification);
     }
@@ -181,11 +183,11 @@ public class NotificationService {
     /**
      * Create action item due notification
      */
-    public Notification createActionItemDue(Long userId, String actionTitle, String actionId, LocalDateTime dueDate) {
+    public Notification createActionItemDue(Long userId, String actionTitle, String actionId) {
         String title = "Action Item Due Soon";
         String message = String.format("Action item \"%s\" is due soon", actionTitle);
-        String actionUrl = "/action-items/" + actionId;
-        String actionText = "View Details";
+        String actionUrl = ACTION_ITEMS_URL + actionId;
+        String actionText = VIEW_DETAILS_TEXT;
         
         return createNotification(userId, NotificationType.ACTION_ITEM_DUE, title, message, 
                                 NotificationPriority.NORMAL, actionUrl, actionText);
@@ -194,7 +196,7 @@ public class NotificationService {
     /**
      * Create meeting invitation notification
      */
-    public Notification createMeetingInvitation(Long userId, String meetingTitle, String meetingId, LocalDateTime meetingDate) {
+    public Notification createMeetingInvitation(Long userId, String meetingTitle, String meetingId) {
         String title = "Meeting Invitation";
         String message = String.format("You have been invited to \"%s\"", meetingTitle);
         String actionUrl = "/meetings/" + meetingId;
@@ -207,11 +209,11 @@ public class NotificationService {
     /**
      * Create action item assignment notification
      */
-    public Notification createActionItemAssignment(Long userId, String actionTitle, String actionId, LocalDateTime dueDate) {
+    public Notification createActionItemAssignment(Long userId, String actionTitle, String actionId) {
         String title = "New Action Item Assigned";
         String message = String.format("You have been assigned action item \"%s\"", actionTitle);
-        String actionUrl = "/action-items/" + actionId;
-        String actionText = "View Details";
+        String actionUrl = ACTION_ITEMS_URL + actionId;
+        String actionText = VIEW_DETAILS_TEXT;
         
         return createNotification(userId, NotificationType.ACTION_ITEM_ASSIGNED, title, message, 
                                 NotificationPriority.NORMAL, actionUrl, actionText);
@@ -223,8 +225,8 @@ public class NotificationService {
     public Notification createActionItemApproval(Long userId, String actionTitle, String actionId, boolean approved) {
         String title = approved ? "Action Item Approved" : "Action Item Rejected";
         String message = String.format("Action item \"%s\" has been %s", actionTitle, approved ? "approved" : "rejected");
-        String actionUrl = "/action-items/" + actionId;
-        String actionText = "View Details";
+        String actionUrl = ACTION_ITEMS_URL + actionId;
+        String actionText = VIEW_DETAILS_TEXT;
         
         return createNotification(userId, NotificationType.ACTION_ITEM_ASSIGNED, title, message, 
                                 NotificationPriority.NORMAL, actionUrl, actionText);
@@ -236,8 +238,8 @@ public class NotificationService {
     public Notification createActionItemCompleted(Long userId, String actionTitle, String actionId, String completedBy) {
         String title = "Action Item Completed";
         String message = String.format("Action item \"%s\" has been completed by %s", actionTitle, completedBy);
-        String actionUrl = "/action-items/" + actionId;
-        String actionText = "View Details";
+        String actionUrl = ACTION_ITEMS_URL + actionId;
+        String actionText = VIEW_DETAILS_TEXT;
         
         return createNotification(userId, NotificationType.ACTION_ITEM_COMPLETED, title, message, 
                                 NotificationPriority.NORMAL, actionUrl, actionText);

@@ -48,25 +48,25 @@
           <mat-card-content>
             <div class="status-grid" *ngIf="!isEditing">
               <div class="status-item">
-                <label>Status</label>
+                <span class="field-label">Status</span>
                 <div class="status-badge" [ngClass]="getStatusColor(actionItem.status)">
                   <mat-icon>{{ getStatusIcon(actionItem.status) }}</mat-icon>
                   <span>{{ actionItem.status | titlecase }}</span>
                 </div>
               </div>
               <div class="status-item">
-                <label>Priority</label>
+                <span class="field-label">Priority</span>
                 <div class="priority-badge" [ngClass]="getPriorityColor(actionItem.priority)">
                   <mat-icon>{{ getPriorityIcon(actionItem.priority) }}</mat-icon>
                   <span>{{ actionItem.priority | titlecase }}</span>
                 </div>
               </div>
               <div class="status-item">
-                <label>Type</label>
+                <span class="field-label">Type</span>
                 <span class="type-value">{{ actionItem.type | titlecase }}</span>
               </div>
               <div class="status-item">
-                <label>Progress</label>
+                <span class="field-label">Progress</span>
                 <div class="progress-container">
                   <mat-progress-bar 
                     mode="determinate" 
@@ -147,7 +147,7 @@
           <mat-card-content>
             <div class="dates-grid" *ngIf="!isEditing">
               <div class="date-item">
-                <label>Due Date</label>
+                <span class="field-label">Due Date</span>
                 <div class="date-value" [ngClass]="{'overdue': isOverdue(actionItem), 'due-soon': isDueSoon(actionItem)}">
                   <mat-icon *ngIf="isOverdue(actionItem)">warning</mat-icon>
                   <mat-icon *ngIf="isDueSoon(actionItem) && !isOverdue(actionItem)">schedule</mat-icon>
@@ -155,11 +155,11 @@
                 </div>
               </div>
               <div class="date-item" *ngIf="actionItem.startDate">
-                <label>Start Date</label>
+                <span class="field-label">Start Date</span>
                 <span class="date-value">{{ actionItem.startDate | date:'medium' }}</span>
               </div>
               <div class="date-item" *ngIf="actionItem.completedAt">
-                <label>Completed Date</label>
+                <span class="field-label">Completed Date</span>
                 <span class="date-value">{{ actionItem.completedAt | date:'medium' }}</span>
               </div>
             </div>
@@ -299,7 +299,7 @@
           <mat-card-content>
             <div class="assignment-info">
               <div class="assignment-item" *ngIf="actionItem.assignee">
-                <label>Assigned To</label>
+                <span class="field-label">Assigned To</span>
                 <div class="assignee-info">
                   <div class="assignee-avatar">
                     {{ actionItem.assignee.firstName.charAt(0) }}{{ actionItem.assignee.lastName.charAt(0) }}
@@ -312,7 +312,7 @@
               </div>
               
               <div class="assignment-item" *ngIf="actionItem.reporter">
-                <label>Reported By</label>
+                <span class="field-label">Reported By</span>
                 <div class="reporter-info">
                   <span class="reporter-name">{{ actionItem.reporter.firstName }} {{ actionItem.reporter.lastName }}</span>
                   <span class="reporter-email">{{ actionItem.reporter.email }}</span>
@@ -320,7 +320,7 @@
               </div>
               
               <div class="assignment-item" *ngIf="actionItem.meeting">
-                <label>Related Meeting</label>
+                <span class="field-label">Related Meeting</span>
                 <button mat-button color="primary" (click)="navigateToMeeting()" class="meeting-link">
                   <mat-icon>event</mat-icon>
                   {{ actionItem.meeting.title }}
@@ -338,15 +338,15 @@
           <mat-card-content>
             <div class="time-info">
               <div class="time-item" *ngIf="actionItem.estimatedHours">
-                <label>Estimated</label>
+                <span class="field-label">Estimated</span>
                 <span class="time-value">{{ actionItem.estimatedHours }}h</span>
               </div>
               <div class="time-item" *ngIf="actionItem.actualHours">
-                <label>Actual</label>
+                <span class="field-label">Actual</span>
                 <span class="time-value">{{ actionItem.actualHours }}h</span>
               </div>
               <div class="time-item" *ngIf="actionItem.estimatedHours && actionItem.actualHours">
-                <label>Variance</label>
+                <span class="field-label">Variance</span>
                 <span class="time-value" [ngClass]="{'over-estimate': actionItem.actualHours > actionItem.estimatedHours}">
                   {{ actionItem.actualHours - actionItem.estimatedHours > 0 ? '+' : '' }}{{ actionItem.actualHours - actionItem.estimatedHours }}h
                 </span>

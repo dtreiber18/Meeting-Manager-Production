@@ -6,7 +6,6 @@ import com.g37.meetingmanager.service.MicrosoftGraphOAuthService;
 import com.g37.meetingmanager.repository.mysql.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -22,12 +21,18 @@ import java.util.Map;
 public class CalendarController {
 
     private static final Logger log = LoggerFactory.getLogger(CalendarController.class);
+    
+    // Constants for repeated literals
+    private static final String ERROR_KEY = "error";
+    private static final String IS_CONNECTED_KEY = "isConnected";
+    private static final String USER_EMAIL_KEY = "userEmail";
+    private static final String MESSAGE_KEY = "message";
+    private static final String USER_NOT_FOUND_MSG = "User not found";
 
     private final AuthService authService;
     private final MicrosoftGraphOAuthService microsoftGraphOAuthService;
     private final UserRepository userRepository;
 
-    @Autowired
     public CalendarController(AuthService authService, 
                              MicrosoftGraphOAuthService microsoftGraphOAuthService,
                              UserRepository userRepository) {
@@ -54,7 +59,7 @@ public class CalendarController {
             if (email == null) {
                 log.warn("No email provided in calendar status request");
                 return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Email parameter is required"));
+                    .body(Map.of(ERROR_KEY, "Email parameter is required"));
             }
 
             User user = authService.findUserByEmail(email);
@@ -63,10 +68,10 @@ public class CalendarController {
             
             if (user == null) {
                 log.warn("User not found for email: {}", email);
-                response.put("isConnected", false);
+                response.put(IS_CONNECTED_KEY, false);
                 response.put("isExpired", false);
-                response.put("userEmail", email);
-                response.put("error", "User not found");
+                response.put(USER_EMAIL_KEY, email);
+                response.put(ERROR_KEY, USER_NOT_FOUND_MSG);
                 return ResponseEntity.ok(response);
             }
 
@@ -79,9 +84,9 @@ public class CalendarController {
                     user.getGraphTokenExpiresAt(), LocalDateTime.now(), isExpired);
             }
 
-            response.put("isConnected", isConnected);
+            response.put(IS_CONNECTED_KEY, isConnected);
             response.put("isExpired", isExpired);
-            response.put("userEmail", email);
+            response.put(USER_EMAIL_KEY, email);
             
             if (user.getGraphTokenExpiresAt() != null) {
                 response.put("expiresAt", user.getGraphTokenExpiresAt().toString());
@@ -90,10 +95,14 @@ public class CalendarController {
             log.info("Calendar status for {}: connected={}, expired={}", email, isConnected, isExpired);
             return ResponseEntity.ok(response);
 
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid request parameters: ", e);
+            return ResponseEntity.badRequest()
+                .body(Map.of(ERROR_KEY, "Invalid request: " + e.getMessage()));
+        } catch (RuntimeException e) {
             log.error("Error getting calendar status: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Internal server error: " + e.getMessage()));
+                .body(Map.of(ERROR_KEY, "Internal server error: " + e.getMessage()));
         }
     }
 
@@ -110,10 +119,14 @@ public class CalendarController {
             response.put("authUrl", authUrl);
             
             return ResponseEntity.ok(response);
-        } catch (Exception e) {
+        } catch (IllegalStateException e) {
+            log.error("Service configuration error: ", e);
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Map.of(ERROR_KEY, "Service temporarily unavailable"));
+        } catch (RuntimeException e) {
             log.error("Error generating authorization URL: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to generate authorization URL"));
+                .body(Map.of(ERROR_KEY, "Failed to generate authorization URL"));
         }
     }
 
@@ -124,14 +137,14 @@ public class CalendarController {
     public ResponseEntity<Map<String, Object>> handleOAuthCallback(@RequestBody Map<String, String> request) {
         try {
             String code = request.get("code");
-            String userEmail = request.get("userEmail");
+            String userEmail = request.get(USER_EMAIL_KEY);
             
             log.info("Processing OAuth callback for user: {}", userEmail);
             
             if (code == null || userEmail == null) {
                 log.warn("Missing required parameters in OAuth callback");
                 return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Missing authorization code or user email"));
+                    .body(Map.of(ERROR_KEY, "Missing authorization code or user email"));
             }
 
             User user = authService.findUserByEmail(userEmail);
@@ -139,7 +152,7 @@ public class CalendarController {
             if (user == null) {
                 log.warn("User not found for OAuth callback: {}", userEmail);
                 return ResponseEntity.badRequest()
-                    .body(Map.of("error", "User not found"));
+                    .body(Map.of(ERROR_KEY, USER_NOT_FOUND_MSG));
             }
 
             // Exchange code for tokens
@@ -147,7 +160,7 @@ public class CalendarController {
             if (tokenResponse == null) {
                 log.error("Failed to exchange authorization code for tokens");
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to exchange authorization code"));
+                    .body(Map.of(ERROR_KEY, "Failed to exchange authorization code"));
             }
             
             // Store tokens in user record
@@ -167,15 +180,23 @@ public class CalendarController {
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "Calendar integration successful");
-            response.put("isConnected", true);
+            response.put(MESSAGE_KEY, "Calendar integration successful");
+            response.put(IS_CONNECTED_KEY, true);
             
             return ResponseEntity.ok(response);
             
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid OAuth callback parameters: ", e);
+            return ResponseEntity.badRequest()
+                .body(Map.of(ERROR_KEY, "Invalid callback parameters: " + e.getMessage()));
+        } catch (SecurityException e) {
+            log.error("OAuth security error: ", e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of(ERROR_KEY, "Authentication failed: " + e.getMessage()));
+        } catch (RuntimeException e) {
             log.error("Error processing OAuth callback: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to process OAuth callback: " + e.getMessage()));
+                .body(Map.of(ERROR_KEY, "Failed to process OAuth callback: " + e.getMessage()));
         }
     }
 
@@ -193,7 +214,7 @@ public class CalendarController {
             if (user == null) {
                 log.warn("User not found for calendar disconnect: {}", userEmail);
                 return ResponseEntity.badRequest()
-                    .body(Map.of("error", "User not found"));
+                    .body(Map.of(ERROR_KEY, USER_NOT_FOUND_MSG));
             }
 
             // Clear Graph tokens
@@ -207,15 +228,19 @@ public class CalendarController {
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "Calendar disconnected successfully");
-            response.put("isConnected", false);
+            response.put(MESSAGE_KEY, "Calendar disconnected successfully");
+            response.put(IS_CONNECTED_KEY, false);
             
             return ResponseEntity.ok(response);
             
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid user email parameter: ", e);
+            return ResponseEntity.badRequest()
+                .body(Map.of(ERROR_KEY, "Invalid user email: " + e.getMessage()));
+        } catch (RuntimeException e) {
             log.error("Error disconnecting calendar: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to disconnect calendar: " + e.getMessage()));
+                .body(Map.of(ERROR_KEY, "Failed to disconnect calendar: " + e.getMessage()));
         }
     }
 }

@@ -10,7 +10,7 @@ export interface ToastConfig extends MatSnackBarConfig {
 })
 export class ToastService {
   
-  constructor(private snackBar: MatSnackBar) {}
+  constructor(private readonly snackBar: MatSnackBar) {}
 
   /**
    * Show a success toast message

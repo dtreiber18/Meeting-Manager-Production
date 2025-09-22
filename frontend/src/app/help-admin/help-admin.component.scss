@@ -4,6 +4,10 @@
   padding: 1.5rem;
 }
 
+.hidden {
+  display: none;
+}
+
 .help-admin-tabs {
   .mat-mdc-tab-group {
     .mat-mdc-tab-header {
@@ -55,7 +59,7 @@
       .mat-mdc-form-field-flex {
         .mat-mdc-form-field-infix {
           padding: 12px 0;
-          min-height: auto;
+          min-height: 0; /* Firefox 22+ compatible alternative to auto */
           
           .mat-mdc-input-element {
             padding: 8px 12px;
@@ -384,7 +388,8 @@ button {
 }
 
 // TinyMCE Editor Styling
-editor {
+:host ::ng-deep .tinymce-editor,
+.editor-container {
   display: block;
   width: 100%;
   

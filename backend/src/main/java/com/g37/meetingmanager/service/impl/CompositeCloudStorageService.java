@@ -5,7 +5,6 @@ import com.g37.meetingmanager.model.Document.StorageProvider;
 import com.g37.meetingmanager.service.CloudStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
@@ -17,13 +16,15 @@ public class CompositeCloudStorageService implements CloudStorageService {
     
     private static final Logger logger = LoggerFactory.getLogger(CompositeCloudStorageService.class);
     
-    @Autowired
-    @Qualifier("oneDriveStorageService")
-    private CloudStorageService oneDriveService;
+    private final CloudStorageService oneDriveService;
+    private final CloudStorageService googleDriveService;
     
-    @Autowired
-    @Qualifier("googleDriveStorageService")
-    private CloudStorageService googleDriveService;
+    public CompositeCloudStorageService(
+            @Qualifier("oneDriveStorageService") CloudStorageService oneDriveService,
+            @Qualifier("googleDriveStorageService") CloudStorageService googleDriveService) {
+        this.oneDriveService = oneDriveService;
+        this.googleDriveService = googleDriveService;
+    }
     
     @Override
     public CloudUploadResult uploadFile(MultipartFile file, Document document) throws Exception {
@@ -67,16 +68,13 @@ public class CompositeCloudStorageService implements CloudStorageService {
     }
     
     private CloudStorageService getStorageService(StorageProvider provider) {
-        switch (provider) {
-            case ONEDRIVE:
-                return oneDriveService;
-            case GOOGLEDRIVE:
-                return googleDriveService;
-            case LOCAL:
+        return switch (provider) {
+            case ONEDRIVE -> oneDriveService;
+            case GOOGLEDRIVE -> googleDriveService;
+            case LOCAL -> 
                 // For local storage, you might want to implement a local file service
                 throw new UnsupportedOperationException("Local storage not implemented yet");
-            default:
-                throw new IllegalArgumentException("Unsupported storage provider: " + provider);
-        }
+            default -> throw new IllegalArgumentException("Unsupported storage provider: " + provider);
+        };
     }
 }

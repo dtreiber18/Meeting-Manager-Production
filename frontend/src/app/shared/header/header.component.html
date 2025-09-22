@@ -68,7 +68,7 @@
 
     <!-- Notifications dropdown menu -->
     <mat-menu #notificationsMenu="matMenu" class="notifications-menu" [hasBackdrop]="true">
-      <div (click)="$event.stopPropagation()">
+      <div (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()" (keydown.space)="$event.stopPropagation()">
         <app-notifications-dropdown 
           [maxDisplayItems]="5"
           (notificationClick)="onNotificationClick($event)"

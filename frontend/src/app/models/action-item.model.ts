@@ -126,6 +126,46 @@ export interface ActionItemFilter {
   tags?: string[];
 }
 
+// API Response interfaces
+export interface ActionItemResponse {
+  id: number;
+  title: string;
+  description?: string;
+  status: string;
+  priority: string;
+  type: string;
+  dueDate?: string;
+  startDate?: string;
+  completedAt?: string;
+  completed: boolean;
+  isRecurring: boolean;
+  recurringPattern?: string;
+  estimatedHours?: number;
+  actualHours?: number;
+  notes?: string;
+  completionNotes?: string;
+  tags?: string;
+  createdAt: string;
+  updatedAt: string;
+  lastReminderSent?: string;
+  
+  // Relationships
+  meeting?: Meeting;
+  assignee?: User;
+  reporter?: User;
+  organization?: Organization;
+  subTasks?: ActionItemResponse[];
+  parentActionItem?: ActionItemResponse;
+  assignedTo?: string;
+}
+
+export interface ActionItemListResponse {
+  items: ActionItemResponse[];
+  total: number;
+  page: number;
+  size: number;
+}
+
 export interface ActionItemSummary {
   total: number;
   open: number;

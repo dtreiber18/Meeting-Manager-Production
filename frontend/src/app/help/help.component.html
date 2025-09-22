@@ -189,79 +189,99 @@
         </mat-card>
 
         <!-- User Guide -->
-        <mat-card class="help-section-card" (click)="navigateToSection('user-guide')">
-          <mat-card-header>
-            <div mat-card-avatar class="section-avatar user-guide">
-              <mat-icon>menu_book</mat-icon>
-            </div>
-            <mat-card-title>User Guide</mat-card-title>
-            <mat-card-subtitle>Comprehensive feature documentation</mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
-            <p>Detailed guides for all features including meetings, action items, and collaboration tools.</p>
-            <div class="article-count">{{ getArticleCount('user-guide') }} articles</div>
-          </mat-card-content>
-        </mat-card>
+        <button class="help-section-button" 
+                  (click)="navigateToSection('user-guide')"
+                  [attr.aria-label]="'Navigate to User Guide section'">
+          <mat-card class="help-section-card">
+            <mat-card-header>
+              <div mat-card-avatar class="section-avatar user-guide">
+                <mat-icon>menu_book</mat-icon>
+              </div>
+              <mat-card-title>User Guide</mat-card-title>
+              <mat-card-subtitle>Comprehensive feature documentation</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <p>Detailed guides for all features including meetings, action items, and collaboration tools.</p>
+              <div class="article-count">{{ getArticleCount('user-guide') }} articles</div>
+            </mat-card-content>
+          </mat-card>
+        </button>
 
         <!-- FAQ -->
-        <mat-card class="help-section-card" (click)="navigateToSection('faq')">
-          <mat-card-header>
-            <div mat-card-avatar class="section-avatar faq">
-              <mat-icon>quiz</mat-icon>
-            </div>
-            <mat-card-title>Frequently Asked Questions</mat-card-title>
-            <mat-card-subtitle>Common questions and answers</mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
-            <p>Find quick answers to the most commonly asked questions about Meeting Manager.</p>
-            <div class="article-count">{{ getFAQCount() }} questions</div>
-          </mat-card-content>
-        </mat-card>
+        <button class="help-section-button" 
+                  (click)="navigateToSection('faq')"
+                  [attr.aria-label]="'Navigate to FAQ section'">
+          <mat-card class="help-section-card">
+            <mat-card-header>
+              <div mat-card-avatar class="section-avatar faq">
+                <mat-icon>quiz</mat-icon>
+              </div>
+              <mat-card-title>Frequently Asked Questions</mat-card-title>
+              <mat-card-subtitle>Common questions and answers</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <p>Find quick answers to the most commonly asked questions about Meeting Manager.</p>
+              <div class="article-count">{{ getFAQCount() }} questions</div>
+            </mat-card-content>
+          </mat-card>
+        </button>
 
         <!-- Troubleshooting -->
-        <mat-card class="help-section-card" (click)="navigateToSection('troubleshooting')">
-          <mat-card-header>
-            <div mat-card-avatar class="section-avatar troubleshooting">
-              <mat-icon>build</mat-icon>
-            </div>
-            <mat-card-title>Troubleshooting</mat-card-title>
-            <mat-card-subtitle>Solutions for common issues</mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
-            <p>Step-by-step solutions for technical issues and error messages you might encounter.</p>
-            <div class="article-count">{{ getArticleCount('troubleshooting') }} guides</div>
-          </mat-card-content>
-        </mat-card>
+        <button class="help-section-button" 
+                  (click)="navigateToSection('troubleshooting')"
+                  [attr.aria-label]="'Navigate to Troubleshooting section'">
+          <mat-card class="help-section-card">
+            <mat-card-header>
+              <div mat-card-avatar class="section-avatar troubleshooting">
+                <mat-icon>build</mat-icon>
+              </div>
+              <mat-card-title>Troubleshooting</mat-card-title>
+              <mat-card-subtitle>Solutions for common issues</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <p>Step-by-step solutions for technical issues and error messages you might encounter.</p>
+              <div class="article-count">{{ getArticleCount('troubleshooting') }} guides</div>
+            </mat-card-content>
+          </mat-card>
+        </button>
 
         <!-- API Documentation -->
-        <mat-card class="help-section-card" (click)="navigateToSection('api')">
-          <mat-card-header>
-            <div mat-card-avatar class="section-avatar api">
-              <mat-icon>code</mat-icon>
-            </div>
-            <mat-card-title>API Documentation</mat-card-title>
-            <mat-card-subtitle>Developer resources</mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
-            <p>Technical documentation for developers integrating with Meeting Manager APIs.</p>
-            <div class="article-count">{{ getArticleCount('api') }} endpoints</div>
-          </mat-card-content>
-        </mat-card>
+        <button class="help-section-button" 
+                  (click)="navigateToSection('api')"
+                  [attr.aria-label]="'Navigate to API Documentation section'">
+          <mat-card class="help-section-card">
+            <mat-card-header>
+              <div mat-card-avatar class="section-avatar api">
+                <mat-icon>code</mat-icon>
+              </div>
+              <mat-card-title>API Documentation</mat-card-title>
+              <mat-card-subtitle>Developer resources</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <p>Technical documentation for developers integrating with Meeting Manager APIs.</p>
+              <div class="article-count">{{ getArticleCount('api') }} endpoints</div>
+            </mat-card-content>
+          </mat-card>
+        </button>
 
         <!-- Contact Support -->
-        <mat-card class="help-section-card" (click)="navigateToSection('support')">
-          <mat-card-header>
-            <div mat-card-avatar class="section-avatar support">
-              <mat-icon>support_agent</mat-icon>
-            </div>
-            <mat-card-title>Contact Support</mat-card-title>
-            <mat-card-subtitle>Get personalized help</mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
-            <p>Submit a support ticket or contact our team directly for assistance with your account.</p>
-            <div class="article-count">24/7 support available</div>
-          </mat-card-content>
-        </mat-card>
+        <button class="help-section-button" 
+                  (click)="navigateToSection('support')"
+                  [attr.aria-label]="'Navigate to Support section'">
+          <mat-card class="help-section-card">
+            <mat-card-header>
+              <div mat-card-avatar class="section-avatar support">
+                <mat-icon>support_agent</mat-icon>
+              </div>
+              <mat-card-title>Contact Support</mat-card-title>
+              <mat-card-subtitle>Get personalized help</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <p>Submit a support ticket or contact our team directly for assistance with your account.</p>
+              <div class="article-count">24/7 support available</div>
+            </mat-card-content>
+          </mat-card>
+        </button>
 
       </div>
     </div>
@@ -589,18 +609,23 @@
         <p class="results-count">{{ searchResults.length }} result(s) found</p>
         
         <div class="results-list">
-          <mat-card class="result-card" *ngFor="let result of searchResults" (click)="openResult(result)">
-            <mat-card-header>
-              <div mat-card-avatar class="result-avatar" [ngClass]="result.type">
-                <mat-icon>{{ getResultIcon(result.type) }}</mat-icon>
-              </div>
-              <mat-card-title>{{ result.title }}</mat-card-title>
-              <mat-card-subtitle>{{ result.category }} • {{ result.type }}</mat-card-subtitle>
-            </mat-card-header>
-            <mat-card-content>
-              <p class="result-snippet" [innerHTML]="result.snippet"></p>
-            </mat-card-content>
-          </mat-card>
+          <button class="help-section-button" 
+                    *ngFor="let result of searchResults" 
+                    (click)="openResult(result)"
+                    [attr.aria-label]="'Open ' + result.title + ' in ' + result.category">
+            <mat-card class="result-card">
+              <mat-card-header>
+                <div mat-card-avatar class="result-avatar" [ngClass]="result.type">
+                  <mat-icon>{{ getResultIcon(result.type) }}</mat-icon>
+                </div>
+                <mat-card-title>{{ result.title }}</mat-card-title>
+                <mat-card-subtitle>{{ result.category }} • {{ result.type }}</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <p class="result-snippet" [innerHTML]="result.snippet"></p>
+              </mat-card-content>
+            </mat-card>
+          </button>
         </div>
       </div>
 

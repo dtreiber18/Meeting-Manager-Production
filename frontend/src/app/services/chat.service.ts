@@ -124,87 +124,89 @@ export class ChatService {
       return "I'd love to help you create a meeting! However, I need to use the enhanced chat features for meeting creation. This might not work in fallback mode, but let's try! What would you like to call your meeting?";
     }
 
-    // Context-aware responses based on page type and user input
-    if (pageType === 'home') {
-      if (lowerMessage.includes('search') || lowerMessage.includes('find')) {
-        return 'You can search for meetings using the search bar at the top. It searches through meeting subjects, summaries, participants, action items, and all other meeting details. Just type your query and press Enter, or use the Filter button for more specific criteria like date ranges or meeting types.';
-      }
-      if (lowerMessage.includes('filter')) {
-        return 'The Filter button opens advanced filtering options where you can filter by date range, meeting type (external/internal), specific participants, meetings with action items, or meetings with recordings. You can combine multiple filters to narrow down your results.';
-      }
-      if (lowerMessage.includes('action') || lowerMessage.includes('task')) {
-        return 'Action items from your meetings are automatically extracted and can be converted into tasks, emails, or calendar events. The system identifies who items are assigned to and their due dates. You can see action items in the meeting summaries and detailed views.';
-      }
-      if (
-        lowerMessage.includes('automation') ||
-        lowerMessage.includes('workflow')
-      ) {
-        return 'The platform automatically processes meeting notes from various sources (Fathom, Otter.ai, etc.), classifies meeting types, and can generate follow-up actions like tasks, emails, and calendar invites based on the meeting content and action items identified.';
-      }
+    // Context-aware responses based on page type
+    switch (pageType) {
+      case 'home':
+        return this.getHomePageResponse(lowerMessage);
+      case 'meetings':
+        return this.getMeetingsPageResponse(lowerMessage);
+      case 'detail':
+        return this.getDetailPageResponse(lowerMessage);
+      case 'settings':
+        return this.getSettingsPageResponse(lowerMessage);
+      default:
+        return this.getGeneralResponse(lowerMessage, userMessage, pageType);
     }
+  }
 
-    if (pageType === 'meetings') {
-      if (lowerMessage.includes('card') || lowerMessage.includes('view')) {
-        return 'You can switch between Grid and List views using the buttons in the top right. Grid view shows meetings as cards with key details, while List view provides a more compact table format. Click any meeting to see full details.';
-      }
-      if (lowerMessage.includes('type') || lowerMessage.includes('category')) {
-        return 'Meetings are automatically classified into types like External Sales, Internal Team Strategy, Board Meetings, etc. Each type has a colored badge - blue for external meetings, green for internal meetings. This helps with organization and automated workflows.';
-      }
+  private getHomePageResponse(lowerMessage: string): string {
+    if (lowerMessage.includes('search') || lowerMessage.includes('find')) {
+      return 'You can search for meetings using the search bar at the top. It searches through meeting subjects, summaries, participants, action items, and all other meeting details. Just type your query and press Enter, or use the Filter button for more specific criteria like date ranges or meeting types.';
     }
-
-    if (pageType === 'detail') {
-      if (
-        lowerMessage.includes('participant') ||
-        lowerMessage.includes('attend')
-      ) {
-        return 'The Participants tab shows who was invited, who attended (green indicators), and who was absent (red indicators). This information is automatically extracted from your meeting platform and helps track engagement and follow-up needs.';
-      }
-      if (lowerMessage.includes('recording') || lowerMessage.includes('play')) {
-        return "If a meeting was recorded, you'll see the Recording tab with play and download options. The recording URL is automatically captured from your meeting platform when available.";
-      }
-      if (lowerMessage.includes('action') || lowerMessage.includes('task')) {
-        return "Action items are automatically extracted from meeting transcripts and summaries. Each item shows the description, who it's assigned to, due date, priority level, and current status. These can be automatically converted into tasks in your preferred task management system.";
-      }
+    if (lowerMessage.includes('filter')) {
+      return 'The Filter button opens advanced filtering options where you can filter by date range, meeting type (external/internal), specific participants, meetings with action items, or meetings with recordings. You can combine multiple filters to narrow down your results.';
     }
-
-    if (pageType === 'settings') {
-      if (
-        lowerMessage.includes('api') ||
-        lowerMessage.includes('integration')
-      ) {
-        return "In the API configuration sections, you'll set up connections to your meeting note sources (like Fathom.video, Otter.ai) and destination apps (like Google Calendar, Gmail). Each requires an API URL, API Key, and field mapping to work properly.";
-      }
-      if (lowerMessage.includes('field') || lowerMessage.includes('mapping')) {
-        return 'Field mapping tells the system how to match data between different apps. For sources, you map their field names to our standard fields. For destinations, you map our fields to their expected field names. This ensures data flows correctly between systems.';
-      }
-      if (
-        lowerMessage.includes('source') ||
-        lowerMessage.includes('get info')
-      ) {
-        return "Meeting note sources are apps that provide meeting data to our platform. Configure the API connection and map fields like 'title' to 'Meeting Subject' or 'participants' to 'Meeting Participants'. Make sure to mark sources as Active when ready.";
-      }
-      if (
-        lowerMessage.includes('destination') ||
-        lowerMessage.includes('send info')
-      ) {
-        return 'Destination apps receive processed meeting data and action items. Set up integrations with calendar apps for scheduling, email apps for follow-ups, and task apps for action items. Field mapping ensures data appears in the right places.';
-      }
+    if (lowerMessage.includes('action') || lowerMessage.includes('task')) {
+      return 'Action items from your meetings are automatically extracted and can be converted into tasks, emails, or calendar events. The system identifies who items are assigned to and their due dates. You can see action items in the meeting summaries and detailed views.';
     }
+    if (lowerMessage.includes('automation') || lowerMessage.includes('workflow')) {
+      return 'The platform automatically processes meeting notes from various sources (Fathom, Otter.ai, etc.), classifies meeting types, and can generate follow-up actions like tasks, emails, and calendar invites based on the meeting content and action items identified.';
+    }
+    return this.getGeneralResponse(lowerMessage, '', 'home');
+  }
 
+  private getMeetingsPageResponse(lowerMessage: string): string {
+    if (lowerMessage.includes('card') || lowerMessage.includes('view')) {
+      return 'You can switch between Grid and List views using the buttons in the top right. Grid view shows meetings as cards with key details, while List view provides a more compact table format. Click any meeting to see full details.';
+    }
+    if (lowerMessage.includes('type') || lowerMessage.includes('category')) {
+      return 'Meetings are automatically classified into types like External Sales, Internal Team Strategy, Board Meetings, etc. Each type has a colored badge - blue for external meetings, green for internal meetings. This helps with organization and automated workflows.';
+    }
+    return this.getGeneralResponse(lowerMessage, '', 'meetings');
+  }
+
+  private getDetailPageResponse(lowerMessage: string): string {
+    if (lowerMessage.includes('participant') || lowerMessage.includes('attend')) {
+      return 'The Participants tab shows who was invited, who attended (green indicators), and who was absent (red indicators). This information is automatically extracted from your meeting platform and helps track engagement and follow-up needs.';
+    }
+    if (lowerMessage.includes('recording') || lowerMessage.includes('play')) {
+      return "If a meeting was recorded, you'll see the Recording tab with play and download options. The recording URL is automatically captured from your meeting platform when available.";
+    }
+    if (lowerMessage.includes('action') || lowerMessage.includes('task')) {
+      return "Action items are automatically extracted from meeting transcripts and summaries. Each item shows the description, who it's assigned to, due date, priority level, and current status. These can be automatically converted into tasks in your preferred task management system.";
+    }
+    return this.getGeneralResponse(lowerMessage, '', 'detail');
+  }
+
+  private getSettingsPageResponse(lowerMessage: string): string {
+    if (lowerMessage.includes('api') || lowerMessage.includes('integration')) {
+      return "In the API configuration sections, you'll set up connections to your meeting note sources (like Fathom.video, Otter.ai) and destination apps (like Google Calendar, Gmail). Each requires an API URL, API Key, and field mapping to work properly.";
+    }
+    if (lowerMessage.includes('field') || lowerMessage.includes('mapping')) {
+      return 'Field mapping tells the system how to match data between different apps. For sources, you map their field names to our standard fields. For destinations, you map our fields to their expected field names. This ensures data flows correctly between systems.';
+    }
+    if (lowerMessage.includes('source') || lowerMessage.includes('get info')) {
+      return "Meeting note sources are apps that provide meeting data to our platform. Configure the API connection and map fields like 'title' to 'Meeting Subject' or 'participants' to 'Meeting Participants'. Make sure to mark sources as Active when ready.";
+    }
+    if (lowerMessage.includes('destination') || lowerMessage.includes('send info')) {
+      return 'Destination apps receive processed meeting data and action items. Set up integrations with calendar apps for scheduling, email apps for follow-ups, and task apps for action items. Field mapping ensures data appears in the right places.';
+    }
+    return this.getGeneralResponse(lowerMessage, '', 'settings');
+  }
+
+  private getGeneralResponse(lowerMessage: string, userMessage: string, pageType: PageType): string {
     // General responses
     if (lowerMessage.includes('help') || lowerMessage.includes('how')) {
       return "I can help explain any feature you see on this page. Try asking about specific elements like buttons, forms, or data you're viewing. I can also explain workflows, integrations, and best practices for using the platform.";
     }
 
-    if (
-      lowerMessage.includes('password') ||
-      lowerMessage.includes('security')
-    ) {
+    if (lowerMessage.includes('password') || lowerMessage.includes('security')) {
       return "For security, you only need to enter your new password and confirm it - no need for your current password since you're already authenticated. The system uses secure password hashing and session management.";
     }
 
     // Default response with context
-    return `I understand you're asking about "${userMessage}". Based on what I can see on this ${pageType} page, I'd be happy to help explain specific features, workflows, or answer questions about the information displayed. Could you be more specific about what you'd like to know?`;
+    const messageToUse = userMessage || lowerMessage;
+    return `I understand you're asking about "${messageToUse}". Based on what I can see on this ${pageType} page, I'd be happy to help explain specific features, workflows, or answer questions about the information displayed. Could you be more specific about what you'd like to know?`;
   }
 
   private isMeetingCreationIntent(message: string): boolean {
@@ -242,24 +244,50 @@ export class ChatService {
     const lowerMessage = userMessage.toLowerCase();
 
     // Handle cancellation
-    if (lowerMessage.includes('cancel') || lowerMessage.includes('nevermind') || lowerMessage.includes('stop')) {
+    if (this.isCancellationMessage(lowerMessage)) {
       this.meetingCreationState = null;
       return of("No problem! Meeting creation cancelled. Let me know if you'd like to create a meeting later.");
     }
 
+    // Handle each step of the creation flow
     switch (state.step) {
       case 'title':
-        state.title = userMessage.trim();
-        state.step = 'date';
-        return of(`Perfect! I'll create a meeting called "${state.title}". When would you like to schedule it? Please provide a date and time (e.g., "Tomorrow at 2 PM" or "December 15th at 10:30 AM").`);
+        return this.handleTitleStep(userMessage, state);
+      case 'date':
+        return this.handleDateStep(userMessage, state);
+      case 'type':
+        return this.handleTypeStep(userMessage, state);
+      case 'participants':
+        return this.handleParticipantsStep(userMessage, state);
+      case 'description':
+        return this.handleDescriptionStep(userMessage, state);
+      case 'confirm':
+        return this.handleConfirmStep(lowerMessage, state);
+      default:
+        this.meetingCreationState = null;
+        return of("Something went wrong. Let's start over. What meeting would you like to create?");
+    }
+  }
 
-      case 'date': {
-        const dateTime = this.parseDateTimeFromMessage(userMessage);
-        if (dateTime.startTime) {
-          state.startTime = dateTime.startTime;
-          state.endTime = dateTime.endTime || this.calculateEndTime(dateTime.startTime, 60); // Default 1 hour
-          state.step = 'type';
-          return of(`Great! I've scheduled it for ${this.formatDateTime(state.startTime)}. What type of meeting is this? You can say:
+  private isCancellationMessage(lowerMessage: string): boolean {
+    return lowerMessage.includes('cancel') || 
+           lowerMessage.includes('nevermind') || 
+           lowerMessage.includes('stop');
+  }
+
+  private handleTitleStep(userMessage: string, state: MeetingCreationState): Observable<string> {
+    state.title = userMessage.trim();
+    state.step = 'date';
+    return of(`Perfect! I'll create a meeting called "${state.title}". When would you like to schedule it? Please provide a date and time (e.g., "Tomorrow at 2 PM" or "December 15th at 10:30 AM").`);
+  }
+
+  private handleDateStep(userMessage: string, state: MeetingCreationState): Observable<string> {
+    const dateTime = this.parseDateTimeFromMessage(userMessage);
+    if (dateTime.startTime) {
+      state.startTime = dateTime.startTime;
+      state.endTime = dateTime.endTime || this.calculateEndTime(dateTime.startTime, 60); // Default 1 hour
+      state.step = 'type';
+      return of(`Great! I've scheduled it for ${this.formatDateTime(state.startTime)}. What type of meeting is this? You can say:
 
 • **Team meeting** - Internal team discussions
 • **Client meeting** - External client calls  
@@ -270,8 +298,8 @@ export class ChatService {
 • **Review/Retrospective** - Review meetings
 
 Just say the type you prefer.`);
-        } else {
-          return of(`I couldn't understand that date/time. Could you try again? Here are some examples that work well:
+    } else {
+      return of(`I couldn't understand that date/time. Could you try again? Here are some examples that work well:
 
 **Relative dates:**
 • "Tomorrow at 2 PM"
@@ -283,47 +311,51 @@ Just say the type you prefer.`);
 • "9/2 at 8:30 AM"
 
 Please try again with one of these formats.`);
-        }
-      }
+    }
+  }
 
-      case 'type':
-        state.meetingType = this.normalizeMeetingType(userMessage);
-        state.step = 'participants';
-        return of(`Got it! This will be a ${state.meetingType}. Who would you like to invite? You can list email addresses separated by commas, or say "just me" for a solo meeting.`);
+  private handleTypeStep(userMessage: string, state: MeetingCreationState): Observable<string> {
+    state.meetingType = this.normalizeMeetingType(userMessage);
+    state.step = 'participants';
+    return of(`Got it! This will be a ${state.meetingType}. Who would you like to invite? You can list email addresses separated by commas, or say "just me" for a solo meeting.`);
+  }
 
-      case 'participants': {
-        if (lowerMessage.includes('just me') || lowerMessage.includes('only me') || lowerMessage.includes('no one')) {
-          state.participants = [];
-        } else {
-          state.participants = this.extractEmailsFromMessage(userMessage);
-        }
-        state.step = 'description';
-        const participantText = state.participants && state.participants.length > 0 
-          ? `I'll invite: ${state.participants.join(', ')}.` 
-          : "This will be a solo meeting.";
-        return of(`${participantText} Would you like to add a description or agenda for the meeting? (You can say "no description" to skip this step)`);
-      }
+  private handleParticipantsStep(userMessage: string, state: MeetingCreationState): Observable<string> {
+    const lowerMessage = userMessage.toLowerCase();
+    
+    if (lowerMessage.includes('just me') || lowerMessage.includes('only me') || lowerMessage.includes('no one')) {
+      state.participants = [];
+    } else {
+      state.participants = this.extractEmailsFromMessage(userMessage);
+    }
+    
+    state.step = 'description';
+    const participantText = state.participants && state.participants.length > 0 
+      ? `I'll invite: ${state.participants.join(', ')}.` 
+      : "This will be a solo meeting.";
+    return of(`${participantText} Would you like to add a description or agenda for the meeting? (You can say "no description" to skip this step)`);
+  }
 
-      case 'description':
-        if (!lowerMessage.includes('no description') && !lowerMessage.includes('skip')) {
-          state.description = userMessage.trim();
-        }
-        state.step = 'confirm';
-        return of(this.generateConfirmationMessage(state));
+  private handleDescriptionStep(userMessage: string, state: MeetingCreationState): Observable<string> {
+    const lowerMessage = userMessage.toLowerCase();
+    
+    if (!lowerMessage.includes('no description') && !lowerMessage.includes('skip')) {
+      state.description = userMessage.trim();
+    }
+    
+    state.step = 'confirm';
+    return of(this.generateConfirmationMessage(state));
+  }
 
-      case 'confirm':
-        if (lowerMessage.includes('yes') || lowerMessage.includes('confirm') || lowerMessage.includes('create') || lowerMessage.includes('looks good')) {
-          return this.createMeetingFromState(state);
-        } else if (lowerMessage.includes('no') || lowerMessage.includes('cancel')) {
-          this.meetingCreationState = null;
-          return of("Okay, I've cancelled the meeting creation. Let me know if you'd like to start over!");
-        } else {
-          return of("Please confirm by saying 'yes' to create the meeting, or 'no' to cancel.");
-        }
-
-      default:
-        this.meetingCreationState = null;
-        return of("Something went wrong. Let's start over. What meeting would you like to create?");
+  private handleConfirmStep(lowerMessage: string, state: MeetingCreationState): Observable<string> {
+    if (lowerMessage.includes('yes') || lowerMessage.includes('confirm') || 
+        lowerMessage.includes('create') || lowerMessage.includes('looks good')) {
+      return this.createMeetingFromState(state);
+    } else if (lowerMessage.includes('no') || lowerMessage.includes('cancel')) {
+      this.meetingCreationState = null;
+      return of("Okay, I've cancelled the meeting creation. Let me know if you'd like to start over!");
+    } else {
+      return of("Please confirm by saying 'yes' to create the meeting, or 'no' to cancel.");
     }
   }
 
@@ -340,62 +372,112 @@ Please try again with one of these formats.`);
     const now = new Date();
     const lowerMessage = message.toLowerCase();
 
-    // Handle relative dates
+    // Handle relative dates first
+    const relativeDateResult = this.parseRelativeDates(lowerMessage, now, message);
+    if (relativeDateResult.startTime) {
+      return relativeDateResult;
+    }
+
+    // Handle specific month/day patterns
+    const monthDayResult = this.parseMonthDayPattern(message, now);
+    if (monthDayResult.startTime) {
+      return monthDayResult;
+    }
+
+    // Handle numeric date patterns
+    const numericDateResult = this.parseNumericDatePatterns(message, now);
+    if (numericDateResult.startTime) {
+      return numericDateResult;
+    }
+
+    // Handle time-only patterns (for today/tomorrow)
+    const timeOnlyResult = this.parseTimeOnlyPattern(message, now);
+    if (timeOnlyResult.startTime) {
+      return timeOnlyResult;
+    }
+
+    return {};
+  }
+
+  private parseRelativeDates(lowerMessage: string, now: Date, originalMessage: string): { startTime?: string } {
     if (lowerMessage.includes('tomorrow')) {
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const time = this.extractTimeFromMessage(message);
-      if (time) {
-        tomorrow.setHours(time.hours, time.minutes, 0, 0);
-        return { startTime: tomorrow.toISOString() };
-      }
+      return this.createDateWithTime(now, 1, originalMessage);
     }
 
     if (lowerMessage.includes('next week')) {
-      const nextWeek = new Date(now);
-      nextWeek.setDate(nextWeek.getDate() + 7);
-      const time = this.extractTimeFromMessage(message);
-      if (time) {
-        nextWeek.setHours(time.hours, time.minutes, 0, 0);
-        return { startTime: nextWeek.toISOString() };
-      }
+      return this.createDateWithTime(now, 7, originalMessage);
     }
 
-    // Handle specific dates like "September 2nd", "Dec 15th", etc.
-    const monthDayMatch = message.match(/(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2})(st|nd|rd|th)?/i);
-    if (monthDayMatch) {
-      const monthName = monthDayMatch[1].toLowerCase();
-      const day = parseInt(monthDayMatch[2]);
-      const time = this.extractTimeFromMessage(message);
+    return {};
+  }
+
+  private createDateWithTime(baseDate: Date, daysToAdd: number, message: string): { startTime?: string } {
+    const targetDate = new Date(baseDate);
+    targetDate.setDate(targetDate.getDate() + daysToAdd);
+    
+    const time = this.extractTimeFromMessage(message);
+    if (time) {
+      targetDate.setHours(time.hours, time.minutes, 0, 0);
+      return { startTime: targetDate.toISOString() };
+    }
+    
+    return {};
+  }
+
+  private parseMonthDayPattern(message: string, now: Date): { startTime?: string } {
+    // Split the complex regex into simpler parts to reduce complexity
+    const fullMonths = /(january|february|march|april|may|june|july|august|september|october|november|december)/i;
+    const shortMonths = /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i;
+    const dayPattern = /\s+(\d{1,2})(?:st|nd|rd|th)?\b/i;
+    
+    let monthMatch = fullMonths.exec(message);
+    monthMatch ??= shortMonths.exec(message);
+    
+    if (monthMatch) {
+      const restOfMessage = message.slice(monthMatch.index + monthMatch[0].length);
+      const dayMatch = dayPattern.exec(restOfMessage);
       
-      const monthMap: { [key: string]: number } = {
-        'january': 0, 'jan': 0, 'february': 1, 'feb': 1, 'march': 2, 'mar': 2,
-        'april': 3, 'apr': 3, 'may': 4, 'june': 5, 'jun': 5,
-        'july': 6, 'jul': 6, 'august': 7, 'aug': 7, 'september': 8, 'sep': 8,
-        'october': 9, 'oct': 9, 'november': 10, 'nov': 10, 'december': 11, 'dec': 11
-      };
-      
-      const monthIndex = monthMap[monthName];
-      if (monthIndex !== undefined && time) {
-        const meetingDate = new Date(now.getFullYear(), monthIndex, day, time.hours, time.minutes, 0, 0);
+      if (dayMatch) {
+        const monthName = monthMatch[1].toLowerCase();
+        const day = parseInt(dayMatch[1]);
+        const time = this.extractTimeFromMessage(message);
         
-        // If the date is in the past this year, schedule for next year
-        if (meetingDate < now) {
-          meetingDate.setFullYear(meetingDate.getFullYear() + 1);
+        const monthIndex = this.getMonthIndex(monthName);
+        if (monthIndex !== undefined && time) {
+          const meetingDate = new Date(now.getFullYear(), monthIndex, day, time.hours, time.minutes, 0, 0);
+          
+          // If the date is in the past this year, schedule for next year
+          if (meetingDate < now) {
+            meetingDate.setFullYear(meetingDate.getFullYear() + 1);
+          }
+          
+          return { startTime: meetingDate.toISOString() };
         }
-        
-        return { startTime: meetingDate.toISOString() };
       }
     }
 
-    // Handle specific dates in format "Dec 15", "12/15", etc.
+    return {};
+  }
+
+  private getMonthIndex(monthName: string): number | undefined {
+    const monthMap: { [key: string]: number } = {
+      'january': 0, 'jan': 0, 'february': 1, 'feb': 1, 'march': 2, 'mar': 2,
+      'april': 3, 'apr': 3, 'may': 4, 'june': 5, 'jun': 5,
+      'july': 6, 'jul': 6, 'august': 7, 'aug': 7, 'september': 8, 'sep': 8,
+      'october': 9, 'oct': 9, 'november': 10, 'nov': 10, 'december': 11, 'dec': 11
+    };
+    
+    return monthMap[monthName];
+  }
+
+  private parseNumericDatePatterns(message: string, now: Date): { startTime?: string } {
     const datePatterns = [
       /(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/, // MM/DD or MM/DD/YY or MM/DD/YYYY
       /(\d{1,2})-(\d{1,2})(?:-(\d{2,4}))?/, // MM-DD or MM-DD-YY or MM-DD-YYYY
     ];
 
     for (const pattern of datePatterns) {
-      const match = message.match(pattern);
+      const match = pattern.exec(message);
       if (match) {
         const month = parseInt(match[1]) - 1; // JS months are 0-indexed
         const day = parseInt(match[2]);
@@ -410,7 +492,10 @@ Please try again with one of these formats.`);
       }
     }
 
-    // Handle specific times (basic parsing) - fallback for today or tomorrow
+    return {};
+  }
+
+  private parseTimeOnlyPattern(message: string, now: Date): { startTime?: string } {
     const timeMatch = this.extractTimeFromMessage(message);
     if (timeMatch) {
       const meetingDate = new Date(now);
@@ -436,7 +521,7 @@ Please try again with one of these formats.`);
     ];
 
     for (const pattern of timePatterns) {
-      const match = message.match(pattern);
+      const match = pattern.exec(message);
       if (match) {
         let hours = parseInt(match[1]);
         const minutes = match[2] ? parseInt(match[2]) : 0;

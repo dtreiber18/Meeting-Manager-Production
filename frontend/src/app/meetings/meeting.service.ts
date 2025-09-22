@@ -38,15 +38,15 @@ interface BackendMeeting {
 
 @Injectable({ providedIn: 'root' })
 export class MeetingService {
-  private _meetingsUpdated = new BehaviorSubject<boolean>(false);
+  private readonly _meetingsUpdated = new BehaviorSubject<boolean>(false);
   
   // Observable that components can subscribe to for meeting updates
   public meetingsUpdated$ = this._meetingsUpdated.asObservable();
 
   constructor(
-    private http: HttpClient,
-    private mapper: MeetingMapperService,
-    private apiConfig: ApiConfigService
+    private readonly http: HttpClient,
+    private readonly mapper: MeetingMapperService,
+    private readonly apiConfig: ApiConfigService
   ) {
     console.log('🔧 MeetingService using ApiConfigService');
     console.log('🔧 Meetings endpoint:', this.apiConfig.endpoints.meetings());

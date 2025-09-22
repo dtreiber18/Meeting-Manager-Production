@@ -15,7 +15,7 @@ export class ModalContainerComponent implements AfterViewInit {
   @ViewChild('modalContainer', { read: ViewContainerRef, static: true }) 
   modalContainer!: ViewContainerRef;
 
-  constructor(private modalService: ModalService) {}
+  constructor(private readonly modalService: ModalService) {}
 
   ngAfterViewInit() {
     this.modalService.setModalContainer(this.modalContainer);

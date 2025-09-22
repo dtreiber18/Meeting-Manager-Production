@@ -42,9 +42,9 @@ export interface BulkImportResult {
   providedIn: 'root'
 })
 export class HelpAdminService {
-  private baseUrl = '/api/admin/help';
+  private readonly baseUrl = '/api/admin/help';
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   // Articles Management
   createArticle(article: Omit<HelpArticle, 'id' | 'createdAt' | 'updatedAt' | 'viewCount'>): Observable<HelpArticle> {

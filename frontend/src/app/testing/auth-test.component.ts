@@ -65,7 +65,7 @@ export class AuthTestComponent {
   testResults: { message: string; success: boolean }[] = [];
   isRunning = false;
 
-  constructor(private authTestHelper: AuthTestHelper) {}
+  constructor(private readonly authTestHelper: AuthTestHelper) {}
 
   async runTests() {
     this.isRunning = true;

@@ -48,6 +48,15 @@ quill-editor {
 :root {
   /* Override any -ms-high-contrast media queries in Angular Material */
   --mat-high-contrast-override: none;
+  
+  /* Professional color overrides for enterprise theme */
+  --primary-color: #1565c0;
+  --primary-dark: #0d47a1;
+  --accent-color: #42a5f5;
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --background-light: #f8f9fa;
+  --border-light: #e9ecef;
 }
 
 /* Use modern forced-colors media query for accessibility */
@@ -124,17 +133,6 @@ body {
 
 .mat-mdc-button {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Professional color overrides for enterprise theme */
-:root {
-  --primary-color: #1565c0;
-  --primary-dark: #0d47a1;
-  --accent-color: #42a5f5;
-  --text-primary: #212529;
-  --text-secondary: #6c757d;
-  --background-light: #f8f9fa;
-  --border-light: #e9ecef;
 }
 
 /* Enhanced button styles for enterprise look */

@@ -5,6 +5,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { CalendarService } from '../services/calendar.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-auth-callback',
@@ -143,9 +144,9 @@ export class AuthCallbackComponent implements OnInit {
   errorMessage = '';
 
   constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    private calendarService: CalendarService
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
+    private readonly calendarService: CalendarService
   ) {}
 
   ngOnInit() {
@@ -171,7 +172,7 @@ export class AuthCallbackComponent implements OnInit {
   private async handleAuthorizationCode(code: string) {
     try {
       console.log('Processing authorization code:', code);
-      const result = await this.calendarService.handleOAuthCallback(code).toPromise();
+      const result = await firstValueFrom(this.calendarService.handleOAuthCallback(code));
       console.log('OAuth callback result:', result);
       
       this.processing = false;
@@ -182,12 +183,17 @@ export class AuthCallbackComponent implements OnInit {
         this.router.navigate(['/calendar-setup']);
       }, 3000);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('OAuth callback error:', error);
       let errorMessage = 'Failed to process authorization. Please try again.';
       
-      if (error && error.error) {
-        errorMessage = `Error: ${error.error.error || error.error}`;
+      const errorObj = error as { error?: { error?: string } | string };
+      if (errorObj?.error) {
+        if (typeof errorObj.error === 'string') {
+          errorMessage = `Error: ${errorObj.error}`;
+        } else if (typeof errorObj.error === 'object' && errorObj.error.error) {
+          errorMessage = `Error: ${errorObj.error.error}`;
+        }
       }
       
       this.handleError(errorMessage);

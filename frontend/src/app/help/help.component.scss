@@ -9,6 +9,22 @@
   }
 }
 
+// Interactive section button for accessibility
+.help-section-button {
+  display: block;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: inherit;
+  cursor: pointer;
+  
+  &:focus {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+  }
+}
+
 // Header Section
 .help-icon-container {
   display: flex;

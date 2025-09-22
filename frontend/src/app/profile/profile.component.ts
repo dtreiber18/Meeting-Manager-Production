@@ -261,10 +261,10 @@ import { UserService, UserProfile } from '../services/user.service';
   `]
 })
 export class ProfileComponent implements OnInit {
-  private fb = inject(FormBuilder);
-  private authService = inject(AuthService);
-  private userService = inject(UserService);
-  private snackBar = inject(MatSnackBar);
+  private readonly fb = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
+  private readonly userService = inject(UserService);
+  private readonly snackBar = inject(MatSnackBar);
 
   profileForm!: FormGroup;
   currentUser: User | null = null;

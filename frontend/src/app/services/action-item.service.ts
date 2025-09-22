@@ -9,7 +9,9 @@ import {
   CreateActionItemRequest, 
   UpdateActionItemRequest,
   ActionItemStatus,
-  ActionItemPriority
+  ActionItemPriority,
+  ActionItemType,
+  ActionItemResponse
 } from '../models/action-item.model';
 import { environment } from '../../environments/environment';
 import { ToastService } from '../shared/services/toast.service';
@@ -18,18 +20,18 @@ import { ToastService } from '../shared/services/toast.service';
   providedIn: 'root'
 })
 export class ActionItemService {
-  private apiUrl = `${environment.apiUrl}/action-items`;
+  private readonly apiUrl = `${environment.apiUrl}/action-items`;
   
   // Subject for real-time updates
-  private actionItemsSubject = new BehaviorSubject<ActionItem[]>([]);
+  private readonly actionItemsSubject = new BehaviorSubject<ActionItem[]>([]);
   public actionItems$ = this.actionItemsSubject.asObservable();
   
-  private currentFilterSubject = new BehaviorSubject<ActionItemFilter>({});
+  private readonly currentFilterSubject = new BehaviorSubject<ActionItemFilter>({});
   public currentFilter$ = this.currentFilterSubject.asObservable();
 
   constructor(
-    private http: HttpClient,
-    private toastService: ToastService
+    private readonly http: HttpClient,
+    private readonly toastService: ToastService
   ) {
     this.loadActionItems();
   }
@@ -38,51 +40,9 @@ export class ActionItemService {
    * Get all action items with optional filtering
    */
   getActionItems(filter?: ActionItemFilter): Observable<ActionItem[]> {
-    let params = new HttpParams();
-    
-    if (filter) {
-      if (filter.status && filter.status.length > 0) {
-        filter.status.forEach(status => params = params.append('status', status));
-      }
-      if (filter.priority && filter.priority.length > 0) {
-        filter.priority.forEach(priority => params = params.append('priority', priority));
-      }
-      if (filter.type && filter.type.length > 0) {
-        filter.type.forEach(type => params = params.append('type', type));
-      }
-      if (filter.assigneeId) {
-        params = params.set('assigneeId', filter.assigneeId.toString());
-      }
-      if (filter.reporterId) {
-        params = params.set('reporterId', filter.reporterId.toString());
-      }
-      if (filter.meetingId) {
-        params = params.set('meetingId', filter.meetingId.toString());
-      }
-      if (filter.dueDateFrom) {
-        params = params.set('dueDateFrom', filter.dueDateFrom.toISOString());
-      }
-      if (filter.dueDateTo) {
-        params = params.set('dueDateTo', filter.dueDateTo.toISOString());
-      }
-      if (filter.completed !== undefined) {
-        params = params.set('completed', filter.completed.toString());
-      }
-      if (filter.overdue !== undefined) {
-        params = params.set('overdue', filter.overdue.toString());
-      }
-      if (filter.dueSoon !== undefined) {
-        params = params.set('dueSoon', filter.dueSoon.toString());
-      }
-      if (filter.search) {
-        params = params.set('search', filter.search);
-      }
-      if (filter.tags && filter.tags.length > 0) {
-        filter.tags.forEach(tag => params = params.append('tags', tag));
-      }
-    }
+    const params = filter ? this.buildFilterParams(filter) : new HttpParams();
 
-    return this.http.get<any[]>(this.apiUrl, { params }).pipe(
+    return this.http.get<ActionItemResponse[]>(this.apiUrl, { params }).pipe(
       map(response => this.convertToActionItems(response)),
       tap(actionItems => this.actionItemsSubject.next(actionItems)),
       catchError(error => {
@@ -94,10 +54,94 @@ export class ActionItemService {
   }
 
   /**
+   * Build HTTP parameters from action item filter
+   */
+  private buildFilterParams(filter: ActionItemFilter): HttpParams {
+    let params = new HttpParams();
+    
+    params = this.addArrayParams(params, 'status', filter.status);
+    params = this.addArrayParams(params, 'priority', filter.priority);
+    params = this.addArrayParams(params, 'type', filter.type);
+    params = this.addArrayParams(params, 'tags', filter.tags);
+    
+    params = this.addIdParams(params, filter);
+    params = this.addDateParams(params, filter);
+    params = this.addBooleanParams(params, filter);
+    params = this.addSearchParams(params, filter);
+    
+    return params;
+  }
+
+  /**
+   * Add array parameters to HttpParams
+   */
+  private addArrayParams(params: HttpParams, key: string, values?: string[]): HttpParams {
+    if (values?.length) {
+      values.forEach(value => params = params.append(key, value));
+    }
+    return params;
+  }
+
+  /**
+   * Add ID-based parameters to HttpParams
+   */
+  private addIdParams(params: HttpParams, filter: ActionItemFilter): HttpParams {
+    if (filter.assigneeId) {
+      params = params.set('assigneeId', filter.assigneeId.toString());
+    }
+    if (filter.reporterId) {
+      params = params.set('reporterId', filter.reporterId.toString());
+    }
+    if (filter.meetingId) {
+      params = params.set('meetingId', filter.meetingId.toString());
+    }
+    return params;
+  }
+
+  /**
+   * Add date-based parameters to HttpParams
+   */
+  private addDateParams(params: HttpParams, filter: ActionItemFilter): HttpParams {
+    if (filter.dueDateFrom) {
+      params = params.set('dueDateFrom', filter.dueDateFrom.toISOString());
+    }
+    if (filter.dueDateTo) {
+      params = params.set('dueDateTo', filter.dueDateTo.toISOString());
+    }
+    return params;
+  }
+
+  /**
+   * Add boolean parameters to HttpParams
+   */
+  private addBooleanParams(params: HttpParams, filter: ActionItemFilter): HttpParams {
+    if (filter.completed !== undefined) {
+      params = params.set('completed', filter.completed.toString());
+    }
+    if (filter.overdue !== undefined) {
+      params = params.set('overdue', filter.overdue.toString());
+    }
+    if (filter.dueSoon !== undefined) {
+      params = params.set('dueSoon', filter.dueSoon.toString());
+    }
+    return params;
+  }
+
+  /**
+   * Add search parameters to HttpParams
+   */
+  private addSearchParams(params: HttpParams, filter: ActionItemFilter): HttpParams {
+    if (filter.search) {
+      params = params.set('search', filter.search);
+    }
+    return params;
+  }
+
+  /**
    * Get a specific action item by ID
    */
   getActionItem(id: number): Observable<ActionItem> {
-    return this.http.get<any>(`${this.apiUrl}/${id}`).pipe(
+    return this.http.get<ActionItemResponse>(`${this.apiUrl}/${id}`).pipe(
       map(response => this.convertToActionItem(response)),
       catchError(error => {
         console.error(`Error loading action item ${id}:`, error);
@@ -111,7 +155,7 @@ export class ActionItemService {
    * Create a new action item
    */
   createActionItem(request: CreateActionItemRequest): Observable<ActionItem> {
-    return this.http.post<any>(this.apiUrl, request).pipe(
+    return this.http.post<ActionItemResponse>(this.apiUrl, request).pipe(
       map(response => this.convertToActionItem(response)),
       tap(() => {
         this.toastService.showSuccess('Action item created successfully');
@@ -129,7 +173,7 @@ export class ActionItemService {
    * Update an existing action item
    */
   updateActionItem(id: number, request: UpdateActionItemRequest): Observable<ActionItem> {
-    return this.http.put<any>(`${this.apiUrl}/${id}`, request).pipe(
+    return this.http.put<ActionItemResponse>(`${this.apiUrl}/${id}`, request).pipe(
       map(response => this.convertToActionItem(response)),
       tap(() => {
         this.toastService.showSuccess('Action item updated successfully');
@@ -164,7 +208,7 @@ export class ActionItemService {
    * Mark action item as completed
    */
   markAsCompleted(id: number): Observable<ActionItem> {
-    return this.http.patch<any>(`${this.apiUrl}/${id}/complete`, {}).pipe(
+    return this.http.patch<ActionItemResponse>(`${this.apiUrl}/${id}/complete`, {}).pipe(
       map(response => this.convertToActionItem(response)),
       tap(() => {
         this.toastService.showSuccess('Action item marked as completed');
@@ -182,7 +226,7 @@ export class ActionItemService {
    * Mark action item as in progress
    */
   markAsInProgress(id: number): Observable<ActionItem> {
-    return this.http.patch<any>(`${this.apiUrl}/${id}/in-progress`, {}).pipe(
+    return this.http.patch<ActionItemResponse>(`${this.apiUrl}/${id}/in-progress`, {}).pipe(
       map(response => this.convertToActionItem(response)),
       tap(() => {
         this.toastService.showSuccess('Action item marked as in progress');
@@ -200,7 +244,7 @@ export class ActionItemService {
    * Get action items assigned to current user
    */
   getMyActionItems(): Observable<ActionItem[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/my-items`).pipe(
+    return this.http.get<ActionItemResponse[]>(`${this.apiUrl}/my-items`).pipe(
       map(response => this.convertToActionItems(response)),
       catchError(error => {
         console.error('Error loading my action items:', error);
@@ -214,7 +258,7 @@ export class ActionItemService {
    * Get action items created by current user
    */
   getReportedActionItems(): Observable<ActionItem[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/reported`).pipe(
+    return this.http.get<ActionItemResponse[]>(`${this.apiUrl}/reported`).pipe(
       map(response => this.convertToActionItems(response)),
       catchError(error => {
         console.error('Error loading reported action items:', error);
@@ -228,7 +272,7 @@ export class ActionItemService {
    * Get action items for a specific meeting
    */
   getActionItemsForMeeting(meetingId: number): Observable<ActionItem[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/meeting/${meetingId}`).pipe(
+    return this.http.get<ActionItemResponse[]>(`${this.apiUrl}/meeting/${meetingId}`).pipe(
       map(response => this.convertToActionItems(response)),
       catchError(error => {
         console.error(`Error loading action items for meeting ${meetingId}:`, error);
@@ -313,21 +357,21 @@ export class ActionItemService {
   /**
    * Convert API response to ActionItem array
    */
-  private convertToActionItems(response: any[]): ActionItem[] {
+  private convertToActionItems(response: ActionItemResponse[]): ActionItem[] {
     return response.map(item => this.convertToActionItem(item));
   }
 
   /**
    * Convert API response to ActionItem
    */
-  private convertToActionItem(item: any): ActionItem {
+  private convertToActionItem(item: ActionItemResponse): ActionItem {
     return {
       id: item.id,
       title: item.title,
       description: item.description,
       status: item.status as ActionItemStatus,
       priority: item.priority as ActionItemPriority,
-      type: item.type,
+      type: item.type as ActionItemType,
       dueDate: item.dueDate ? new Date(item.dueDate) : undefined,
       startDate: item.startDate ? new Date(item.startDate) : undefined,
       completedAt: item.completedAt ? new Date(item.completedAt) : undefined,

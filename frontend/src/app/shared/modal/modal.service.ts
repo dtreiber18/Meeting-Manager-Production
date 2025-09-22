@@ -1,18 +1,22 @@
-import { Injectable, ComponentRef, ViewContainerRef } from '@angular/core';
+import { Injectable, ComponentRef, ViewContainerRef, Type } from '@angular/core';
 import { Subject } from 'rxjs';
 
-export interface ModalConfig {
+export interface ModalData {
+  [key: string]: unknown;
+}
+
+export interface ModalConfig<T = ModalData> {
   title: string;
-  component?: any;
-  data?: any;
+  component?: Type<unknown>;
+  data?: T;
   width?: string;
   height?: string;
   disableClose?: boolean;
 }
 
-export interface ModalResult {
+export interface ModalResult<T = ModalData> {
   action: 'save' | 'cancel';
-  data?: any;
+  data?: T;
 }
 
 @Injectable({
@@ -20,14 +24,14 @@ export interface ModalResult {
 })
 export class ModalService {
   private modalContainer?: ViewContainerRef;
-  private activeModal?: ComponentRef<any>;
-  private modalResult = new Subject<ModalResult>();
+  private activeModal?: ComponentRef<unknown>;
+  private readonly modalResult = new Subject<ModalResult<unknown>>();
 
   setModalContainer(container: ViewContainerRef) {
     this.modalContainer = container;
   }
 
-  openModal(config: ModalConfig): Promise<ModalResult> {
+  openModal<T = ModalData>(config: ModalConfig<T>): Promise<ModalResult<T>> {
     if (!this.modalContainer) {
       throw new Error('Modal container not set');
     }
@@ -46,29 +50,29 @@ export class ModalService {
 
       // Set up modal configuration
       if (this.activeModal.instance) {
-        this.activeModal.instance.config = config;
-        this.activeModal.instance.modalService = this;
+        (this.activeModal.instance as ModalData)['config'] = config;
+        (this.activeModal.instance as ModalData)['modalService'] = this;
       }
     }
 
     return new Promise((resolve) => {
       const subscription = this.modalResult.subscribe((result) => {
-        resolve(result);
+        resolve(result as ModalResult<T>);
         subscription.unsubscribe();
       });
     });
   }
 
-  closeModal(result?: ModalResult) {
+  closeModal<T = ModalData>(result?: ModalResult<T>) {
     if (this.activeModal) {
       this.activeModal.destroy();
       this.activeModal = undefined;
     }
 
-    this.modalResult.next(result || { action: 'cancel' });
+    this.modalResult.next((result || { action: 'cancel' }) as ModalResult<unknown>);
   }
 
-  saveModal(data?: any) {
+  saveModal<T = ModalData>(data?: T) {
     this.closeModal({ action: 'save', data });
   }
 

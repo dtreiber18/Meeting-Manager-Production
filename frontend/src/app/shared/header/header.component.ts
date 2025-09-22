@@ -35,7 +35,7 @@ import { takeUntil, filter } from 'rxjs/operators';
   encapsulation: ViewEncapsulation.None
 })
 export class HeaderComponent implements OnInit, OnDestroy {
-  private destroy$ = new Subject<void>();
+  private readonly destroy$ = new Subject<void>();
   
   currentUser$: Observable<User | null>;
   isAuthenticated$: Observable<boolean>;
@@ -65,10 +65,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
   ];
 
   constructor(
-    private authService: AuthService,
-    private router: Router,
-    private roleService: RoleService,
-    private notificationService: NotificationService
+    private readonly authService: AuthService,
+    private readonly router: Router,
+    private readonly roleService: RoleService,
+    private readonly notificationService: NotificationService
   ) {
     this.currentUser$ = this.authService.currentUser$;
     this.isAuthenticated$ = this.authService.isAuthenticated$;

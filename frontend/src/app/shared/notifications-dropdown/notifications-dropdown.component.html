@@ -22,12 +22,13 @@
 
   <!-- Notifications List -->
   <div class="notifications-list" *ngIf="hasNotifications(); else noNotifications">
-    <div 
+    <button 
       *ngFor="let notification of displayNotifications; trackBy: trackByNotificationId"
-      class="notification-item"
+      class="notification-item w-full text-left block"
       [class.unread]="!notification.isRead"
       [class]="getPriorityClass(notification.priority)"
-      (click)="onNotificationClick(notification, $event)">
+      (click)="onNotificationClick(notification, $event)"
+      [attr.aria-label]="'Notification: ' + notification.title">
       
       <!-- Notification Icon -->
       <div class="notification-icon">
@@ -71,7 +72,7 @@
           <mat-icon>close</mat-icon>
         </button>
       </div>
-    </div>
+    </button>
 
     <!-- Show More Link -->
     <div class="show-more-section" *ngIf="hasMoreNotifications">

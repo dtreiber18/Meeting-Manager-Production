@@ -67,16 +67,16 @@ export class AuthService {
   private readonly REFRESH_TOKEN_KEY = 'mm_refresh_token';
   private readonly USER_KEY = 'mm_user';
 
-  private currentUserSubject = new BehaviorSubject<User | null>(null);
+  private readonly currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
-  private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+  private readonly isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
-  private tokenRefreshTimer: any;
+  private tokenRefreshTimer: NodeJS.Timeout | null = null;
   private isLoginInProgress = false;
 
-  constructor(private http: HttpClient, private router: Router) {
+  constructor(private readonly http: HttpClient, private readonly router: Router) {
     this.initializeAuthState();
   }
 
@@ -352,7 +352,8 @@ export class AuthService {
       const currentTime = Math.floor(Date.now() / 1000);
       return payload.exp < currentTime;
     } catch (error) {
-      return true;
+      console.error('Error checking token expiry:', error);
+      return true; // Consider expired if we can't parse
     }
   }
 
@@ -370,6 +371,7 @@ export class AuthService {
 
       return new Date(payload.exp * 1000).toLocaleString();
     } catch (error) {
+      console.error('Error parsing token expiry:', error);
       return 'Error parsing expiry';
     }
   }

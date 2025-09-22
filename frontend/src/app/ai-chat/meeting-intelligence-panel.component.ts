@@ -343,7 +343,7 @@ export class MeetingIntelligencePanelComponent implements OnInit {
   loadingAnalysis = false;
   loadingSuggestions = false;
 
-  constructor(private chatService: ChatService) {}
+  constructor(private readonly chatService: ChatService) {}
 
   ngOnInit(): void {
     this.loadMeetingIntelligence();

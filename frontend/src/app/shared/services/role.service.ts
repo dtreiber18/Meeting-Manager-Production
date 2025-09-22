@@ -71,10 +71,10 @@ export const PERMISSIONS = {
   providedIn: 'root'
 })
 export class RoleService {
-  private currentUserSubject = new BehaviorSubject<UserWithRoles | null>(null);
+  private readonly currentUserSubject = new BehaviorSubject<UserWithRoles | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
-  private rolesSubject = new BehaviorSubject<Role[]>([]);
+  private readonly rolesSubject = new BehaviorSubject<Role[]>([]);
   public roles$ = this.rolesSubject.asObservable();
 
   constructor() {
@@ -316,7 +316,7 @@ export class RoleService {
   getCurrentUserLevel(): Observable<number> {
     return this.currentUser$.pipe(
       map(user => {
-        if (!user || !user.roles.length) return 0;
+        if (!user?.roles?.length) return 0;
         return Math.max(...user.roles.map(role => role.level));
       })
     );

@@ -33,11 +33,11 @@ export class HomeContainerComponent implements OnDestroy {
     hasRecording: false
   };
 
-  private destroy$ = new Subject<void>();
+  private readonly destroy$ = new Subject<void>();
 
   constructor(
-    private meetingService: MeetingService,
-    private router: Router
+    private readonly meetingService: MeetingService,
+    private readonly router: Router
   ) {
     this.loadMeetings();
     
