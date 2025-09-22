@@ -73,7 +73,7 @@ export class AuthService {
   private readonly isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
-  private tokenRefreshTimer: NodeJS.Timeout | null = null;
+  private tokenRefreshTimer: ReturnType<typeof setTimeout> | null = null;
   private isLoginInProgress = false;
 
   constructor(private readonly http: HttpClient, private readonly router: Router) {
