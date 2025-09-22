@@ -300,7 +300,22 @@ export class MeetingDetailsComponent implements OnInit {
           if (!this.meeting.attachments) {
             this.meeting.attachments = [];
           }
-          this.meeting.attachments.push(result as {name: string; url: string});
+          const uploadResult = result as {name: string; url: string};
+          const newAttachment = {
+            id: Date.now(), // Temporary ID
+            originalFileName: uploadResult.name,
+            storedFileName: uploadResult.name,
+            fileSize: 0, // Unknown size
+            fileType: 'unknown',
+            description: undefined,
+            isPublic: false,
+            isVirusScanned: false,
+            isArchived: false,
+            tags: undefined,
+            uploadedAt: new Date().toISOString(),
+            uploadedById: 1 // Default uploader ID
+          };
+          this.meeting.attachments.push(newAttachment);
         }
       }
     });

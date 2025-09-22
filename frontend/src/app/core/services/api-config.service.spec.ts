@@ -56,13 +56,13 @@ describe('ApiConfigService', () => {
   it('should handle invalid base URL gracefully by using fallback', () => {
     // Mock environment with invalid URL
     const originalApiUrl = environment.apiUrl;
-    (environment as any).apiUrl = 'invalid-url';
+    (environment as typeof environment).apiUrl = 'invalid-url';
     
     // In development, invalid URLs should be used as-is (no fallback conversion)
     const service = new ApiConfigService();
     expect(service.getApiUrl('test')).toBe('invalid-url/test');
     
     // Restore original URL
-    (environment as any).apiUrl = originalApiUrl;
+    (environment as typeof environment).apiUrl = originalApiUrl;
   });
 });

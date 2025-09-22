@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService, User, LoginRequest, AuthResponse } from './auth.service';
 
@@ -110,7 +111,7 @@ describe('AuthService', () => {
         password: 'wrongpassword'
       };
 
-      let error: any;
+      let error: HttpErrorResponse | undefined;
 
       service.login(credentials).subscribe({
         next: () => fail('Should have errored'),
@@ -124,7 +125,7 @@ describe('AuthService', () => {
       );
 
       expect(error).toBeTruthy();
-      expect(error.status).toBe(401);
+      expect(error?.status).toBe(401);
     });
   });
 

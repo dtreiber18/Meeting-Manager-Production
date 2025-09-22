@@ -11,6 +11,55 @@ export interface Organization {
   currentMeetingCount: number;
 }
 
+// Meeting room interface
+export interface MeetingRoom {
+  id: number;
+  name: string;
+  location?: string;
+  description?: string;
+  capacity: number;
+  isActive: boolean;
+  hasProjector: boolean;
+  hasWhiteboard: boolean;
+  hasVideoConferencing: boolean;
+  hasAirConditioning: boolean;
+  isAccessible: boolean;
+  equipment?: string;
+  timeZone?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Meeting note interface  
+export interface MeetingNote {
+  id: number;
+  title: string;
+  content: string;
+  noteType: 'GENERAL' | 'AGENDA_ITEM' | 'DECISION' | 'ACTION_ITEM' | 'FOLLOW_UP' | 'RISK' | 'ISSUE' | 'MINUTES';
+  isPublic: boolean;
+  isPinned: boolean;
+  tags?: string;
+  createdAt: string;
+  updatedAt: string;
+  authorId: number;
+}
+
+// Meeting attachment interface
+export interface MeetingAttachment {
+  id: number;
+  originalFileName: string;
+  storedFileName: string;
+  fileSize: number;
+  fileType: string;
+  description?: string;
+  isPublic: boolean;
+  isVirusScanned: boolean;
+  isArchived: boolean;
+  tags?: string;
+  uploadedAt: string;
+  uploadedById: number;
+}
+
 export interface User {
   id: number;
   firstName: string;
@@ -27,7 +76,7 @@ export interface User {
   language: string;
   displayName: string;
   fullName: string;
-  roles: any[];
+  roles: string[];
 }
 
 export interface Participant {
@@ -128,7 +177,7 @@ export interface User {
   createdAt: string;
   updatedAt: string;
   lastLoginAt?: string;
-  roles: any[];
+  roles: string[];
   displayName: string;
   fullName: string;
 }
@@ -251,11 +300,11 @@ export interface Meeting {
   updatedAt: string;
   organization: Organization;
   organizer: User;
-  meetingRoom?: any;
+  meetingRoom?: MeetingRoom;
   participants: Participant[];
   actionItems: ActionItem[];
-  notes: any[];
-  attachments: any[];
+  notes: MeetingNote[];
+  attachments: MeetingAttachment[];
   details: string;
   durationInMinutes: number;
   upcoming: boolean;
@@ -298,11 +347,11 @@ export interface Meeting {
   updatedAt: string;
   organization: Organization;
   organizer: User;
-  meetingRoom?: any;
+  meetingRoom?: MeetingRoom;
   participants: Participant[];
   actionItems: ActionItem[];
-  notes: any[];
-  attachments: any[];
+  notes: MeetingNote[];
+  attachments: MeetingAttachment[];
   details: string;
   durationInMinutes: number;
   upcoming: boolean;
