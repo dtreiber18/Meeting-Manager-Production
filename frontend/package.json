@@ -10,8 +10,8 @@
     "test": "ng test",
     "test:headless": "ng test --watch=false --browsers=ChromeHeadless",
     "test:ci": "ng test --watch=false --browsers=ChromeHeadless --code-coverage",
-    "lint": "eslint src/**/*.ts --config eslint.config.js",
-    "lint:fix": "eslint src/**/*.ts --config eslint.config.js --fix",
+    "lint": "ng lint",
+    "lint:fix": "ng lint --fix",
     "validate-api-urls": "npm run lint && npm run test:url-validation",
     "test:url-validation": "ng test --include='**/service-url-validation.spec.ts' --watch=false --browsers=ChromeHeadless",
     "e2e": "ng e2e"

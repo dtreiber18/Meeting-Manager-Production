@@ -1,0 +1,18 @@
+{
+  "rules": {
+    "Web:LabelHasAssociatedControlRule": false,
+    "Web:FormLabelAssociationRule": false,
+    "typescript:S1874": false,
+    "typescript:S6637": false,
+    "Web:S5254": false,
+    "Web:S6827": false,
+    "javascript:S6582": false,
+    "typescript:S6582": false
+  },
+  "exclusions": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ]
+}

@@ -173,7 +173,7 @@
   </div>
 
   <!-- Login button (only show when not authenticated) -->
-  <div class="header-actions" *ngIf="!(isAuthenticated$ | async)">
+  <div class="header-actions" *ngIf="(isAuthenticated$ | async) === false">
     <button mat-raised-button color="primary" routerLink="/auth" class="login-btn">
       Sign In
     </button>

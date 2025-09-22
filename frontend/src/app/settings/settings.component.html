@@ -1,5 +1,8 @@
-<main class="settings-container max-w-7xl mx-auto p-6 space-y-6" aria-label="Settings Page"
-  aria-describedby="settings-description">
+<main class="settings-container max-w-7xl mx-auto p-6 space-y-6" 
+      aria-label="Settings Page"
+      aria-describedby="settings-description" 
+      title="Settings Page" 
+      role="main">
   <div id="settings-description" class="sr-only">Application settings and configuration page</div>
   <!-- Page Header -->
   <div class="mb-8">
@@ -11,7 +14,7 @@
   <mat-card class="settings-card">
     <!-- Tabs Navigation -->
     <mat-tab-group [(selectedIndex)]="activeTabIndex" (selectedTabChange)="onTabChange($event.index || 0)"
-      class="settings-tabs">
+      class="settings-tabs" title="Settings Tabs" [attr.aria-label]="'Settings navigation tabs'">
 
       <!-- Account Tab -->
       <mat-tab label="Account Info" [attr.aria-label]="'Account information settings'">
@@ -273,8 +276,7 @@
                       (change)="updateApp({ isActive: selectedApp!.isActive })" color="primary"
                       [id]="'app-active-checkbox'"
                       [attr.aria-label]="'Toggle application active status'" 
-                      name="appActiveStatus"
-                      title="Toggle application active status">
+                      name="appActiveStatus">
                       Active
                     </mat-checkbox>
                     <button mat-button color="warn" type="button" (click)="confirmDeleteApp()"
@@ -295,14 +297,14 @@
                     <form [formGroup]="appConfigForm" class="professional-form-field">
                       <mat-form-field appearance="outline" class="w-full">
                         <mat-label>App Name</mat-label>
-                        <input matInput formControlName="name" placeholder="Enter app name"
+                        <input matInput formControlName="name" placeholder="Enter app name" title="App Name"
                           [attr.aria-describedby]="'app-name-hint'">
                         <mat-hint id="app-name-hint">Choose a descriptive name for this source</mat-hint>
                       </mat-form-field>
 
                       <mat-form-field appearance="outline" class="w-full">
                         <mat-label>Connection Type</mat-label>
-                        <mat-select formControlName="connectionType" [attr.aria-describedby]="'connection-type-hint'">
+                        <mat-select formControlName="connectionType" title="Connection Type" [attr.aria-describedby]="'connection-type-hint'">
                           <mat-option value="api">API Connection</mat-option>
                           <mat-option value="folder">Folder Access</mat-option>
                         </mat-select>
@@ -314,7 +316,7 @@
                         class="professional-form-grid grid-cols-2">
                         <mat-form-field appearance="outline">
                           <mat-label>API URL</mat-label>
-                          <input matInput type="url" formControlName="apiUrl" placeholder="https://api.example.com/v1"
+                          <input matInput type="url" formControlName="apiUrl" placeholder="https://api.example.com/v1" title="API URL"
                             [attr.aria-describedby]="'api-url-hint'">
                           <mat-hint id="api-url-hint">The base URL for API requests</mat-hint>
                           <mat-error *ngIf="hasFieldError(appConfigForm, 'apiUrl', 'pattern')">
@@ -325,7 +327,7 @@
                         <mat-form-field appearance="outline">
                           <mat-label>API Key</mat-label>
                           <input matInput [type]="showApiKey ? 'text' : 'password'" formControlName="apiKey"
-                            placeholder="Enter API key" [attr.aria-describedby]="'api-key-hint'">
+                            placeholder="Enter API key" title="API Key" [attr.aria-describedby]="'api-key-hint'">
                           <button mat-icon-button matSuffix (click)="toggleApiKeyVisibility()" type="button"
                             [attr.aria-label]="showApiKey ? 'Hide API key' : 'Show API key'">
                             <mat-icon [attr.aria-hidden]="true">{{ showApiKey ? 'visibility_off' : 'visibility'
@@ -340,7 +342,7 @@
                         <mat-form-field appearance="outline" class="w-full">
                           <mat-label>Folder Path</mat-label>
                           <input matInput formControlName="folderPath"
-                            placeholder="/path/to/meeting/notes or \\server\\share\\meetings"
+                            placeholder="/path/to/meeting/notes or \\server\\share\\meetings" title="Folder Path"
                             [attr.aria-describedby]="'folder-path-hint'">
                           <mat-hint id="folder-path-hint">Local or network path to meeting files</mat-hint>
                         </mat-form-field>
@@ -348,7 +350,7 @@
                         <div class="professional-form-grid grid-cols-2">
                           <mat-form-field appearance="outline">
                             <mat-label>Username (Optional)</mat-label>
-                            <input matInput formControlName="username" placeholder="Username for folder access"
+                            <input matInput formControlName="username" placeholder="Username for folder access" title="Username"
                               [attr.aria-describedby]="'username-hint'">
                             <mat-hint id="username-hint">Username for network folder access</mat-hint>
                           </mat-form-field>
@@ -356,7 +358,7 @@
                           <mat-form-field appearance="outline">
                             <mat-label>Password (Optional)</mat-label>
                             <input matInput type="password" formControlName="password"
-                              placeholder="Password for folder access" [attr.aria-describedby]="'folder-password-hint'">
+                              placeholder="Password for folder access" title="Folder Access Password" [attr.aria-describedby]="'folder-password-hint'">
                             <mat-hint id="folder-password-hint">Password for network folder access</mat-hint>
                           </mat-form-field>
                         </div>
@@ -400,7 +402,7 @@
                         <mat-label>{{ field.label }}</mat-label>
                         <input matInput [id]="'field-' + field.key" [value]="getFieldMappingValue(field.key)"
                           (input)="updateFieldMapping(field.key, $any($event.target).value)"
-                          [placeholder]="field.placeholder" [attr.aria-describedby]="'field-' + field.key + '-hint'"
+                          [placeholder]="field.placeholder" [title]="field.label" [attr.aria-describedby]="'field-' + field.key + '-hint'"
                           [attr.aria-label]="field.label + ' field mapping'">
                         <mat-hint [id]="'field-' + field.key + '-hint'">
                           {{ field.hint || 'Map this field to your data source' }}

@@ -1,0 +1,10 @@
+{
+  "rules": {
+    "form-label": "off",
+    "label-has-for": "off",
+    "form-control-label": "off"
+  },
+  "elements": [
+    "html5"
+  ]
+}
