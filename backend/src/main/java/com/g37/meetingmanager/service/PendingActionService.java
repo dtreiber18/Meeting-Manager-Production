@@ -93,8 +93,7 @@ public class PendingActionService {
             notificationService.createActionItemAssignment(
                 savedAction.getAssigneeId(),
                 savedAction.getTitle(),
-                savedAction.getId(),
-                savedAction.getDueDate()
+                savedAction.getId()
             );
         }
 
