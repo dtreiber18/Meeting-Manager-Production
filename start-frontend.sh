@@ -7,4 +7,4 @@ echo "Frontend will be available at: http://localhost:4200"
 echo "API requests will be proxied to: http://localhost:8081"
 echo ""
 
-ng serve --proxy-config proxy.conf.json
+npx --force ng serve --proxy-config proxy.conf.json --port 4200
