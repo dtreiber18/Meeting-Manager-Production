@@ -14,7 +14,10 @@ const QuillConfig = {
 };
 
 // Make Quill available globally
-(window as any).Quill = Quill;
+interface WindowWithQuill extends Window {
+  Quill?: typeof Quill;
+}
+(window as unknown as WindowWithQuill).Quill = Quill;
 
 bootstrapApplication(AppComponent, appConfig)
   .catch((err) => console.error(err));

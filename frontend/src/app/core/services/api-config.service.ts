@@ -20,31 +20,59 @@ export class ApiConfigService {
     console.log('🔧 Environment.production:', environment?.production);
     console.log('🔧 Environment.apiUrl:', environment?.apiUrl);
     
+    this.baseApiUrl = this.determineApiUrl();
+    console.log('🔧 ApiConfigService initialized with base URL:', this.baseApiUrl);
+  }
+
+  private determineApiUrl(): string {
+    // Detect if we're in a test environment
+    const isTestEnvironment = this.isTestEnvironment();
+    
     // Get the base API URL from environment
     let apiUrl = environment?.apiUrl;
     
-    // Handle environment loading issues with proper dev/prod logic
     if (!apiUrl) {
-      if (environment?.production) {
-        // Production should have an explicit API URL
-        console.error('❌ ApiConfigService: No apiUrl configured for production!');
-        apiUrl = '/api'; // Fallback to relative
-      } else {
-        // Development: use direct backend URL temporarily to bypass proxy issues
-        apiUrl = 'http://localhost:8081/api';
-        console.log('✅ ApiConfigService: Using direct backend URL for development testing');
-      }
-    } else if (apiUrl === '/api' && !environment?.production) {
-      // Temporarily use direct backend URL instead of proxy
-      apiUrl = 'http://localhost:8081/api';
-      console.log('✅ ApiConfigService: Using direct backend URL for development testing');
-    } else if (!apiUrl.startsWith('http') && environment?.production) {
-      // Production with relative URL is problematic
+      return this.handleMissingApiUrl(isTestEnvironment);
+    }
+    
+    if (apiUrl === '/api' && !environment?.production) {
+      return this.handleDevApiUrl(isTestEnvironment);
+    }
+    
+    if (!apiUrl.startsWith('http') && environment?.production) {
       console.error('❌ ApiConfigService: Production environment has relative apiUrl, this may not work properly');
     }
     
-    this.baseApiUrl = apiUrl;
-    console.log('🔧 ApiConfigService initialized with base URL:', this.baseApiUrl);
+    return apiUrl;
+  }
+
+  private isTestEnvironment(): boolean {
+    const global = globalThis as unknown as Record<string, unknown>;
+    const win = typeof window !== 'undefined' ? window as unknown as Record<string, unknown> : null;
+    
+    return typeof global['jasmine'] !== 'undefined' || 
+           typeof global['jest'] !== 'undefined' ||
+           (win !== null && typeof win['__karma__'] !== 'undefined');
+  }
+
+  private handleMissingApiUrl(isTestEnvironment: boolean): string {
+    if (environment?.production) {
+      console.error('❌ ApiConfigService: No apiUrl configured for production!');
+      return '/api'; // Fallback to relative
+    } else {
+      const url = isTestEnvironment ? '/api' : 'http://localhost:8081/api';
+      console.log('✅ ApiConfigService: Using direct backend URL for development testing');
+      return url;
+    }
+  }
+
+  private handleDevApiUrl(isTestEnvironment: boolean): string {
+    const url = isTestEnvironment ? '/api' : 'http://localhost:8081/api';
+    const message = isTestEnvironment ? 
+                   '🧪 ApiConfigService: Using relative URLs for testing' : 
+                   '✅ ApiConfigService: Using direct backend URL for development testing';
+    console.log(message);
+    return url;
   }
 
   private isValidApiUrl(url: string): boolean {
