@@ -1,1 +1,162 @@
-/* Add custom styles for meeting details screen here if needed */
+/* Enhanced Meeting Details Screen Styles */
+
+.container {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+}
+
+/* Card hover effects */
+.bg-white:hover {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.3s ease;
+}
+
+/* Participant cards enhanced styling */
+.participant-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* Custom scrollbar for long content */
+.overflow-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.overflow-auto::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10px;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Enhanced button styles */
+button {
+  transition: all 0.2s ease-in-out;
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+}
+
+/* Loading animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.loading-spinner {
+  border-top-color: #3b82f6;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Status color utilities */
+.status-open { 
+  background-color: #dbeafe; 
+  color: #1e40af; 
+}
+
+.status-in-progress { 
+  background-color: #fef3c7; 
+  color: #92400e; 
+}
+
+.status-completed { 
+  background-color: #d1fae5; 
+  color: #065f46; 
+}
+
+.status-pending { 
+  background-color: #f3f4f6; 
+  color: #374151; 
+}
+
+.priority-low { 
+  background-color: #f3f4f6; 
+  color: #374151; 
+}
+
+.priority-medium { 
+  background-color: #dbeafe; 
+  color: #1e40af; 
+}
+
+.priority-high { 
+  background-color: #fed7aa; 
+  color: #c2410c; 
+}
+
+.priority-urgent { 
+  background-color: #fecaca; 
+  color: #dc2626; 
+}
+
+/* Responsive enhancements */
+@media (max-width: 1024px) {
+  .w-96 {
+    width: 100%;
+    margin-top: 2rem;
+  }
+  
+  .flex {
+    flex-direction: column;
+  }
+}
+
+/* Focus states for accessibility */
+input:focus, 
+textarea:focus, 
+select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Enhanced prose styling */
+.prose {
+  max-width: none;
+  
+  p {
+    margin-bottom: 1rem;
+    line-height: 1.7;
+  }
+}
+
+/* Animation for new content */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideInUp 0.3s ease-out;
+}

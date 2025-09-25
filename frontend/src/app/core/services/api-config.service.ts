@@ -30,13 +30,14 @@ export class ApiConfigService {
         console.error('❌ ApiConfigService: No apiUrl configured for production!');
         apiUrl = '/api'; // Fallback to relative
       } else {
-        // Development: use relative URL for proxy
-        apiUrl = '/api';
-        console.log('✅ ApiConfigService: Using relative URL for development proxy');
+        // Development: use direct backend URL temporarily to bypass proxy issues
+        apiUrl = 'http://localhost:8081/api';
+        console.log('✅ ApiConfigService: Using direct backend URL for development testing');
       }
     } else if (apiUrl === '/api' && !environment?.production) {
-      // This is correct for development - keep the relative URL for proxy
-      console.log('✅ ApiConfigService: Using relative URL for development proxy');
+      // Temporarily use direct backend URL instead of proxy
+      apiUrl = 'http://localhost:8081/api';
+      console.log('✅ ApiConfigService: Using direct backend URL for development testing');
     } else if (!apiUrl.startsWith('http') && environment?.production) {
       // Production with relative URL is problematic
       console.error('❌ ApiConfigService: Production environment has relative apiUrl, this may not work properly');

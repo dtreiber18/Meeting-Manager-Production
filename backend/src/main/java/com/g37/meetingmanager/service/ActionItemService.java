@@ -1,43 +1,34 @@
 package com.g37.meetingmanager.service;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
+import com.g37.meetingmanager.model.ActionItem;
+import com.g37.meetingmanager.model.User;
+import com.g37.meetingmanager.repository.mysql.ActionItemRepository;
+import com.g37.meetingmanager.repository.mysql.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.g37.meetingmanager.model.ActionItem;
-import com.g37.meetingmanager.model.User;
-import com.g37.meetingmanager.repository.mysql.ActionItemRepository;
-import com.g37.meetingmanager.repository.mysql.UserRepository;
-
 import jakarta.persistence.criteria.Predicate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
 public class ActionItemService {
 
-    private static final String ACTION_ITEM_NOT_FOUND = "Action item not found with id: ";
-    private static final String ASSIGNEE_FIELD = "assignee";
-    private static final String COMPLETED_FIELD = "completed";
-    private static final String DUE_DATE_FIELD = "dueDate";
+    @Autowired
+    private ActionItemRepository actionItemRepository;
 
-    private final ActionItemRepository actionItemRepository;
-    private final UserRepository userRepository;
-    private final NotificationService notificationService;
+    @Autowired
+    private UserRepository userRepository;
 
-    public ActionItemService(ActionItemRepository actionItemRepository, 
-                            UserRepository userRepository,
-                            NotificationService notificationService) {
-        this.actionItemRepository = actionItemRepository;
-        this.userRepository = userRepository;
-        this.notificationService = notificationService;
-    }
+    @Autowired
+    private NotificationService notificationService;
 
     /**
      * Get all action items with optional filtering
@@ -67,7 +58,7 @@ public class ActionItemService {
      */
     public Page<ActionItem> getActionItemsByAssignee(Long assigneeId, Pageable pageable) {
         Specification<ActionItem> spec = (root, query, criteriaBuilder) ->
-                criteriaBuilder.equal(root.get(ASSIGNEE_FIELD).get("id"), assigneeId);
+                criteriaBuilder.equal(root.get("assignee").get("id"), assigneeId);
         return actionItemRepository.findAll(spec, pageable);
     }
 
@@ -85,9 +76,9 @@ public class ActionItemService {
      */
     public List<ActionItem> getOverdueActionItems() {
         Specification<ActionItem> spec = (root, query, criteriaBuilder) -> {
-            Predicate notCompleted = criteriaBuilder.equal(root.get(COMPLETED_FIELD), false);
-            Predicate pastDue = criteriaBuilder.lessThan(root.get(DUE_DATE_FIELD), LocalDateTime.now());
-            Predicate hasDueDate = criteriaBuilder.isNotNull(root.get(DUE_DATE_FIELD));
+            Predicate notCompleted = criteriaBuilder.equal(root.get("completed"), false);
+            Predicate pastDue = criteriaBuilder.lessThan(root.get("dueDate"), LocalDateTime.now());
+            Predicate hasDueDate = criteriaBuilder.isNotNull(root.get("dueDate"));
             return criteriaBuilder.and(notCompleted, pastDue, hasDueDate);
         };
         return actionItemRepository.findAll(spec);
@@ -101,8 +92,8 @@ public class ActionItemService {
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime future = now.plusDays(days);
             
-            Predicate notCompleted = criteriaBuilder.equal(root.get(COMPLETED_FIELD), false);
-            Predicate dueSoon = criteriaBuilder.between(root.get(DUE_DATE_FIELD), now, future);
+            Predicate notCompleted = criteriaBuilder.equal(root.get("completed"), false);
+            Predicate dueSoon = criteriaBuilder.between(root.get("dueDate"), now, future);
             return criteriaBuilder.and(notCompleted, dueSoon);
         };
         return actionItemRepository.findAll(spec);
@@ -134,7 +125,8 @@ public class ActionItemService {
             notificationService.createActionItemAssignment(
                 savedActionItem.getAssignee().getId(),
                 savedActionItem.getTitle(),
-                savedActionItem.getId().toString()
+                savedActionItem.getId().toString(),
+                savedActionItem.getDueDate()
             );
         }
 
@@ -146,7 +138,7 @@ public class ActionItemService {
      */
     public ActionItem updateActionItem(Long id, ActionItem actionItemDetails) {
         ActionItem actionItem = actionItemRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(ACTION_ITEM_NOT_FOUND + id));
+                .orElseThrow(() -> new RuntimeException("Action item not found with id: " + id));
 
         // Update basic fields
         actionItem.setTitle(actionItemDetails.getTitle());
@@ -164,8 +156,8 @@ public class ActionItemService {
         actionItem.setRecurringPattern(actionItemDetails.getRecurringPattern());
 
         // Handle completion status
-        if (actionItemDetails.getCompleted() != null && !actionItemDetails.getCompleted().equals(actionItem.getCompleted())) {
-            if (Boolean.TRUE.equals(actionItemDetails.getCompleted())) {
+        if (actionItemDetails.getCompleted() != null && actionItemDetails.getCompleted() != actionItem.getCompleted()) {
+            if (actionItemDetails.getCompleted()) {
                 actionItem.markAsCompleted();
                 actionItem.setCompletionNotes(actionItemDetails.getCompletionNotes());
             } else {
@@ -181,7 +173,7 @@ public class ActionItemService {
      */
     public ActionItem markAsCompleted(Long id, String completionNotes) {
         ActionItem actionItem = actionItemRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(ACTION_ITEM_NOT_FOUND + id));
+                .orElseThrow(() -> new RuntimeException("Action item not found with id: " + id));
 
         actionItem.markAsCompleted();
         if (completionNotes != null && !completionNotes.trim().isEmpty()) {
@@ -210,7 +202,7 @@ public class ActionItemService {
      */
     public ActionItem markAsInProgress(Long id) {
         ActionItem actionItem = actionItemRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(ACTION_ITEM_NOT_FOUND + id));
+                .orElseThrow(() -> new RuntimeException("Action item not found with id: " + id));
 
         actionItem.markAsInProgress();
         return actionItemRepository.save(actionItem);
@@ -221,7 +213,7 @@ public class ActionItemService {
      */
     public void deleteActionItem(Long id) {
         ActionItem actionItem = actionItemRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(ACTION_ITEM_NOT_FOUND + id));
+                .orElseThrow(() -> new RuntimeException("Action item not found with id: " + id));
         
         actionItemRepository.delete(actionItem);
     }
@@ -256,12 +248,12 @@ public class ActionItemService {
      */
     public ActionItemStatistics getStatistics(Long userId) {
         Specification<ActionItem> userAssignedSpec = (root, query, criteriaBuilder) ->
-                criteriaBuilder.equal(root.get(ASSIGNEE_FIELD).get("id"), userId);
+                criteriaBuilder.equal(root.get("assignee").get("id"), userId);
 
         List<ActionItem> userActionItems = actionItemRepository.findAll(userAssignedSpec);
 
         long total = userActionItems.size();
-        long completed = userActionItems.stream().mapToLong(ai -> Boolean.TRUE.equals(ai.getCompleted()) ? 1 : 0).sum();
+        long completed = userActionItems.stream().mapToLong(ai -> ai.getCompleted() ? 1 : 0).sum();
         long overdue = userActionItems.stream().mapToLong(ai -> ai.isOverdue() ? 1 : 0).sum();
         long dueSoon = userActionItems.stream().mapToLong(ai -> ai.isDueSoon(7) ? 1 : 0).sum();
         long inProgress = userActionItems.stream()
@@ -302,19 +294,19 @@ public class ActionItemService {
 
             // Assignee filter
             if (assigneeId != null) {
-                predicates.add(criteriaBuilder.equal(root.get(ASSIGNEE_FIELD).get("id"), assigneeId));
+                predicates.add(criteriaBuilder.equal(root.get("assignee").get("id"), assigneeId));
             }
 
             // Overdue filter
             if (overdue != null && overdue) {
-                predicates.add(criteriaBuilder.equal(root.get(COMPLETED_FIELD), false));
-                predicates.add(criteriaBuilder.lessThan(root.get(DUE_DATE_FIELD), LocalDateTime.now()));
-                predicates.add(criteriaBuilder.isNotNull(root.get(DUE_DATE_FIELD)));
+                predicates.add(criteriaBuilder.equal(root.get("completed"), false));
+                predicates.add(criteriaBuilder.lessThan(root.get("dueDate"), LocalDateTime.now()));
+                predicates.add(criteriaBuilder.isNotNull(root.get("dueDate")));
             }
 
             // Completed filter
             if (completed != null) {
-                predicates.add(criteriaBuilder.equal(root.get(COMPLETED_FIELD), completed));
+                predicates.add(criteriaBuilder.equal(root.get("completed"), completed));
             }
 
             // Search filter

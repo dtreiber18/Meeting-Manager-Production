@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:8081/api', // Direct connection to backend - bypassing proxy issues
+  apiUrl: '/api', // Relative URL for Angular proxy in development
   enableN8nIntegration: true,
   n8nWebhookUrl: 'https://g37-ventures1.app.n8n.cloud/webhook/operations'
   // Note: Quill Editor is completely free - no API keys required!
