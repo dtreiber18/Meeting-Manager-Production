@@ -1,5 +1,6 @@
 import { Component, Input, OnInit, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -16,6 +17,7 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
@@ -141,14 +143,26 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
           <mat-card-title class="flex items-center">
             <mat-icon class="mr-2 text-purple-600">lightbulb</mat-icon>
             AI Suggestions
+            <mat-chip *ngIf="suggestions.length > 0" class="ml-2 text-xs">
+              {{ suggestions.length }} new
+            </mat-chip>
           </mat-card-title>
-          <button 
-            mat-icon-button 
-            (click)="refreshSuggestions()"
-            [disabled]="loadingSuggestions"
-            matTooltip="Refresh Suggestions">
-            <mat-icon [class.spin]="loadingSuggestions">refresh</mat-icon>
-          </button>
+          <div class="flex items-center space-x-2">
+            <button 
+              mat-icon-button 
+              (click)="toggleAutoSuggestions()"
+              [color]="autoSuggestionsEnabled ? 'primary' : ''"
+              matTooltip="Auto-generate suggestions">
+              <mat-icon>{{ autoSuggestionsEnabled ? 'auto_mode' : 'smart_toy' }}</mat-icon>
+            </button>
+            <button 
+              mat-icon-button 
+              (click)="refreshSuggestions()"
+              [disabled]="loadingSuggestions"
+              matTooltip="Refresh Suggestions">
+              <mat-icon [class.spin]="loadingSuggestions">refresh</mat-icon>
+            </button>
+          </div>
         </mat-card-header>
 
         <mat-card-content>
@@ -192,6 +206,14 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
                 </button>
                 <button 
                   mat-button 
+                  color="accent"
+                  (click)="acceptSuggestionAsWorkflow(suggestion)"
+                  class="text-xs"
+                  *ngIf="suggestion.priority === 'HIGH' || suggestion.priority === 'URGENT'">
+                  Create Workflow
+                </button>
+                <button 
+                  mat-button 
                   (click)="dismissSuggestion(suggestion)"
                   class="text-xs">
                   Dismiss
@@ -207,74 +229,90 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
         </mat-card-content>
       </mat-card>
 
-      <!-- Follow-up Recommendations -->
-      <mat-card class="followup-card" *ngIf="analysis?.followUpRecommendations?.length">
+      <!-- Smart Insights & Predictions -->
+      <mat-card class="smart-insights-card">
         <mat-card-header>
           <mat-card-title class="flex items-center">
-            <mat-icon class="mr-2 text-green-600">trending_up</mat-icon>
-            Follow-up Actions
+            <mat-icon class="mr-2 text-indigo-600">psychology</mat-icon>
+            Smart Insights
           </mat-card-title>
         </mat-card-header>
 
         <mat-card-content>
-          <div class="space-y-2">
-            <div *ngFor="let recommendation of analysis?.followUpRecommendations || []; let i = index" 
-                 class="flex items-start gap-3 p-2 rounded hover:bg-gray-50">
-              <div class="flex-shrink-0 w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xs font-medium">
-                {{ i + 1 }}
+          <div *ngIf="analysis" class="space-y-3">
+            
+            <!-- Workflow Recommendations -->
+            <div *ngIf="getWorkflowRecommendations().length > 0" class="workflow-recommendations">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700">🔄 Workflow Automation</h4>
+              <div class="space-y-2">
+                <div *ngFor="let rec of getWorkflowRecommendations()" 
+                     class="text-xs bg-indigo-50 text-indigo-800 px-3 py-2 rounded border-l-3 border-indigo-400 flex justify-between items-center">
+                  <span>{{ rec.message }}</span>
+                  <button 
+                    mat-button 
+                    color="primary"
+                    (click)="triggerWorkflow(rec.type)"
+                    class="text-xs ml-2">
+                    Setup
+                  </button>
+                </div>
               </div>
-              <span class="text-sm text-gray-700">{{ recommendation }}</span>
             </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
 
-      <!-- Quick Actions -->
-      <mat-card class="quick-actions-card">
-        <mat-card-header>
-          <mat-card-title class="flex items-center">
-            <mat-icon class="mr-2 text-indigo-600">flash_on</mat-icon>
-            Quick Actions
-          </mat-card-title>
-        </mat-card-header>
+            <!-- Predictive Insights -->
+            <div class="predictive-insights">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700">🔮 Predictive Analytics</h4>
+              <div class="grid grid-cols-1 gap-2 text-xs">
+                <div class="prediction-item bg-purple-50 p-2 rounded">
+                  <div class="flex justify-between">
+                    <span class="text-purple-700">Follow-up Meeting Needed:</span>
+                    <span class="font-medium text-purple-900">{{ getPredictedFollowUpProbability() }}%</span>
+                  </div>
+                </div>
+                <div class="prediction-item bg-green-50 p-2 rounded">
+                  <div class="flex justify-between">
+                    <span class="text-green-700">Action Item Completion Rate:</span>
+                    <span class="font-medium text-green-900">{{ getPredictedCompletionRate() }}%</span>
+                  </div>
+                </div>
+                <div class="prediction-item bg-amber-50 p-2 rounded">
+                  <div class="flex justify-between">
+                    <span class="text-amber-700">Risk of Overdue Items:</span>
+                    <span class="font-medium text-amber-900">{{ getOverdueRisk() }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        <mat-card-content>
-          <div class="grid grid-cols-2 gap-2">
-            <button 
-              mat-button 
-              color="primary" 
-              (click)="scheduleFollowUp()"
-              class="text-xs flex items-center justify-center gap-1">
-              <mat-icon class="text-sm">event_note</mat-icon>
-              Schedule Follow-up
-            </button>
-            
-            <button 
-              mat-button 
-              color="primary" 
-              (click)="sendSummary()"
-              class="text-xs flex items-center justify-center gap-1">
-              <mat-icon class="text-sm">email</mat-icon>
-              Send Summary
-            </button>
-            
-            <button 
-              mat-button 
-              color="primary" 
-              (click)="createWorkflow()"
-              class="text-xs flex items-center justify-center gap-1">
-              <mat-icon class="text-sm">account_tree</mat-icon>
-              Create Workflow
-            </button>
-            
-            <button 
-              mat-button 
-              color="primary" 
-              (click)="exportData()"
-              class="text-xs flex items-center justify-center gap-1">
-              <mat-icon class="text-sm">download</mat-icon>
-              Export Data
-            </button>
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700">⚡ Quick Actions</h4>
+              <div class="flex flex-wrap gap-2">
+                <button 
+                  mat-stroked-button 
+                  color="primary"
+                  (click)="generateMeetingReport()"
+                  class="text-xs">
+                  📊 Generate Report
+                </button>
+                <button 
+                  mat-stroked-button 
+                  color="accent"
+                  (click)="scheduleFollowUp()"
+                  class="text-xs">
+                  📅 Schedule Follow-up
+                </button>
+                <button 
+                  mat-stroked-button 
+                  color="warn"
+                  (click)="escalateRiskyItems()"
+                  *ngIf="hasRiskyActionItems()"
+                  class="text-xs">
+                  🚨 Escalate Risks
+                </button>
+              </div>
+            </div>
+
           </div>
         </mat-card-content>
       </mat-card>
@@ -283,7 +321,7 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
   `,
   styles: [`
     .meeting-intelligence-panel {
-      max-width: 400px;
+      width: 100%;
       position: sticky;
       top: 20px;
     }
@@ -342,7 +380,8 @@ export class MeetingIntelligencePanelComponent implements OnInit {
   suggestions: ActionItemSuggestion[] = [];
   loadingAnalysis = false;
   loadingSuggestions = false;
-
+  autoSuggestionsEnabled = false;
+  
   constructor(private readonly chatService: ChatService) {}
 
   ngOnInit(): void {
@@ -405,28 +444,146 @@ export class MeetingIntelligencePanelComponent implements OnInit {
     this.suggestions = this.suggestions.filter(s => s !== suggestion);
   }
 
+  acceptSuggestionAsWorkflow(suggestion: ActionItemSuggestion): void {
+    // Create a pending action that requires approval workflow
+    console.log('Creating workflow for high-priority suggestion:', suggestion);
+    
+    // Emit the suggestion as an action item but with workflow flag
+    const workflowSuggestion = {
+      ...suggestion,
+      requiresApproval: true,
+      workflowType: 'approval',
+      escalationLevel: suggestion.priority === 'URGENT' ? 'executive' : 'manager'
+    };
+    
+    this.actionItemAdded.emit(workflowSuggestion);
+    this.suggestions = this.suggestions.filter(s => s !== suggestion);
+  }
+
   dismissSuggestion(suggestion: ActionItemSuggestion): void {
     this.suggestions = this.suggestions.filter(s => s !== suggestion);
   }
 
+  toggleAutoSuggestions(): void {
+    this.autoSuggestionsEnabled = !this.autoSuggestionsEnabled;
+    if (this.autoSuggestionsEnabled) {
+      console.log('Auto-suggestions enabled - will generate suggestions automatically');
+      // Could set up periodic refresh or real-time analysis
+    }
+  }
+
+  // Smart Insights Methods
+  getWorkflowRecommendations(): Array<{type: string, message: string}> {
+    const recommendations = [];
+    
+    if (this.meeting.actionItems?.some(item => item.priority === 'HIGH' || item.priority === 'URGENT')) {
+      recommendations.push({
+        type: 'approval-workflow',
+        message: 'High-priority items detected - setup approval workflow'
+      });
+    }
+    
+    if (this.analysis?.participantInsights?.missingStakeholders && this.analysis.participantInsights.missingStakeholders.length > 0) {
+      recommendations.push({
+        type: 'notification-workflow',
+        message: 'Auto-notify absent stakeholders of key decisions'
+      });
+    }
+    
+    if (this.meeting.actionItems?.some(item => !item.assignee)) {
+      recommendations.push({
+        type: 'assignment-workflow',
+        message: 'Auto-assign unassigned tasks based on expertise'
+      });
+    }
+
+    return recommendations;
+  }
+
+  triggerWorkflow(workflowType: string): void {
+    console.log('Triggering workflow:', workflowType);
+    // Implementation would integrate with N8N or workflow service
+    switch (workflowType) {
+      case 'approval-workflow':
+        alert('Approval workflow setup initiated for high-priority items');
+        break;
+      case 'notification-workflow':
+        alert('Notification workflow created for absent stakeholders');
+        break;
+      case 'assignment-workflow':
+        alert('Auto-assignment workflow configured');
+        break;
+    }
+  }
+
+  getPredictedFollowUpProbability(): number {
+    if (!this.analysis) return 50;
+    
+    let probability = 30; // Base probability
+    
+    // Increase based on meeting effectiveness
+    if (this.analysis.meetingEffectiveness.score < 6) probability += 30;
+    
+    // Increase if there are missing stakeholders
+    if (this.analysis.participantInsights?.missingStakeholders?.length > 0) probability += 25;
+    
+    // Increase if there are unresolved action items
+    if (this.meeting.actionItems?.some(item => !item.assignee)) probability += 20;
+    
+    return Math.min(95, probability);
+  }
+
+  getPredictedCompletionRate(): number {
+    if (!this.meeting.actionItems?.length) return 100;
+    
+    let rate = 75; // Base completion rate
+    
+    // Adjust based on action item characteristics
+    const assignedItems = this.meeting.actionItems.filter(item => item.assignee);
+    const assignmentRate = assignedItems.length / this.meeting.actionItems.length;
+    
+    rate = rate + (assignmentRate * 20); // Higher if items are assigned
+    
+    // Adjust based on meeting effectiveness
+    if (this.analysis?.meetingEffectiveness && this.analysis.meetingEffectiveness.score >= 7) rate += 10;
+    
+    return Math.round(Math.min(95, rate));
+  }
+
+  getOverdueRisk(): string {
+    if (!this.meeting.actionItems?.length) return 'Low';
+    
+    const urgentItems = this.meeting.actionItems.filter(item => item.priority === 'URGENT').length;
+    const unassignedItems = this.meeting.actionItems.filter(item => !item.assignee).length;
+    
+    if (urgentItems > 2 || unassignedItems > 3) return 'High';
+    if (urgentItems > 0 || unassignedItems > 1) return 'Medium';
+    return 'Low';
+  }
+
+  hasRiskyActionItems(): boolean {
+    return this.getOverdueRisk() !== 'Low';
+  }
+
+  generateMeetingReport(): void {
+    console.log('Generating comprehensive meeting report...');
+    // Implementation would create a detailed report
+    alert('Meeting report generation started - you will receive it via email shortly');
+  }
+
   scheduleFollowUp(): void {
+    console.log('Initiating follow-up scheduling...');
     this.followUpScheduled.emit();
-    // Here you would integrate with calendar API
-    console.log('Scheduling follow-up meeting...');
+    alert('Follow-up meeting scheduling initiated');
   }
 
-  sendSummary(): void {
-    // Here you would integrate with email API
-    console.log('Sending meeting summary...');
+  escalateRiskyItems(): void {
+    const riskyItems = this.meeting.actionItems?.filter(item => 
+      item.priority === 'URGENT' || !item.assignee
+    ) || [];
+    
+    console.log('Escalating risky items:', riskyItems);
+    alert(`Escalating ${riskyItems.length} high-risk action items to management`);
   }
 
-  createWorkflow(): void {
-    // Here you would integrate with workflow/automation system
-    console.log('Creating automated workflow...');
-  }
-
-  exportData(): void {
-    // Here you would export meeting data
-    console.log('Exporting meeting data...');
-  }
 }

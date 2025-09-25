@@ -1,38 +1,79 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
+import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { MatDialog } from '@angular/material/dialog';
 import { Meeting, ActionItem, Participant } from './meeting.model';
+import { MeetingService } from './meeting.service';
 import { PendingAction, PendingActionService } from '../services/pending-action.service';
-import { AiChatComponent } from '../ai-chat/ai-chat.component';
+
 import { MeetingIntelligencePanelComponent } from '../ai-chat/meeting-intelligence-panel.component';
 import { ActionItemSuggestion } from '../services/meeting-ai-assistant.service';
+import { environment } from '../../environments/environment';
+import { ModalService } from '../shared/modal/modal.service';
+import { ModalContainerComponent } from '../shared/modal/modal-container/modal-container.component';
+
 
 type ParticipantType = 'CLIENT' | 'G37' | 'OTHER';
+
+interface N8nEventData {
+  id?: string;
+  title?: string;
+  start?: string;
+  end?: string;
+  description?: string;
+  [key: string]: unknown;
+}
+
+// Extended types for editing functionality
+interface EditablePendingAction extends PendingAction {
+  editing?: boolean;
+}
+
+interface EditableActionItem extends ActionItem {
+  editing?: boolean;
+}
+
+interface EditableMeeting extends Meeting {
+  actionItems: EditableActionItem[];
+}
 
 @Component({
   selector: 'app-meeting-details-screen',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatButtonModule, DragDropModule, AiChatComponent, MeetingIntelligencePanelComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, MatButtonModule, DragDropModule, MeetingIntelligencePanelComponent, HttpClientModule, ModalContainerComponent],
   templateUrl: './meeting-details-screen.component.html',
   styleUrls: ['./meeting-details-screen.component.scss']
 })
 export class MeetingDetailsScreenComponent implements OnInit {
-  @Input() meeting!: Meeting;
-  @Output() back = new EventEmitter<void>();
-  @Output() meetingUpdate = new EventEmitter<Meeting>();
+  meeting?: Meeting & { source?: 'mm' | 'n8n' };
+  loading = true;
+  error: string | null = null;
+  meetingId: string | null = null;
+  meetingSource: 'mm' | 'n8n' = 'mm';
 
   isEditing = false; // Global edit mode
   isEditingOverview = false;
   isEditingActionItems = false;
   isAddingParticipant = false;
   
+  // Card collapse/expand state
+  cardState = {
+    header: { collapsed: true, editing: false },
+    participants: { collapsed: true, editing: false },
+    overview: { collapsed: true, editing: false },
+    pendingActions: { collapsed: true, editing: false },
+    actionItems: { collapsed: true, editing: false }
+  };
+  
   // Pending Actions properties
   showPendingActions = true;
   isAddingPendingAction = false;
-  pendingActions: PendingAction[] = [];
+  pendingActions: EditablePendingAction[] = [];
   canManageApprovals = true; // This should be set based on user role
   
   // Enhanced Participant Management Properties
@@ -46,7 +87,7 @@ export class MeetingDetailsScreenComponent implements OnInit {
   };
   filteredParticipants: Participant[] = [];
   
-  editedMeeting!: Meeting;
+  editedMeeting!: EditableMeeting;
   
   newActionItem: Partial<ActionItem> = {
     title: '',
@@ -55,7 +96,8 @@ export class MeetingDetailsScreenComponent implements OnInit {
     dueDate: undefined,
     priority: 'MEDIUM',
     status: 'OPEN',
-    type: 'TASK'
+    type: 'TASK',
+    assignedTo: ''
   };
   
   newParticipant: Partial<Participant> = {
@@ -85,12 +127,246 @@ export class MeetingDetailsScreenComponent implements OnInit {
     estimatedHours: undefined
   };
 
-  constructor(private readonly pendingActionService: PendingActionService) {}
+  constructor(
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
+    private readonly meetingService: MeetingService,
+    private readonly http: HttpClient,
+    private readonly modalService: ModalService,
+    private readonly dialog: MatDialog,
+    private readonly pendingActionService: PendingActionService
+  ) {}
 
   ngOnInit(): void {
-    this.editedMeeting = { ...this.meeting };
-    this.loadPendingActions();
-    this.applyParticipantFilters(); // Initialize participant filters
+    this.meetingId = this.route.snapshot.paramMap.get('id');
+    this.meetingSource = (this.route.snapshot.queryParamMap.get('source') as 'mm' | 'n8n') || 'mm';
+    
+    console.log('🔍 Loading meeting details:', { id: this.meetingId, source: this.meetingSource });
+    
+    if (this.meetingId) {
+      this.loadMeeting();
+    } else {
+      this.error = 'No meeting ID provided';
+      this.loading = false;
+    }
+  }
+
+  loadMeeting() {
+    if (!this.meetingId) return;
+    
+    this.loading = true;
+    this.error = null;
+    
+    if (this.meetingSource === 'n8n') {
+      this.loadN8nMeeting();
+    } else {
+      this.loadMeetingManagerMeeting();
+    }
+  }
+
+  loadMeetingManagerMeeting() {
+    if (!this.meetingId) return;
+    
+    console.log('📞 Fetching Meeting Manager meeting details...');
+    this.meetingService.getMeeting(this.meetingId).subscribe({
+      next: (data) => {
+        console.log('✅ Meeting Manager meeting details:', data);
+        this.meeting = { ...data, source: 'mm' };
+        this.initializeEditedMeeting();
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('❌ Error fetching Meeting Manager meeting:', error);
+        this.handleError(error);
+      }
+    });
+  }
+
+  loadN8nMeeting() {
+    if (!this.meetingId) return;
+    
+    console.log('📞 Fetching n8n meeting details for ID:', this.meetingId);
+    
+    // First try to get individual meeting details
+    this.http.post<N8nEventData>(environment.n8nWebhookUrl, { 
+      action: 'get_event_details', 
+      event_id: this.meetingId 
+    }).subscribe({
+      next: (n8nData) => {
+        console.log('✅ n8n meeting details response:', n8nData);
+        
+        if (n8nData && n8nData !== null && typeof n8nData === 'object') {
+          // Successfully got specific meeting details
+          this.createN8nMeetingFromData(n8nData);
+        } else {
+          // API returned null/empty, try to get from list
+          console.log('⚠️ n8n returned null, trying to get from list...');
+          this.loadN8nMeetingFromList();
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error fetching n8n meeting details:', error);
+        // Try fallback approach - get from list
+        this.loadN8nMeetingFromList();
+      }
+    });
+  }
+
+  loadN8nMeetingFromList() {
+    console.log('📞 Fetching n8n meeting from list API...');
+    // Get all meetings and find the one we need
+    this.http.post<N8nEventData[]>(environment.n8nWebhookUrl, { 
+      action: 'get_events'
+    }).subscribe({
+      next: (response) => {
+        console.log('✅ n8n list response for details lookup:', response);
+        
+        let meetingData = null;
+        
+        if (response && Array.isArray(response)) {
+          // Find the meeting by ID (try multiple ID formats)
+          const meetingIdNum = parseInt(this.meetingId || '0');
+          meetingData = response.find(meeting => {
+            // Check different possible ID fields from the response
+            const meetingId = meeting?.id;
+            return (
+              (typeof meetingId === 'number' && meetingId === meetingIdNum) ||
+              (typeof meetingId === 'string' && meetingId === this.meetingId) ||
+              (meeting as Record<string, string>)['eventId'] === this.meetingId ||
+              (meeting as Record<string, string>)['meetingId'] === this.meetingId
+            );
+          });
+          console.log('🔍 Found meeting in list:', meetingData);
+        } else if (response && (response as Record<string, string>)['id'] === this.meetingId) {
+          // Single meeting response
+          meetingData = response;
+        }
+        
+        if (meetingData) {
+          this.createN8nMeetingFromData(meetingData);
+        } else {
+          // No real data available - show error instead of mock data
+          this.handleN8nDataNotFound();
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error fetching n8n meeting list:', error);
+        this.handleN8nApiError(error);
+      }
+    });
+  }
+
+  createN8nMeetingFromData(n8nData: Record<string, unknown>) {
+    console.log('✅ Creating n8n meeting from real data:', n8nData);
+    this.meeting = {
+      id: parseInt(this.meetingId || '0') || 0,
+      title: (n8nData['title'] || n8nData['meetingType'] || 'Untitled n8n Meeting') as string,
+      description: (n8nData['description'] || n8nData['summary'] || '') as string,
+      source: 'n8n',
+      meetingType: (n8nData['meetingType'] || 'other') as string,
+      status: 'completed',
+      priority: 'medium',
+      isRecurring: false,
+      startTime: (n8nData['date'] || (n8nData['meetingMetadata'] as Record<string, unknown>)?.['date'] || n8nData['startTime'] || new Date().toISOString()) as string,
+      endTime: (n8nData['endTime'] || new Date().toISOString()) as string,
+      isPublic: false,
+      requiresApproval: false,
+      allowRecording: false,
+      autoTranscription: false,
+      aiAnalysisEnabled: false,
+      createdAt: (n8nData['createdAt'] || new Date().toISOString()) as string,
+      updatedAt: (n8nData['updatedAt'] || new Date().toISOString()) as string,
+      organization: {
+        id: 0,
+        name: 'n8n External',
+        domain: 'n8n.cloud',
+        timezone: 'UTC',
+        isActive: true,
+        maxUsers: 1000,
+        maxMeetings: 1000,
+        subscriptionTier: 'external',
+        currentUserCount: 0,
+        currentMeetingCount: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      organizer: {
+        id: 0,
+        firstName: 'n8n',
+        lastName: 'System',
+        email: 'n8n@system.com',
+        isActive: true,
+        emailNotifications: false,
+        pushNotifications: false,
+        timezone: 'UTC',
+        language: 'en',
+        displayName: 'n8n System',
+        fullName: 'n8n System',
+        roles: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      participants: (n8nData['attendees'] || []) as Participant[],
+      actionItems: (n8nData['actionItems'] || []) as ActionItem[],
+      notes: [],
+      attachments: [],
+      details: (n8nData['keyDecisions'] || n8nData['nextSteps'] || n8nData['description'] || 'n8n meeting details') as string,
+      durationInMinutes: (n8nData['duration'] || 60) as number,
+      upcoming: false,
+      inProgress: false,
+      subject: (n8nData['title'] || n8nData['meetingType'] || 'n8n Meeting') as string,
+      type: (n8nData['meetingType'] || 'other') as string
+    } as unknown as Meeting & { source: 'n8n' };
+    this.initializeEditedMeeting();
+    this.loading = false;
+  }
+
+  handleN8nDataNotFound() {
+    console.error('❌ Meeting not found in n8n data');
+    this.error = `Meeting with ID ${this.meetingId} was not found in n8n. It may have been deleted or the ID may be incorrect.`;
+    this.loading = false;
+  }
+
+  handleN8nApiError(error: unknown) {
+    console.error('❌ n8n API completely unavailable:', error);
+    
+    const httpError = error as {status?: number};
+    
+    if (httpError.status === 0) {
+      this.error = 'Unable to connect to n8n. Please check your internet connection and try again.';
+    } else if (httpError.status && httpError.status >= 500) {
+      this.error = 'n8n server error. Please try again later.';
+    } else {
+      this.error = `Failed to load meeting from n8n (${httpError.status || 'unknown'}). The meeting data may be temporarily unavailable.`;
+    }
+    this.loading = false;
+  }
+
+  handleError(error: unknown) {
+    const httpError = error as {status?: number};
+    
+    if (httpError.status === 0) {
+      this.error = 'Unable to connect to server. Please check your internet connection.';
+    } else if (httpError.status === 404) {
+      this.error = `Meeting with ID ${this.meetingId} not found.`;
+    } else if (httpError.status && httpError.status >= 500) {
+      this.error = 'Server error. Please try again later.';
+    } else {
+      this.error = `Failed to load meeting details (${httpError.status || 'unknown'})`;
+    }
+    this.loading = false;
+  }
+
+  retryLoad() {
+    this.loadMeeting();
+  }
+
+  initializeEditedMeeting(): void {
+    if (this.meeting) {
+      this.editedMeeting = { ...this.meeting } as EditableMeeting;
+      this.loadPendingActions();
+      this.applyParticipantFilters();
+    }
   }
 
   /**
@@ -129,7 +405,7 @@ export class MeetingDetailsScreenComponent implements OnInit {
     const description = this.newPendingAction.description.trim();
 
     const pendingAction: Omit<PendingAction, 'id'> = {
-      meetingId: this.meeting.id,
+      meetingId: this.meeting?.id || 0,
       title,
       description,
       actionType: this.newPendingAction.actionType || 'TASK',
@@ -138,7 +414,7 @@ export class MeetingDetailsScreenComponent implements OnInit {
       approvalRequired: this.newPendingAction.approvalRequired || false,
       dueDate: this.newPendingAction.dueDate,
       estimatedHours: this.newPendingAction.estimatedHours,
-      organizationId: this.meeting.organization?.id,
+      organizationId: this.meeting?.organization?.id || 0,
       reporterId: 1, // Should be current user ID
       reporterName: 'Current User', // Should be current user name
       reporterEmail: 'user@example.com' // Should be current user email
@@ -284,16 +560,23 @@ export class MeetingDetailsScreenComponent implements OnInit {
    * Get priority color class for both action items and pending actions
    */
   getPriorityColor(priority: string): string {
-    // Handle pending action priorities
+    // Handle pending action priorities (uppercase)
     if (['LOW', 'MEDIUM', 'HIGH', 'URGENT'].includes(priority)) {
-      return this.pendingActionService.getPriorityColor(priority as PendingAction['priority']);
+      switch (priority) {
+        case 'LOW': return 'text-green-600 bg-green-50';
+        case 'MEDIUM': return 'text-yellow-600 bg-yellow-50';
+        case 'HIGH': return 'text-orange-600 bg-orange-50';
+        case 'URGENT': return 'text-red-600 bg-red-50';
+        default: return 'text-gray-600 bg-gray-50';
+      }
     }
     
-    // Handle regular action item priorities
-    switch (priority) {
-      case 'high': return 'text-red-600 bg-red-50';
-      case 'medium': return 'text-yellow-600 bg-yellow-50';
+    // Handle regular action item priorities (lowercase - legacy)
+    switch (priority.toLowerCase()) {
       case 'low': return 'text-green-600 bg-green-50';
+      case 'medium': return 'text-yellow-600 bg-yellow-50';
+      case 'high': return 'text-orange-600 bg-orange-50';
+      case 'urgent': return 'text-red-600 bg-red-50';
       default: return 'text-gray-600 bg-gray-50';
     }
   }
@@ -310,30 +593,101 @@ export class MeetingDetailsScreenComponent implements OnInit {
       this.isAddingPendingAction = false;
       this.showParticipantFilters = false;
       // Reset any pending changes
-      this.editedMeeting = { ...this.meeting };
+      if (this.meeting && this.meeting.id !== undefined) {
+        this.editedMeeting = { ...this.meeting } as EditableMeeting;
+      }
       this.loadPendingActions(); // Reload pending actions
       this.applyParticipantFilters(); // Refresh participant filters
+      // Reset all card editing states
+      Object.keys(this.cardState).forEach(key => {
+        this.cardState[key as keyof typeof this.cardState].editing = false;
+      });
     }
   }
 
+  // Toggle collapse/expand for individual cards
+  toggleCardCollapse(cardName: keyof typeof this.cardState): void {
+    this.cardState[cardName].collapsed = !this.cardState[cardName].collapsed;
+  }
+
+  // Toggle edit mode for individual cards
+  toggleCardEdit(cardName: keyof typeof this.cardState): void {
+    if (this.isEditing) {
+      this.cardState[cardName].editing = !this.cardState[cardName].editing;
+    }
+  }
+
+  // Save changes for individual cards
+  saveCard(cardName: keyof typeof this.cardState): void {
+    console.log(`Saving ${cardName} card`);
+    
+    // Save logic for different card types
+    switch (cardName) {
+      case 'header':
+        // Header changes are automatically saved via two-way binding
+        break;
+      case 'overview':
+        // Overview changes are automatically saved via two-way binding
+        break;
+      case 'participants':
+        // Participant changes would trigger service calls if implemented
+        break;
+      case 'pendingActions':
+        // Pending action changes are handled by their dedicated service
+        break;
+      case 'actionItems':
+        // Action item changes are automatically saved via two-way binding
+        break;
+    }
+    
+    this.cardState[cardName].editing = false;
+  }
+
+  // Cancel editing for individual cards
+  cancelCardEdit(cardName: keyof typeof this.cardState): void {
+    this.cardState[cardName].editing = false;
+    
+    // Reset form data to original values
+    switch (cardName) {
+      case 'header':
+        // Reset header data if needed (would require storing original values)
+        break;
+      case 'overview':
+        // Reset overview data if needed (would require storing original values)
+        break;
+      case 'participants':
+        // Reset participant data if needed
+        break;
+      case 'pendingActions':
+        // Reset pending action data if needed
+        break;
+      case 'actionItems':
+        // Reset action item data if needed
+        break;
+    }
+    
+    console.log(`Cancelling ${cardName} card edit`);
+  }
+
   handleParticipantToggle(participantName: string): void {
-    const updatedMeeting = { ...this.editedMeeting };
-    const attended = updatedMeeting.participants.filter(p => p.attended).map(p => p.name);
+    if (!this.editedMeeting.participants) return;
+    
+    const attended = this.editedMeeting.participants.filter(p => p.attended).map(p => p.name);
     const isAttended = attended.includes(participantName);
-    updatedMeeting.participants = updatedMeeting.participants.map(p =>
+    this.editedMeeting.participants = this.editedMeeting.participants.map(p =>
       p.name === participantName ? { ...p, attended: !isAttended } : p
     );
-    this.editedMeeting = updatedMeeting;
-    this.meetingUpdate.emit(updatedMeeting);
   }
 
   handleSaveOverview() {
-    this.meetingUpdate.emit(this.editedMeeting);
+    // In a real implementation, you might want to save to the server here
     this.isEditingOverview = false;
   }
 
   handleCancelOverview() {
-    this.editedMeeting = { ...this.meeting };
+    if (this.meeting && this.meeting.id !== undefined) {
+      this.editedMeeting = { ...this.meeting } as EditableMeeting;
+    }
     this.isEditingOverview = false;
   }
 
@@ -362,6 +716,7 @@ export class MeetingDetailsScreenComponent implements OnInit {
       actualHours: 0,
       tags: '',
       notes: '',
+      assignedTo: this.newActionItem.assignedTo || '',
       organization: {
         id: 1,
         name: 'Default Organization',
@@ -386,7 +741,11 @@ export class MeetingDetailsScreenComponent implements OnInit {
       actionItems: [...(this.editedMeeting.actionItems || []), actionItem]
     };
 
-    // Reset form
+    this.resetNewActionItem();
+    this.isEditingActionItems = false;
+  }
+
+  resetNewActionItem(): void {
     this.newActionItem = {
       title: '',
       description: '',
@@ -394,10 +753,9 @@ export class MeetingDetailsScreenComponent implements OnInit {
       dueDate: undefined,
       priority: 'MEDIUM',
       status: 'OPEN',
-      type: 'TASK'
+      type: 'TASK',
+      assignedTo: ''
     };
-
-    this.meetingUpdate.emit(this.editedMeeting);
   }
 
   handleAddParticipant(): void {
@@ -453,7 +811,6 @@ export class MeetingDetailsScreenComponent implements OnInit {
     };
 
     this.isAddingParticipant = false;
-    this.meetingUpdate.emit(this.editedMeeting);
   }
 
   cancelAddParticipant(): void {
@@ -584,7 +941,6 @@ export class MeetingDetailsScreenComponent implements OnInit {
       const participantIndex = this.editedMeeting.participants.findIndex(p => p.id === participant.id);
       if (participantIndex !== -1) {
         this.editedMeeting.participants[participantIndex] = { ...participant };
-        this.meetingUpdate.emit(this.editedMeeting);
       }
       
       transferArrayItem(
@@ -600,12 +956,9 @@ export class MeetingDetailsScreenComponent implements OnInit {
    * Toggle participant attendance status
    */
   toggleParticipantAttendance(participant: Participant): void {
-    const updatedMeeting = { ...this.editedMeeting };
-    updatedMeeting.participants = updatedMeeting.participants.map(p =>
+    this.editedMeeting.participants = this.editedMeeting.participants.map(p =>
       p.id === participant.id ? { ...p, attended: !p.attended } : p
     );
-    this.editedMeeting = updatedMeeting;
-    this.meetingUpdate.emit(updatedMeeting);
     
     // Refresh filters if active
     if (this.showParticipantFilters) {
@@ -625,23 +978,37 @@ export class MeetingDetailsScreenComponent implements OnInit {
   }
 
   handleDeleteActionItem(id: number) {
-    const updatedMeeting = {
+    this.editedMeeting = {
       ...this.editedMeeting,
       actionItems: this.editedMeeting.actionItems?.filter(item => item.id !== id) || []
     };
-    this.editedMeeting = updatedMeeting;
-    this.meetingUpdate.emit(updatedMeeting);
   }
 
   handleUpdateActionItem(id: number, updates: Partial<ActionItem>) {
-    const updatedMeeting = {
+    this.editedMeeting = {
       ...this.editedMeeting,
       actionItems: this.editedMeeting.actionItems?.map(item =>
         item.id === id ? { ...item, ...updates } : item
       ) || []
     };
-    this.editedMeeting = updatedMeeting;
-    this.meetingUpdate.emit(updatedMeeting);
+  }
+
+  handleDeletePendingAction(id: string) {
+    if (id) {
+      this.pendingActionService.deletePendingAction(id).subscribe({
+        next: () => {
+          this.pendingActions = this.pendingActions.filter(action => action.id !== id);
+        },
+        error: (error) => {
+          console.error('Error deleting pending action:', error);
+        }
+      });
+    }
+  }
+
+  toggleActionItemStatus(item: ActionItem) {
+    const newStatus = (item.status === 'completed' || item.status === 'COMPLETED') ? 'OPEN' : 'COMPLETED';
+    this.handleUpdateActionItem(item.id, { status: newStatus });
   }
 
   get sortedAttended() {
@@ -705,11 +1072,156 @@ export class MeetingDetailsScreenComponent implements OnInit {
   }
 
   private addSuggestedActionItem(actionItem: ActionItem): void {
-    const updatedMeeting = {
+    this.editedMeeting = {
       ...this.editedMeeting,
       actionItems: [...(this.editedMeeting.actionItems || []), actionItem]
     };
-    this.editedMeeting = updatedMeeting;
-    this.meetingUpdate.emit(updatedMeeting);
+  }
+
+  // Utility methods for template
+  formatDateTime(dateTime: string | undefined): string {
+    if (!dateTime) return 'Not specified';
+    try {
+      const date = new Date(dateTime);
+      return date.toLocaleString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return dateTime;
+    }
+  }
+
+  formatDate(date: string | undefined): string {
+    if (!date) return 'Not specified';
+    try {
+      const dateObj = new Date(date);
+      return dateObj.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return date;
+    }
+  }
+
+  getInitials(name: string): string {
+    if (!name) return '?';
+    return name
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase())
+      .slice(0, 2)
+      .join('');
+  }
+
+  // Edit functionality for pending actions
+  private originalPendingActions: { [id: string]: EditablePendingAction } = {};
+
+  startEditPendingAction(action: EditablePendingAction): void {
+    if (action.id) {
+      // Store original values
+      this.originalPendingActions[action.id] = { ...action };
+      // Enable editing mode
+      action.editing = true;
+    }
+  }
+
+  saveEditPendingAction(action: EditablePendingAction): void {
+    if (!action.title?.trim() || !action.description?.trim()) {
+      alert('Title and description are required.');
+      return;
+    }
+
+    if (action.id) {
+      // Update the action via service
+      this.pendingActionService.updatePendingAction(action.id, {
+        title: action.title,
+        description: action.description,
+        assigneeName: action.assigneeName,
+        dueDate: action.dueDate,
+        priority: action.priority
+      }).subscribe({
+        next: (updatedAction) => {
+          console.log('Pending action updated successfully', updatedAction);
+          // Remove original backup
+          if (action.id) {
+            delete this.originalPendingActions[action.id];
+          }
+          // Disable editing mode
+          action.editing = false;
+        },
+        error: (error) => {
+          console.error('Error updating pending action:', error);
+          alert('Failed to update pending action. Please try again.');
+        }
+      });
+    }
+  }
+
+  cancelEditPendingAction(action: EditablePendingAction): void {
+    if (action.id && this.originalPendingActions[action.id]) {
+      // Restore original values
+      const original = this.originalPendingActions[action.id];
+      action.title = original.title;
+      action.description = original.description;
+      action.assigneeName = original.assigneeName;
+      action.dueDate = original.dueDate;
+      action.priority = original.priority;
+      
+      // Clean up
+      delete this.originalPendingActions[action.id];
+    }
+    // Disable editing mode
+    action.editing = false;
+  }
+
+  // Edit functionality for action items
+  private originalActionItems: { [id: number]: EditableActionItem } = {};
+
+  startEditActionItem(item: EditableActionItem): void {
+    // Store original values
+    this.originalActionItems[item.id] = { ...item };
+    // Enable editing mode
+    item.editing = true;
+  }
+
+  saveEditActionItem(item: EditableActionItem): void {
+    if (!item.title?.trim() && !item.description?.trim()) {
+      alert('Either title or description is required.');
+      return;
+    }
+
+    // Update the item locally (you might want to call a service here)
+    console.log('Action item updated:', item);
+    
+    // Remove original backup
+    delete this.originalActionItems[item.id];
+    // Disable editing mode
+    item.editing = false;
+    
+    // If you have an action item service, call it here:
+    // this.actionItemService.updateActionItem(item.id, item).subscribe(...)
+  }
+
+  cancelEditActionItem(item: EditableActionItem): void {
+    if (this.originalActionItems[item.id]) {
+      // Restore original values
+      const original = this.originalActionItems[item.id];
+      item.title = original.title;
+      item.description = original.description;
+      item.assignedTo = original.assignedTo;
+      item.dueDate = original.dueDate;
+      item.priority = original.priority;
+      
+      // Clean up
+      delete this.originalActionItems[item.id];
+    }
+    // Disable editing mode
+    item.editing = false;
   }
 }

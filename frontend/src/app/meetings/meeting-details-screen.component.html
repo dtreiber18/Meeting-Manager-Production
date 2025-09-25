@@ -1,852 +1,989 @@
-<div class="flex gap-6">
-  <!-- Main Content -->
-  <div class="flex-1 space-y-6">
-    <!-- Header -->
-    <div class="bg-white rounded-lg border border-gray-200 p-6">
-      <div class="flex items-start justify-between">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ editedMeeting.title }}</h1>
-          <div class="flex items-center space-x-6 text-sm text-gray-600">
-            <div class="flex items-center">
-              <mat-icon class="w-4 h-4 mr-2">event</mat-icon>
-              {{ editedMeeting.startTime | date:'short' }}
-            </div>
-            <div class="flex items-center">
-              <mat-icon class="w-4 h-4 mr-2">schedule</mat-icon>
-              {{ editedMeeting.time }}
-            </div>
-            <div class="flex items-center">
-              <mat-icon class="w-4 h-4 mr-2">group</mat-icon>
-              {{ allParticipants.length }} participants
-            </div>
-          </div>
-        </div>
-      <div class="flex items-center space-x-3">
-        <button 
-          type="button"
-          (click)="toggleEditMode(); $event.preventDefault(); $event.stopPropagation()"
-          class="flex items-center px-4 py-2 rounded-lg transition-colors"
-          [ngClass]="isEditing ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-blue-600 text-white hover:bg-blue-700'">
-          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path *ngIf="!isEditing" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-            <path *ngIf="isEditing" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-          </svg>
-          {{ isEditing ? 'Done' : 'Edit' }}
-        </button>
-        <a *ngIf="editedMeeting.recordingUrl" [href]="editedMeeting.recordingUrl" target="_blank" rel="noopener noreferrer"
-           class="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-          <mat-icon class="w-4 h-4 mr-2">videocam</mat-icon>
-          View Recording
-        </a>
-      </div>
-    </div>
+<!-- Modal Container -->
+<app-modal-container></app-modal-container>
+
+<!-- Loading State -->
+<div *ngIf="loading" class="loading-container flex items-center justify-center min-h-screen">
+  <div class="text-center">
+    <div class="loading-spinner animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+    <p class="text-gray-600">Loading meeting details...</p>
   </div>
+</div>
 
-  <!-- Meeting Participants (Enhanced Classification System) -->
-  <div class="bg-white rounded-lg border border-gray-200 p-6">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-900">Meeting Participants 
-        <span class="text-sm text-gray-500">({{ allParticipants.length }} total)</span>
-      </h2>
-      <div class="flex items-center space-x-2">
-        <button 
-          *ngIf="isEditing"
-          (click)="toggleParticipantClassificationView()" 
-          class="flex items-center px-3 py-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
-          <mat-icon class="w-4 h-4 mr-2">{{ showClassificationView ? 'view_list' : 'category' }}</mat-icon>
-          {{ showClassificationView ? 'List View' : 'By Type' }}
-        </button>
-        <button 
-          *ngIf="isEditing"
-          (click)="toggleParticipantFilters()" 
-          class="flex items-center px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-          <mat-icon class="w-4 h-4 mr-2">filter_list</mat-icon>
-          Filters
-        </button>
-      </div>
-    </div>
+<!-- Error State -->
+<div *ngIf="error && !loading" class="error-container flex items-center justify-center min-h-screen">
+  <div class="text-center bg-red-50 border border-red-200 rounded-lg p-8 max-w-md">
+    <div class="text-red-500 text-4xl mb-4">⚠️</div>
+    <h3 class="text-lg font-semibold text-red-800 mb-2">Unable to Load Meeting</h3>
+    <p class="text-red-700 mb-4">{{ error }}</p>
+    <button 
+      (click)="retryLoad()"
+      class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+      Try Again
+    </button>
+  </div>
+</div>
 
-    <!-- Participant Filters (Enhanced) -->
-    <div *ngIf="showParticipantFilters" class="bg-gray-50 rounded-lg p-4 mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-          <label for="participant-type-filter" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-          <select id="participant-type-filter" [(ngModel)]="participantFilter.type" (change)="applyParticipantFilters()"
-                  title="Filter participants by type"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
-            <option value="">All Types</option>
-            <option value="CLIENT">Client</option>
-            <option value="G37">G37 Team</option>
-            <option value="OTHER">Other</option>
-          </select>
-        </div>
-        <div>
-          <label for="participant-attendance-filter" class="block text-sm font-medium text-gray-700 mb-1">Attendance</label>
-          <select id="participant-attendance-filter" [(ngModel)]="participantFilter.attendance" (change)="applyParticipantFilters()"
-                  title="Filter participants by attendance"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
-            <option value="">All</option>
-            <option value="attended">Attended</option>
-            <option value="absent">Absent</option>
-            <option value="required">Required</option>
-          </select>
-        </div>
-        <div>
-          <label for="participant-role-filter" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
-          <select id="participant-role-filter" [(ngModel)]="participantFilter.role" (change)="applyParticipantFilters()"
-                  title="Filter participants by role"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
-            <option value="">All Roles</option>
-            <option value="ORGANIZER">Organizer</option>
-            <option value="PRESENTER">Presenter</option>
-            <option value="ATTENDEE">Attendee</option>
-            <option value="OBSERVER">Observer</option>
-          </select>
-        </div>
-        <div>
-          <label for="participant-search-filter" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
-          <input id="participant-search-filter" type="text" [(ngModel)]="participantFilter.search" (input)="applyParticipantFilters()"
-                 placeholder="Name or email..." title="Search participants by name or email"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
-        </div>
-      </div>
-    </div>
+<!-- Meeting Details Content -->
+<div *ngIf="meeting && !loading" class="min-h-screen bg-gray-50">
+  <!-- Breadcrumb Navigation -->
+  <nav class="bg-white border-b border-gray-200 px-6 py-3">
+    <ol class="flex items-center space-x-2 text-sm text-gray-500 max-w-7xl mx-auto">
+      <li><a href="/meetings" class="hover:text-blue-600 transition-colors">Meetings</a></li>
+      <li><span class="mx-2">/</span></li>
+      <li class="text-gray-900 font-medium truncate">{{ editedMeeting.title }}</li>
+    </ol>
+  </nav>
 
-    <!-- Classification View -->
-    <div *ngIf="showClassificationView" class="space-y-6">
+  <!-- Main Layout -->
+  <div class="max-w-7xl mx-auto px-6 py-6">
+    <div class="flex flex-col md:flex-row gap-6">
+      <!-- Main Content Column (2/3 width) -->
+      <div class="flex-1 md:w-2/3 space-y-4">
       
-      <!-- Client Participants -->
-      <div class="participant-category">
-        <div class="flex items-center mb-3">
-          <div class="w-4 h-4 bg-blue-500 rounded-full mr-3"></div>
-          <h3 class="text-md font-semibold text-blue-700">Client Participants ({{ getParticipantsByType('CLIENT').length }})</h3>
-          <div class="ml-auto text-sm text-gray-500">
-            {{ getAttendanceStats('CLIENT').attended }} attended, {{ getAttendanceStats('CLIENT').absent }} absent
-          </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" 
-             cdkDropList 
-             [cdkDropListData]="getParticipantsByType('CLIENT')"
-             (cdkDropListDropped)="onParticipantDrop($event, 'CLIENT')">
-          <div *ngFor="let participant of getParticipantsByType('CLIENT')" 
-               class="participant-card bg-blue-50 border border-blue-200 rounded-lg p-3 hover:shadow-sm transition-all cursor-move"
-               cdkDrag
-               [cdkDragData]="participant">
-            <div class="flex items-start justify-between">
-              <div class="flex-1">
-                <div class="flex items-center space-x-2 mb-1">
-                  <div class="w-2 h-2 rounded-full" [ngClass]="participant.attended ? 'bg-green-500' : 'bg-red-500'"></div>
-                  <span class="font-medium text-blue-900">{{ participant.name }}</span>
-                  <span *ngIf="participant.organizer" class="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded">ORG</span>
-                  <span *ngIf="participant.presenter" class="text-xs bg-purple-600 text-white px-1.5 py-0.5 rounded">PRES</span>
-                </div>
-                <div class="text-sm text-blue-700 mb-1">{{ participant.email }}</div>
-                <div *ngIf="participant.organization" class="text-xs text-blue-600">{{ participant.organization }}</div>
-                <div *ngIf="participant.title" class="text-xs text-gray-600">{{ participant.title }}</div>
-              </div>
-              <div class="flex flex-col items-end space-y-1">
-                <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">{{ participant.participantRole }}</span>
-                <div *ngIf="isEditing" class="flex space-x-1">
-                  <button (click)="editParticipant(participant)" class="text-blue-600 hover:text-blue-800">
-                    <mat-icon class="w-3 h-3">edit</mat-icon>
-                  </button>
-                  <button (click)="toggleParticipantAttendance(participant)" 
-                          class="text-gray-600 hover:text-gray-800"
-                          [title]="participant.attended ? 'Mark as absent' : 'Mark as attended'">
-                    <mat-icon class="w-3 h-3">{{ participant.attended ? 'person_remove' : 'person_add' }}</mat-icon>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- G37 Team Participants -->
-      <div class="participant-category">
-        <div class="flex items-center mb-3">
-          <div class="w-4 h-4 bg-green-500 rounded-full mr-3"></div>
-          <h3 class="text-md font-semibold text-green-700">G37 Team ({{ getParticipantsByType('G37').length }})</h3>
-          <div class="ml-auto text-sm text-gray-500">
-            {{ getAttendanceStats('G37').attended }} attended, {{ getAttendanceStats('G37').absent }} absent
-          </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
-             cdkDropList 
-             [cdkDropListData]="getParticipantsByType('G37')"
-             (cdkDropListDropped)="onParticipantDrop($event, 'G37')">
-          <div *ngFor="let participant of getParticipantsByType('G37')" 
-               class="participant-card bg-green-50 border border-green-200 rounded-lg p-3 hover:shadow-sm transition-all cursor-move"
-               cdkDrag
-               [cdkDragData]="participant">
-            <div class="flex items-start justify-between">
-              <div class="flex-1">
-                <div class="flex items-center space-x-2 mb-1">
-                  <div class="w-2 h-2 rounded-full" [ngClass]="participant.attended ? 'bg-green-500' : 'bg-red-500'"></div>
-                  <span class="font-medium text-green-900">{{ participant.name }}</span>
-                  <span *ngIf="participant.organizer" class="text-xs bg-green-600 text-white px-1.5 py-0.5 rounded">ORG</span>
-                  <span *ngIf="participant.presenter" class="text-xs bg-purple-600 text-white px-1.5 py-0.5 rounded">PRES</span>
-                </div>
-                <div class="text-sm text-green-700 mb-1">{{ participant.email }}</div>
-                <div *ngIf="participant.department" class="text-xs text-green-600">{{ participant.department }}</div>
-                <div *ngIf="participant.title" class="text-xs text-gray-600">{{ participant.title }}</div>
-              </div>
-              <div class="flex flex-col items-end space-y-1">
-                <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">{{ participant.participantRole }}</span>
-                <div *ngIf="isEditing" class="flex space-x-1">
-                  <button (click)="editParticipant(participant)" class="text-green-600 hover:text-green-800">
-                    <mat-icon class="w-3 h-3">edit</mat-icon>
-                  </button>
-                  <button (click)="toggleParticipantAttendance(participant)" 
-                          class="text-gray-600 hover:text-gray-800"
-                          [title]="participant.attended ? 'Mark as absent' : 'Mark as attended'">
-                    <mat-icon class="w-3 h-3">{{ participant.attended ? 'person_remove' : 'person_add' }}</mat-icon>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Other Participants -->
-      <div class="participant-category" *ngIf="getParticipantsByType('OTHER').length > 0">
-        <div class="flex items-center mb-3">
-          <div class="w-4 h-4 bg-orange-500 rounded-full mr-3"></div>
-          <h3 class="text-md font-semibold text-orange-700">Other Participants ({{ getParticipantsByType('OTHER').length }})</h3>
-          <div class="ml-auto text-sm text-gray-500">
-            {{ getAttendanceStats('OTHER').attended }} attended, {{ getAttendanceStats('OTHER').absent }} absent
-          </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
-             cdkDropList 
-             [cdkDropListData]="getParticipantsByType('OTHER')"
-             (cdkDropListDropped)="onParticipantDrop($event, 'OTHER')">
-          <div *ngFor="let participant of getParticipantsByType('OTHER')" 
-               class="participant-card bg-orange-50 border border-orange-200 rounded-lg p-3 hover:shadow-sm transition-all cursor-move"
-               cdkDrag
-               [cdkDragData]="participant">
-            <div class="flex items-start justify-between">
-              <div class="flex-1">
-                <div class="flex items-center space-x-2 mb-1">
-                  <div class="w-2 h-2 rounded-full" [ngClass]="participant.attended ? 'bg-green-500' : 'bg-red-500'"></div>
-                  <span class="font-medium text-orange-900">{{ participant.name }}</span>
-                  <span *ngIf="participant.organizer" class="text-xs bg-orange-600 text-white px-1.5 py-0.5 rounded">ORG</span>
-                  <span *ngIf="participant.presenter" class="text-xs bg-purple-600 text-white px-1.5 py-0.5 rounded">PRES</span>
-                </div>
-                <div class="text-sm text-orange-700 mb-1">{{ participant.email }}</div>
-                <div *ngIf="participant.organization" class="text-xs text-orange-600">{{ participant.organization }}</div>
-                <div *ngIf="participant.title" class="text-xs text-gray-600">{{ participant.title }}</div>
-              </div>
-              <div class="flex flex-col items-end space-y-1">
-                <span class="text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-800">{{ participant.participantRole }}</span>
-                <div *ngIf="isEditing" class="flex space-x-1">
-                  <button (click)="editParticipant(participant)" class="text-orange-600 hover:text-orange-800">
-                    <mat-icon class="w-3 h-3">edit</mat-icon>
-                  </button>
-                  <button (click)="toggleParticipantAttendance(participant)" 
-                          class="text-gray-600 hover:text-gray-800"
-                          [title]="participant.attended ? 'Mark as absent' : 'Mark as attended'">
-                    <mat-icon class="w-3 h-3">{{ participant.attended ? 'person_remove' : 'person_add' }}</mat-icon>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Traditional List View -->
-    <div *ngIf="!showClassificationView" class="space-y-4">
-      <div>
-        <h3 class="text-md font-medium text-green-700 mb-3">Attended ({{ sortedAttended.length }})</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-          <label *ngFor="let participantName of sortedAttended" class="flex items-center p-3 bg-green-50 rounded-lg cursor-pointer hover:bg-green-100 transition-colors">
-            <input type="checkbox" [checked]="true" (change)="handleParticipantToggle(participantName)" class="rounded text-green-600 focus:ring-green-500 mr-3" />
-            <span class="text-green-800 font-medium">{{ participantName }}</span>
-          </label>
-        </div>
-      </div>
-      <div>
-        <h3 class="text-md font-medium text-red-700 mb-3">Absent ({{ sortedAbsent.length }})</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-          <label *ngFor="let participantName of sortedAbsent" class="flex items-center p-3 bg-red-50 rounded-lg cursor-pointer hover:bg-red-100 transition-colors">
-            <input type="checkbox" [checked]="false" (change)="handleParticipantToggle(participantName)" class="rounded text-red-600 focus:ring-red-500 mr-3" />
-            <span class="text-red-800 font-medium">{{ participantName }}</span>
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <!-- Add Participant Section (only visible in edit mode) -->
-    <div *ngIf="isEditing" class="mt-6 pt-4 border-t border-gray-200">
-      <div class="add-participant-section" *ngIf="!isAddingParticipant">
-        <button 
-          (click)="isAddingParticipant = true"
-          class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-          </svg>
-          Add Participant
-        </button>
-      </div>
-
-      <!-- Add Participant Form -->
-      <div *ngIf="isAddingParticipant" class="bg-white border border-gray-200 rounded-lg p-4 mt-4">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Add New Participant</h3>
-        
-        <div class="space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label for="new-participant-name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-              <input 
-                id="new-participant-name"
-                type="text"
-                [(ngModel)]="newParticipant.name" 
-                placeholder="Enter participant name"
-                title="Participant name"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            <div>
-              <label for="new-participant-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input 
-                id="new-participant-email"
-                type="email"
-                [(ngModel)]="newParticipant.email" 
-                placeholder="Enter email address"
-                title="Participant email"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label for="new-participant-type" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-              <select 
-                id="new-participant-type"
-                [(ngModel)]="newParticipant.participantType"
-                title="Select participant type"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                <option value="CLIENT">Client</option>
-                <option value="G37">G37 Team</option>
-                <option value="OTHER">Other</option>
-              </select>
-            </div>
-            <div>
-              <label for="new-participant-role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
-              <select 
-                id="new-participant-role"
-                [(ngModel)]="newParticipant.participantRole"
-                title="Select participant role"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                <option value="ORGANIZER">Organizer</option>
-                <option value="PRESENTER">Presenter</option>
-                <option value="ATTENDEE">Attendee</option>
-                <option value="OBSERVER">Observer</option>
-              </select>
-            </div>
-            <div>
-              <label for="new-participant-title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
-              <input 
-                id="new-participant-title"
-                type="text"
-                [(ngModel)]="newParticipant.title" 
-                placeholder="Job title or position"
-                title="Job title or position"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label for="new-participant-organization" class="block text-sm font-medium text-gray-700 mb-1">Organization</label>
-              <input 
-                id="new-participant-organization"
-                type="text"
-                [(ngModel)]="newParticipant.organization" 
-                placeholder="Company or organization"
-                title="Company or organization"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            <div>
-              <label for="new-participant-department" class="block text-sm font-medium text-gray-700 mb-1">Department</label>
-              <input 
-                id="new-participant-department"
-                type="text"
-                [(ngModel)]="newParticipant.department" 
-                placeholder="Department or team"
-                title="Department or team"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        <!-- Meeting Header Card -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+          <!-- Card Header -->
+          <div class="flex items-center justify-between p-4 border-b border-gray-200">
+            <h3 class="text-base font-semibold text-gray-900">Meeting Details</h3>
+            <div class="flex items-center space-x-2">
+              <!-- Edit button (visible when in global edit mode and not editing this card) -->
+              <button 
+                *ngIf="isEditing && !cardState.header.editing"
+                type="button"
+                (click)="toggleCardEdit('header')"
+                class="px-2 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors">
+                Edit
+              </button>
+              <!-- Cancel button (only visible when editing this card) -->
+              <button 
+                *ngIf="cardState.header.editing"
+                type="button"
+                (click)="toggleCardEdit('header')"
+                class="px-2 py-1 text-xs bg-red-100 text-red-700 hover:bg-red-200 rounded-md transition-colors">
+                Cancel
+              </button>
+              <!-- Save button (only visible when editing this card) -->
+              <button 
+                *ngIf="cardState.header.editing"
+                type="button"
+                (click)="saveCard('header')"
+                class="px-2 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded-md transition-colors">
+                Save
+              </button>
+              <!-- Collapse/Expand button -->
+              <button 
+                type="button"
+                (click)="toggleCardCollapse('header')"
+                class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+                <mat-icon class="w-4 h-4">{{ cardState.header.collapsed ? 'expand_more' : 'expand_less' }}</mat-icon>
+              </button>
+              <!-- Global Edit button (only on header card) -->
+              <button 
+                type="button"
+                (click)="toggleEditMode(); $event.preventDefault(); $event.stopPropagation()"
+                class="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                {{ isEditing ? 'Exit Edit' : 'Edit Meeting' }}
+              </button>
             </div>
           </div>
           
-          <div class="flex items-center space-x-6">
-            <div class="flex items-center">
-              <input 
-                type="checkbox" 
-                [(ngModel)]="newParticipant.isRequired"
-                id="required-participant"
-                class="rounded text-blue-600 focus:ring-blue-500 mr-2">
-              <label for="required-participant" class="text-sm font-medium text-gray-700">
-                Required Participant
-              </label>
+          <!-- Card Content -->
+          <div class="p-4" [hidden]="cardState.header.collapsed">
+            <!-- Read-only view -->
+            <div *ngIf="!cardState.header.editing">
+              <h1 class="text-xl font-semibold text-gray-900 mb-2">{{ editedMeeting.title }}</h1>
+              <div class="flex items-center space-x-4 text-sm text-gray-600">
+                <span class="flex items-center">
+                  <mat-icon class="w-4 h-4 mr-1">event</mat-icon>
+                  {{ editedMeeting.startTime | date:'M/d/yy, h:mm a' }}
+                </span>
+                <span class="flex items-center">
+                  <mat-icon class="w-4 h-4 mr-1">schedule</mat-icon>
+                  {{ editedMeeting.startTime | date:'shortTime' }}
+                </span>
+                <span class="flex items-center">
+                  <mat-icon class="w-4 h-4 mr-1">group</mat-icon>
+                  {{ allParticipants.length }} participants
+                </span>
+              </div>
             </div>
-            <div class="flex items-center">
-              <input 
-                type="checkbox" 
-                [(ngModel)]="newParticipant.organizer"
-                id="organizer-participant"
-                class="rounded text-blue-600 focus:ring-blue-500 mr-2">
-              <label for="organizer-participant" class="text-sm font-medium text-gray-700">
-                Organizer
-              </label>
-            </div>
-            <div class="flex items-center">
-              <input 
-                type="checkbox" 
-                [(ngModel)]="newParticipant.presenter"
-                id="presenter-participant"
-                class="rounded text-blue-600 focus:ring-blue-500 mr-2">
-              <label for="presenter-participant" class="text-sm font-medium text-gray-700">
-                Presenter
-              </label>
-            </div>
-          </div>
-        </div>
-        
-        <div class="flex space-x-3 mt-6">
-          <button 
-            (click)="handleAddParticipant()"
-            [disabled]="!newParticipant.name?.trim() || !newParticipant.email?.trim()"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
-            Add Participant
-          </button>
-          <button 
-            (click)="cancelAddParticipant()"
-            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Meeting Overview -->
-  <div class="bg-white rounded-lg border border-gray-200 p-6">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-900">Meeting Overview</h2>
-      <ng-container *ngIf="isEditing && !isEditingOverview; else editingOverviewBtns">
-        <button (click)="isEditingOverview = true" class="flex items-center px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-          <mat-icon class="w-4 h-4 mr-2">edit</mat-icon>
-          Edit Overview
-        </button>
-      </ng-container>
-      <ng-template #editingOverviewBtns>
-        <div *ngIf="isEditingOverview" class="flex space-x-2">
-          <button (click)="handleSaveOverview()" class="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-            <mat-icon class="w-4 h-4 mr-2">save</mat-icon>
-            Save
-          </button>
-          <button (click)="handleCancelOverview()" class="flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-            <mat-icon class="w-4 h-4 mr-2">close</mat-icon>
-            Cancel
-          </button>
-        </div>
-      </ng-template>
-    </div>
-    <div *ngIf="isEditingOverview; else overviewDisplay" class="space-y-4">
-      <div>
-        <label for="meeting-summary" class="block text-sm font-medium text-gray-700 mb-2">Summary</label>
-        <textarea id="meeting-summary" [(ngModel)]="editedMeeting.summary" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="3" title="Meeting summary" placeholder="Enter meeting summary..."></textarea>
-      </div>
-      <div>
-        <label for="meeting-details" class="block text-sm font-medium text-gray-700 mb-2">Details</label>
-        <textarea id="meeting-details" [(ngModel)]="editedMeeting.details" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="5" title="Meeting details" placeholder="Enter meeting details..."></textarea>
-      </div>
-      <div>
-        <label for="meeting-next-steps" class="block text-sm font-medium text-gray-700 mb-2">Next Steps</label>
-        <textarea id="meeting-next-steps" [(ngModel)]="editedMeeting.nextSteps" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="3" title="Next steps" placeholder="Enter next steps..."></textarea>
-      </div>
-    </div>
-    <ng-template #overviewDisplay>
-      <div class="space-y-4">
-        <div>
-          <h3 class="text-sm font-medium text-gray-700 mb-2">Summary</h3>
-          <p class="text-gray-900">{{ editedMeeting.summary || 'No summary available' }}</p>
-        </div>
-        <div>
-          <h3 class="text-sm font-medium text-gray-700 mb-2">Details</h3>
-          <p class="text-gray-900 whitespace-pre-wrap">{{ editedMeeting.details || 'No details available' }}</p>
-        </div>
-        <div>
-          <h3 class="text-sm font-medium text-gray-700 mb-2">Next Steps</h3>
-          <p class="text-gray-900 whitespace-pre-wrap">{{ editedMeeting.nextSteps || 'No next steps defined' }}</p>
-        </div>
-      </div>
-    </ng-template>
-  </div>
-
-  <!-- Pending Actions (mnm_pending integration) -->
-  <div class="bg-white rounded-lg border border-gray-200 p-6">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-900">Pending Actions 
-        <span class="text-sm text-gray-500">(Approval Workflow)</span>
-      </h2>
-      <div class="flex items-center space-x-2">
-        <button 
-          *ngIf="isEditing"
-          (click)="togglePendingActionsView()" 
-          class="flex items-center px-3 py-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
-          <mat-icon class="w-4 h-4 mr-2">workflow</mat-icon>
-          {{ showPendingActions ? 'Hide Pending' : 'Show Pending' }}
-        </button>
-        <button 
-          *ngIf="isEditing"
-          (click)="isAddingPendingAction = true" 
-          class="flex items-center px-3 py-2 bg-purple-600 text-white hover:bg-purple-700 rounded-lg transition-colors">
-          <mat-icon class="w-4 h-4 mr-2">add_task</mat-icon>
-          Add Pending Action
-        </button>
-      </div>
-    </div>
-
-    <!-- Pending Actions List -->
-    <div *ngIf="showPendingActions && pendingActions.length > 0" class="space-y-3 mb-6">
-      <div *ngFor="let pendingAction of pendingActions" 
-           class="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow"
-           [ngClass]="getPendingActionBorderClass(pendingAction.status)">
-        
-        <!-- Pending Action Header -->
-        <div class="flex items-start justify-between mb-3">
-          <div class="flex items-center space-x-3">
-            <mat-icon class="text-gray-500">{{ getActionTypeIcon(pendingAction.actionType) }}</mat-icon>
-            <div>
-              <h4 class="font-medium text-gray-900">{{ pendingAction.title }}</h4>
-              <p class="text-sm text-gray-600">{{ pendingAction.description }}</p>
-            </div>
-          </div>
-          <div class="flex items-center space-x-2">
-            <span class="px-2 py-1 rounded-full text-xs font-medium" 
-                  [ngClass]="getPriorityColor(pendingAction.priority)">
-              {{ pendingAction.priority }}
-            </span>
-            <span class="px-2 py-1 rounded-full text-xs font-medium" 
-                  [ngClass]="getStatusColor(pendingAction.status)">
-              {{ pendingAction.status }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Pending Action Details -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-3">
-          <div *ngIf="pendingAction.assigneeName">
-            <span class="font-medium">Assigned to:</span> {{ pendingAction.assigneeName }}
-          </div>
-          <div *ngIf="pendingAction.dueDate">
-            <span class="font-medium">Due:</span> {{ pendingAction.dueDate | date:'short' }}
-          </div>
-          <div *ngIf="pendingAction.reporterName">
-            <span class="font-medium">Reporter:</span> {{ pendingAction.reporterName }}
-          </div>
-        </div>
-
-        <!-- Approval Action Buttons -->
-        <div *ngIf="canManageApprovals && (pendingAction.status === 'PENDING_APPROVAL' || pendingAction.status === 'NEW')" 
-             class="flex items-center space-x-2 pt-3 border-t border-gray-100">
-          <button 
-            (click)="approvePendingAction(pendingAction)"
-            class="flex items-center px-3 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors">
-            <mat-icon class="w-4 h-4 mr-1">check</mat-icon>
-            Approve
-          </button>
-          <button 
-            (click)="rejectPendingAction(pendingAction)"
-            class="flex items-center px-3 py-1.5 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 transition-colors">
-            <mat-icon class="w-4 h-4 mr-1">close</mat-icon>
-            Reject
-          </button>
-          <button 
-            (click)="editPendingAction(pendingAction)"
-            class="flex items-center px-3 py-1.5 text-blue-600 hover:bg-blue-50 text-sm rounded-md transition-colors">
-            <mat-icon class="w-4 h-4 mr-1">edit</mat-icon>
-            Edit
-          </button>
-        </div>
-
-        <!-- Workflow Status -->
-        <div *ngIf="pendingAction.n8nWorkflowStatus && pendingAction.status === 'APPROVED'" 
-             class="mt-2 flex items-center text-xs text-gray-500">
-          <mat-icon class="w-3 h-3 mr-1">settings</mat-icon>
-          N8N Workflow: {{ pendingAction.n8nWorkflowStatus }}
-          <span *ngIf="pendingAction.n8nExecutionId" class="ml-2">({{ pendingAction.n8nExecutionId }})</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Add Pending Action Form -->
-    <div *ngIf="isAddingPendingAction" class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">Add New Pending Action</h3>
-      
-      <div class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label for="pending-action-title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
-            <input 
-              id="pending-action-title"
-              type="text"
-              [(ngModel)]="newPendingAction.title" 
-              placeholder="Enter action title"
-              title="Action title"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-          </div>
-          <div>
-            <label for="pending-action-type" class="block text-sm font-medium text-gray-700 mb-1">Action Type</label>
-            <select 
-              id="pending-action-type"
-              [(ngModel)]="newPendingAction.actionType"
-              title="Select action type"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-              <option value="TASK">Task</option>
-              <option value="DECISION">Decision</option>
-              <option value="FOLLOW_UP">Follow Up</option>
-              <option value="APPROVAL">Approval</option>
-              <option value="REVIEW">Review</option>
-              <option value="COMMUNICATION">Communication</option>
-              <option value="OTHER">Other</option>
-            </select>
-          </div>
-        </div>
-        
-        <div>
-          <label for="pending-action-description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea 
-            id="pending-action-description"
-            [(ngModel)]="newPendingAction.description" 
-            placeholder="Enter detailed description"
-            title="Action description"
-            rows="3"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"></textarea>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label for="pending-action-priority" class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-            <select 
-              id="pending-action-priority"
-              [(ngModel)]="newPendingAction.priority"
-              title="Select priority level"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-              <option value="URGENT">Urgent</option>
-            </select>
-          </div>
-          <div>
-            <label for="pending-action-due-date" class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-            <input 
-              id="pending-action-due-date"
-              type="date"
-              [(ngModel)]="newPendingAction.dueDate"
-              title="Due date"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-          </div>
-          <div>
-            <label for="pending-action-estimated-hours" class="block text-sm font-medium text-gray-700 mb-1">Estimated Hours</label>
-            <input 
-              id="pending-action-estimated-hours"
-              type="number"
-              [(ngModel)]="newPendingAction.estimatedHours"
-              min="0"
-              step="0.5"
-              placeholder="0"
-              title="Estimated hours"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-          </div>
-        </div>
-
-        <div class="flex items-center">
-          <input 
-            type="checkbox" 
-            [(ngModel)]="newPendingAction.approvalRequired"
-            id="approval-required"
-            title="Requires management approval"
-            class="rounded text-purple-600 focus:ring-purple-500 mr-2">
-          <label for="approval-required" class="text-sm font-medium text-gray-700">
-            Requires Management Approval
-          </label>
-        </div>
-      </div>
-      
-      <div class="flex space-x-3 mt-6">
-        <button 
-          (click)="handleAddPendingAction()"
-          [disabled]="!newPendingAction.title?.trim() || !newPendingAction.description?.trim()"
-          class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
-          Add Pending Action
-        </button>
-        <button 
-          (click)="cancelAddPendingAction()"
-          class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
-          Cancel
-        </button>
-      </div>
-    </div>
-
-    <!-- Empty State -->
-    <div *ngIf="showPendingActions && pendingActions.length === 0" class="text-center py-8">
-      <mat-icon class="w-12 h-12 text-gray-400 mx-auto mb-4">task_alt</mat-icon>
-      <p class="text-gray-500">No pending actions for this meeting.</p>
-      <p class="text-sm text-gray-400 mt-1">Use "Add Pending Action" to create approval workflow items.</p>
-    </div>
-  </div>
-
-  <!-- Action Items -->
-  <div class="bg-white rounded-lg border border-gray-200 p-6">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-900">Action Items 
-        <span class="text-sm text-gray-500">(Regular Tasks)</span>
-      </h2>
-      <button 
-        *ngIf="isEditing"
-        (click)="isEditingActionItems = !isEditingActionItems" 
-        class="flex items-center px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-        </svg>
-        {{ isEditingActionItems ? 'Done Editing' : 'Edit Action Items' }}
-      </button>
-    </div>
-    <ng-container *ngIf="editedMeeting.actionItems?.length; else noActionItems">
-      <div *ngFor="let item of editedMeeting.actionItems" class="flex items-center justify-between p-4 border border-gray-200 rounded-lg mb-2">
-        <div class="flex-1">
-          <ng-container *ngIf="isEditingActionItems; else actionItemDisplay">
-            <div class="space-y-4">
+            
+            <!-- Edit view -->
+            <div *ngIf="cardState.header.editing" class="space-y-4">
               <div>
-                <label [for]="'edit-action-item-description-' + item.id" class="block text-sm font-medium text-gray-700 mb-2">Task Description</label>
-                <textarea [id]="'edit-action-item-description-' + item.id" [(ngModel)]="item.description" (ngModelChange)="handleUpdateActionItem(item.id, { description: $event })" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none" rows="2" title="Task description" placeholder="Enter task description..."></textarea>
+                <label for="meeting-title" class="block text-sm font-medium text-gray-700 mb-1">Meeting Title</label>
+                <input 
+                  id="meeting-title"
+                  type="text" 
+                  [(ngModel)]="editedMeeting.title"
+                  placeholder="Enter meeting title"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               </div>
-              <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label [for]="'edit-action-item-assignee-' + item.id" class="block text-sm font-medium text-gray-700 mb-2">Assignee</label>
-                  <input [id]="'edit-action-item-assignee-' + item.id" type="text" [value]="item.assignee?.firstName || 'Unassigned'" readonly class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50" title="Assignee">
+                  <label for="meeting-start-date" class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <input 
+                    id="meeting-start-date"
+                    type="datetime-local" 
+                    [ngModel]="editedMeeting.startTime | date:'yyyy-MM-ddTHH:mm'"
+                    (ngModelChange)="editedMeeting.startTime = $event"
+                    title="Set meeting start date and time"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
-                  <label [for]="'edit-action-item-due-date-' + item.id" class="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
-                  <input [id]="'edit-action-item-due-date-' + item.id" type="date" [value]="item.dueDate" readonly class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50" title="Due date" placeholder="Due date" />
-                </div>
-                <div>
-                  <label [for]="'edit-action-item-priority-' + item.id" class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-                  <select [id]="'edit-action-item-priority-' + item.id" disabled class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50" title="Priority">
-                    <option>{{ item.priority }}</option>
-                  </select>
-                </div>
-                <div>
-                  <label [for]="'edit-action-item-status-' + item.id" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                  <select [id]="'edit-action-item-status-' + item.id" disabled class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50" title="Status">
-                    <option>{{ item.status }}</option>
-                  </select>
+                  <label for="meeting-end-date" class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <input 
+                    id="meeting-end-date"
+                    type="datetime-local" 
+                    [ngModel]="editedMeeting.endTime | date:'yyyy-MM-ddTHH:mm'"
+                    (ngModelChange)="editedMeeting.endTime = $event"
+                    title="Set meeting end date and time"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
               </div>
             </div>
-          </ng-container>
-          <ng-template #actionItemDisplay>
-            <div class="flex items-center space-x-3 mb-2">
-              <mat-icon class="w-4 h-4 text-gray-400">check_box</mat-icon>
-              <span class="font-medium text-gray-900">{{ item.description }}</span>
-              <span class="px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getPriorityColor(item.priority || 'medium')">
-                {{ item.priority || 'medium' }}
-              </span>
-              <span class="px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getStatusColor(item.status || 'pending')">
-                {{ item.status || 'pending' }}
-              </span>
+          </div>
+        </div>
+
+        <!-- Meeting Participants -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+          <!-- Card Header -->
+          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+            <h3 class="text-base font-semibold text-gray-900">Meeting Participants ({{ allParticipants.length }} total)</h3>
+            <div class="flex items-center space-x-2">
+              <!-- Edit button (visible when in global edit mode and not editing this card) -->
+              <button 
+                *ngIf="isEditing && !cardState.participants.editing"
+                type="button"
+                (click)="toggleCardEdit('participants')"
+                class="px-2 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors">
+                Edit
+              </button>
+              <!-- Cancel button (only visible when editing this card) -->
+              <button 
+                *ngIf="cardState.participants.editing"
+                type="button"
+                (click)="toggleCardEdit('participants')"
+                class="px-2 py-1 text-xs bg-red-100 text-red-700 hover:bg-red-200 rounded-md transition-colors">
+                Cancel
+              </button>
+              <!-- Save button (only visible when editing this card) -->
+              <button 
+                *ngIf="cardState.participants.editing"
+                type="button"
+                (click)="saveCard('participants')"
+                class="px-2 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded-md transition-colors">
+                Save
+              </button>
+              <!-- Collapse/Expand button -->
+              <button 
+                type="button"
+                (click)="toggleCardCollapse('participants')"
+                class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+                <mat-icon class="w-4 h-4">{{ cardState.participants.collapsed ? 'expand_more' : 'expand_less' }}</mat-icon>
+              </button>
             </div>
-            <div class="text-sm text-gray-600">
-              Assigned to: {{ item.assignee?.firstName || 'Unassigned' }} <span *ngIf="item.dueDate">• Due: {{ item.dueDate | date:'short' }}</span>
+          </div>
+          
+          <div class="p-4" [hidden]="cardState.participants.collapsed">
+            <!-- Simple Participant List -->
+            <div class="space-y-3">
+              
+              <!-- Client Participants -->
+              <div>
+                <div class="flex items-center mb-2">
+                  <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                  <h4 class="text-sm font-medium text-gray-900">Client Participants ({{ getParticipantsByType('CLIENT').length }})</h4>
+                  <span class="ml-auto text-xs text-gray-500">{{ getAttendanceStats('CLIENT').attended }} attended • {{ getAttendanceStats('CLIENT').absent }} absent</span>
+                </div>
+                <div class="ml-5 space-y-1">
+                  <div *ngFor="let participant of getParticipantsByType('CLIENT')" class="flex items-center justify-between py-1">
+                    <div class="flex items-center space-x-2">
+                      <span class="text-sm text-gray-800">{{ participant.name }}</span>
+                      <span *ngIf="participant.organizer" class="text-xs text-orange-600 font-medium">ATTENDEE</span>
+                    </div>
+                    <span class="text-xs" [ngClass]="participant.attended ? 'text-green-600' : 'text-red-600'">
+                      {{ participant.attended ? 'attended' : 'absent' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- G37 Team -->
+              <div>
+                <div class="flex items-center mb-2">
+                  <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                  <h4 class="text-sm font-medium text-gray-900">G37 Team ({{ getParticipantsByType('G37').length }})</h4>
+                  <span class="ml-auto text-xs text-gray-500">{{ getAttendanceStats('G37').attended }} attended • {{ getAttendanceStats('G37').absent }} absent</span>
+                </div>
+                <div class="ml-5 space-y-1">
+                  <div *ngFor="let participant of getParticipantsByType('G37')" class="flex items-center justify-between py-1">
+                    <div class="flex items-center space-x-2">
+                      <span class="text-sm text-gray-800">{{ participant.name }}</span>
+                      <span *ngIf="participant.organizer" class="text-xs text-orange-600 font-medium">ATTENDEE</span>
+                    </div>
+                    <span class="text-xs" [ngClass]="participant.attended ? 'text-green-600' : 'text-red-600'">
+                      {{ participant.attended ? 'attended' : 'absent' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Other Participants -->
+              <div *ngIf="getParticipantsByType('OTHER').length > 0">
+                <div class="flex items-center mb-2">
+                  <div class="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
+                  <h4 class="text-sm font-medium text-gray-900">Other Participants ({{ getParticipantsByType('OTHER').length }})</h4>
+                  <span class="ml-auto text-xs text-gray-500">{{ getAttendanceStats('OTHER').attended }} attended • {{ getAttendanceStats('OTHER').absent }} absent</span>
+                </div>
+                <div class="ml-5 space-y-1">
+                  <div *ngFor="let participant of getParticipantsByType('OTHER')" class="flex items-center justify-between py-1">
+                    <div class="flex items-center space-x-2">
+                      <span class="text-sm text-gray-800">{{ participant.name }}</span>
+                      <span *ngIf="participant.organizer" class="text-xs text-orange-600 font-medium">ATTENDEE</span>
+                    </div>
+                    <span class="text-xs" [ngClass]="participant.attended ? 'text-green-600' : 'text-red-600'">
+                      {{ participant.attended ? 'attended' : 'absent' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
             </div>
-          </ng-template>
+          </div>
         </div>
-                <button disabled class="ml-3 p-2 text-gray-400 rounded-lg" title="Delete action item (disabled)">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-          </svg>
-        </button>
+
+        <!-- Meeting Overview -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+          <!-- Card Header -->
+          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+            <h3 class="text-base font-semibold text-gray-900">Meeting Overview</h3>
+            <div class="flex items-center space-x-2">
+              <!-- Edit button (visible when in global edit mode and not editing this card) -->
+              <button 
+                *ngIf="isEditing && !cardState.overview.editing"
+                type="button"
+                (click)="toggleCardEdit('overview')"
+                class="px-2 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors">
+                Edit
+              </button>
+              <!-- Cancel button (only visible when editing this card) -->
+              <button 
+                *ngIf="cardState.overview.editing"
+                type="button"
+                (click)="toggleCardEdit('overview')"
+                class="px-2 py-1 text-xs bg-red-100 text-red-700 hover:bg-red-200 rounded-md transition-colors">
+                Cancel
+              </button>
+              <!-- Save button (only visible when editing this card) -->
+              <button 
+                *ngIf="cardState.overview.editing"
+                type="button"
+                (click)="saveCard('overview')"
+                class="px-2 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded-md transition-colors">
+                Save
+              </button>
+              <!-- Collapse/Expand button -->
+              <button 
+                type="button"
+                (click)="toggleCardCollapse('overview')"
+                class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+                <mat-icon class="w-4 h-4">{{ cardState.overview.collapsed ? 'expand_more' : 'expand_less' }}</mat-icon>
+              </button>
+            </div>
+          </div>
+          
+          <div class="p-4 space-y-4" [hidden]="cardState.overview.collapsed">
+            <!-- Summary -->
+            <div class="border-l-4 border-blue-500 pl-4">
+              <h4 class="text-sm font-medium text-gray-900 mb-1">Summary</h4>
+              <!-- Read-only view -->
+              <div *ngIf="!cardState.overview.editing">
+                <p class="text-sm text-gray-700" *ngIf="editedMeeting.summary; else noSummary">{{ editedMeeting.summary }}</p>
+                <ng-template #noSummary>
+                  <p class="text-sm text-gray-400 italic">Sprint retrospective</p>
+                </ng-template>
+              </div>
+              <!-- Edit view -->
+              <textarea 
+                *ngIf="cardState.overview.editing"
+                [(ngModel)]="editedMeeting.summary"
+                placeholder="Enter meeting summary..."
+                rows="3"
+                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </textarea>
+            </div>
+            
+            <!-- Details -->
+            <div class="border-l-4 border-green-500 pl-4">
+              <h4 class="text-sm font-medium text-gray-900 mb-1">Details</h4>
+              <!-- Read-only view -->
+              <div *ngIf="!cardState.overview.editing">
+                <p class="text-sm text-gray-700" *ngIf="editedMeeting.details; else noDetails">{{ editedMeeting.details }}</p>
+                <ng-template #noDetails>
+                  <div class="text-sm text-gray-400 italic space-y-1">
+                    <p>Analyzed sprint outcomes and blockers</p>
+                  </div>
+                </ng-template>
+              </div>
+              <!-- Edit view -->
+              <textarea 
+                *ngIf="cardState.overview.editing"
+                [(ngModel)]="editedMeeting.details"
+                placeholder="Enter meeting details..."
+                rows="4"
+                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </textarea>
+            </div>
+            
+            <!-- Next Steps -->
+            <div class="border-l-4 border-purple-500 pl-4">
+              <h4 class="text-sm font-medium text-gray-900 mb-1">Next Steps</h4>
+              <!-- Read-only view -->
+              <div *ngIf="!cardState.overview.editing">
+                <p class="text-sm text-gray-700" *ngIf="editedMeeting.nextSteps; else noNextSteps">{{ editedMeeting.nextSteps }}</p>
+                <ng-template #noNextSteps>
+                  <div class="text-sm text-gray-400 italic space-y-1">
+                    <p>Schedule follow-up</p>
+                  </div>
+                </ng-template>
+              </div>
+              <!-- Edit view -->
+              <textarea 
+                *ngIf="cardState.overview.editing"
+                [(ngModel)]="editedMeeting.nextSteps"
+                placeholder="Enter next steps..."
+                rows="3"
+                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pending Actions -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+          <!-- Card Header -->
+          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+            <h3 class="text-base font-semibold text-gray-900">Pending Actions <span class="text-sm text-gray-500 font-normal">(Approval Workflow)</span></h3>
+            <div class="flex items-center space-x-2">
+              <!-- Add Pending Action button (only visible when in global edit mode and not adding/editing) -->
+              <button 
+                *ngIf="isEditing && !isAddingPendingAction && !cardState.pendingActions.editing"
+                type="button"
+                (click)="isAddingPendingAction = true"
+                class="px-2 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded-md transition-colors">
+                + Add Pending Action
+              </button>
+              <!-- Edit button (only visible when in global edit mode, not editing this card, and user has interacted) -->
+              <button 
+                *ngIf="false"
+                type="button"
+                (click)="toggleCardEdit('pendingActions')"
+                class="px-2 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors">
+                Edit
+              </button>
+              <!-- Cancel button (only visible when editing this card) -->
+              <button 
+                *ngIf="cardState.pendingActions.editing"
+                type="button"
+                (click)="toggleCardEdit('pendingActions')"
+                class="px-2 py-1 text-xs bg-red-100 text-red-700 hover:bg-red-200 rounded-md transition-colors">
+                Cancel
+              </button>
+              <!-- Save button (only visible when editing this card) -->
+              <button 
+                *ngIf="cardState.pendingActions.editing"
+                type="button"
+                (click)="saveCard('pendingActions')"
+                class="px-2 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded-md transition-colors">
+                Save
+              </button>
+              <!-- Collapse/Expand button -->
+              <button 
+                type="button"
+                (click)="toggleCardCollapse('pendingActions')"
+                class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+                <mat-icon class="w-4 h-4">{{ cardState.pendingActions.collapsed ? 'expand_more' : 'expand_less' }}</mat-icon>
+              </button>
+            </div>
+          </div>
+          <div class="p-4" [hidden]="cardState.pendingActions.collapsed">
+            
+            <!-- Add Pending Action Form -->
+            <div *ngIf="isAddingPendingAction" class="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <h4 class="text-sm font-medium text-gray-900 mb-3">Add New Pending Action</h4>
+              
+              <div class="space-y-3">
+                <!-- Title -->
+                <div>
+                  <label for="pending-title" class="block text-xs font-medium text-gray-700 mb-1">Title *</label>
+                  <input 
+                    id="pending-title"
+                    type="text" 
+                    [(ngModel)]="newPendingAction.title"
+                    placeholder="Enter pending action title..."
+                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <!-- Description -->
+                <div>
+                  <label for="pending-description" class="block text-xs font-medium text-gray-700 mb-1">Description *</label>
+                  <textarea 
+                    id="pending-description"
+                    [(ngModel)]="newPendingAction.description"
+                    placeholder="Enter detailed description..."
+                    rows="2"
+                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  </textarea>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <!-- Assigned To -->
+                  <div>
+                    <label for="pending-assignee" class="block text-xs font-medium text-gray-700 mb-1">Assigned To</label>
+                    <select 
+                      id="pending-assignee"
+                      [(ngModel)]="newPendingAction.assigneeName"
+                      class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="">Select assignee...</option>
+                      <option *ngFor="let participant of editedMeeting.participants" [value]="participant.name">
+                        {{ participant.name }}
+                      </option>
+                    </select>
+                  </div>
+                  
+                  <!-- Due Date -->
+                  <div>
+                    <label for="pending-duedate" class="block text-xs font-medium text-gray-700 mb-1">Due Date</label>
+                    <input 
+                      id="pending-duedate"
+                      type="datetime-local" 
+                      [(ngModel)]="newPendingAction.dueDate"
+                      class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  </div>
+                  
+                  <!-- Priority -->
+                  <div>
+                    <label for="pending-priority" class="block text-xs font-medium text-gray-700 mb-1">Priority</label>
+                    <select 
+                      id="pending-priority"
+                      [(ngModel)]="newPendingAction.priority"
+                      class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="LOW">Low</option>
+                      <option value="MEDIUM">Medium</option>
+                      <option value="HIGH">High</option>
+                      <option value="URGENT">Urgent</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex items-center space-x-2 pt-2">
+                  <button 
+                    type="button"
+                    (click)="handleAddPendingAction()"
+                    [disabled]="!newPendingAction.title?.trim() || !newPendingAction.description?.trim()"
+                    class="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
+                    Add Pending Action
+                  </button>
+                  <button 
+                    type="button"
+                    (click)="cancelAddPendingAction()"
+                    class="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Pending Actions List -->
+            <ng-container *ngIf="pendingActions && pendingActions.length; else noPendingActions">
+              <div class="space-y-2">
+                <div *ngFor="let action of pendingActions; let i = index" 
+                     class="border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                  
+                  <!-- Read-only view -->
+                  <div *ngIf="!action.editing" class="flex items-center justify-between p-3">
+                    <div class="flex items-center space-x-3">
+                      <!-- Status Icon -->
+                      <div class="flex-shrink-0">
+                        <mat-icon class="w-5 h-5" 
+                                  [ngClass]="action.status === 'APPROVED' ? 'text-green-600' : 
+                                            action.status === 'REJECTED' ? 'text-red-600' : 'text-yellow-600'">
+                          {{ action.status === 'APPROVED' ? 'check_circle' : 
+                             action.status === 'REJECTED' ? 'cancel' : 'pending' }}
+                        </mat-icon>
+                      </div>
+                      
+                      <!-- Action Info -->
+                      <div class="flex-1 min-w-0">
+                        <h4 class="text-sm font-medium text-gray-900">{{ action.title }}</h4>
+                        <p class="text-xs text-gray-600 mt-1">{{ action.description }}</p>
+                        <div class="flex items-center space-x-4 text-xs text-gray-500 mt-1">
+                          <span>Assigned to: {{ action.assigneeName || 'Unassigned' }}</span>
+                          <span *ngIf="action.dueDate">Due: {{ action.dueDate | date:'M/d/yy, h:mm a' }}</span>
+                          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                                [ngClass]="getPriorityColor(action.priority || 'MEDIUM')">
+                            {{ action.priority || 'MEDIUM' }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="flex items-center space-x-2">
+                      <!-- Status Badge -->
+                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" 
+                            [ngClass]="getStatusColor(action.status || 'PENDING')">
+                        {{ action.status || 'PENDING' }}
+                      </span>
+                      
+                      <!-- Edit button (only visible in edit mode) -->
+                      <button 
+                        *ngIf="isEditing"
+                        type="button"
+                        (click)="startEditPendingAction(action)"
+                        class="p-1 text-blue-400 hover:text-blue-600 transition-colors"
+                        title="Edit pending action">
+                        <mat-icon class="w-4 h-4">edit</mat-icon>
+                      </button>
+                      
+                      <!-- Delete button (only visible in edit mode) -->
+                      <button 
+                        *ngIf="isEditing"
+                        type="button"
+                        (click)="action.id && handleDeletePendingAction(action.id)"
+                        class="p-1 text-red-400 hover:text-red-600 transition-colors"
+                        title="Delete pending action">
+                        <mat-icon class="w-4 h-4">delete</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- Edit view -->
+                  <div *ngIf="action.editing" class="p-3 bg-gray-50">
+                    <h5 class="text-sm font-medium text-gray-900 mb-3">Edit Pending Action</h5>
+                    
+                    <div class="space-y-3">
+                      <!-- Title -->
+                      <div>
+                        <label [for]="'edit-pending-title-' + i" class="block text-xs font-medium text-gray-700 mb-1">Title *</label>
+                        <input 
+                          [id]="'edit-pending-title-' + i"
+                          type="text" 
+                          [(ngModel)]="action.title"
+                          placeholder="Enter pending action title..."
+                          class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      </div>
+                      
+                      <!-- Description -->
+                      <div>
+                        <label [for]="'edit-pending-description-' + i" class="block text-xs font-medium text-gray-700 mb-1">Description *</label>
+                        <textarea 
+                          [id]="'edit-pending-description-' + i"
+                          [(ngModel)]="action.description"
+                          placeholder="Enter detailed description..."
+                          rows="2"
+                          class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </textarea>
+                      </div>
+                      
+                      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <!-- Assigned To -->
+                        <div>
+                          <label [for]="'edit-pending-assignee-' + i" class="block text-xs font-medium text-gray-700 mb-1">Assigned To</label>
+                          <select 
+                            [id]="'edit-pending-assignee-' + i"
+                            [(ngModel)]="action.assigneeName"
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select assignee...</option>
+                            <option *ngFor="let participant of editedMeeting.participants" [value]="participant.name">
+                              {{ participant.name }}
+                            </option>
+                          </select>
+                        </div>
+                        
+                        <!-- Due Date -->
+                        <div>
+                          <label [for]="'edit-pending-duedate-' + i" class="block text-xs font-medium text-gray-700 mb-1">Due Date</label>
+                          <input 
+                            [id]="'edit-pending-duedate-' + i"
+                            type="datetime-local" 
+                            [(ngModel)]="action.dueDate"
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <!-- Priority -->
+                        <div>
+                          <label [for]="'edit-pending-priority-' + i" class="block text-xs font-medium text-gray-700 mb-1">Priority</label>
+                          <select 
+                            [id]="'edit-pending-priority-' + i"
+                            [(ngModel)]="action.priority"
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="LOW">Low</option>
+                            <option value="MEDIUM">Medium</option>
+                            <option value="HIGH">High</option>
+                            <option value="URGENT">Urgent</option>
+                          </select>
+                        </div>
+                      </div>
+                      
+                      <!-- Action Buttons -->
+                      <div class="flex items-center space-x-2 pt-2">
+                        <button 
+                          type="button"
+                          (click)="saveEditPendingAction(action)"
+                          [disabled]="!action.title.trim() || !action.description.trim()"
+                          class="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
+                          Save Changes
+                        </button>
+                        <button 
+                          type="button"
+                          (click)="cancelEditPendingAction(action)"
+                          class="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors">
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+            
+            <ng-template #noPendingActions>
+              <div class="text-center py-6">
+                <mat-icon class="w-8 h-8 text-gray-400 mx-auto mb-2">task_alt</mat-icon>
+                <p class="text-sm text-gray-500">No pending actions for this meeting</p>
+              </div>
+            </ng-template>
+          </div>
+        </div>
+
+        <!-- Action Items -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+          <!-- Card Header -->
+          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+            <h3 class="text-base font-semibold text-gray-900">Action Items <span class="text-sm text-gray-500 font-normal">(Regular Tasks)</span></h3>
+            <div class="flex items-center space-x-2">
+              <!-- Add Action Item button (only visible when in global edit mode and not adding/editing) -->
+              <button 
+                *ngIf="isEditing && !isEditingActionItems && !cardState.actionItems.editing"
+                type="button"
+                (click)="isEditingActionItems = true"
+                class="px-2 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded-md transition-colors">
+                + Add Action Item
+              </button>
+              <!-- Edit button (only visible when in global edit mode, not editing this card, and user has interacted) -->
+              <button 
+                *ngIf="false"
+                type="button"
+                (click)="toggleCardEdit('actionItems')"
+                class="px-2 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors">
+                Edit
+              </button>
+              <!-- Cancel button (only visible when editing this card) -->
+              <button 
+                *ngIf="cardState.actionItems.editing"
+                type="button"
+                (click)="toggleCardEdit('actionItems')"
+                class="px-2 py-1 text-xs bg-red-100 text-red-700 hover:bg-red-200 rounded-md transition-colors">
+                Cancel
+              </button>
+              <!-- Save button (only visible when editing this card) -->
+              <button 
+                *ngIf="cardState.actionItems.editing"
+                type="button"
+                (click)="saveCard('actionItems')"
+                class="px-2 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded-md transition-colors">
+                Save
+              </button>
+              <!-- Collapse/Expand button -->
+              <button 
+                type="button"
+                (click)="toggleCardCollapse('actionItems')"
+                class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+                <mat-icon class="w-4 h-4">{{ cardState.actionItems.collapsed ? 'expand_more' : 'expand_less' }}</mat-icon>
+              </button>
+            </div>
+          </div>
+          
+          <div class="p-4" [hidden]="cardState.actionItems.collapsed">
+            
+            <!-- Add Action Item Form -->
+            <div *ngIf="isEditingActionItems" class="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <h4 class="text-sm font-medium text-gray-900 mb-3">Add New Action Item</h4>
+              
+              <div class="space-y-3">
+                <!-- Title -->
+                <div>
+                  <label for="actionitem-title" class="block text-xs font-medium text-gray-700 mb-1">Title *</label>
+                  <input 
+                    id="actionitem-title"
+                    type="text" 
+                    [(ngModel)]="newActionItem.title"
+                    placeholder="Enter action item title..."
+                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <!-- Description -->
+                <div>
+                  <label for="actionitem-description" class="block text-xs font-medium text-gray-700 mb-1">Description *</label>
+                  <textarea 
+                    id="actionitem-description"
+                    [(ngModel)]="newActionItem.description"
+                    placeholder="Enter detailed description..."
+                    rows="2"
+                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  </textarea>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <!-- Assigned To -->
+                  <div>
+                    <label for="actionitem-assignee" class="block text-xs font-medium text-gray-700 mb-1">Assigned To</label>
+                    <select 
+                      id="actionitem-assignee"
+                      [(ngModel)]="newActionItem.assignedTo"
+                      title="Select assignee for this action item"
+                      class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="">Select assignee...</option>
+                      <option *ngFor="let participant of editedMeeting.participants" [value]="participant.name">
+                        {{ participant.name }}
+                      </option>
+                    </select>
+                  </div>
+                  
+                  <!-- Due Date -->
+                  <div>
+                    <label for="actionitem-duedate" class="block text-xs font-medium text-gray-700 mb-1">Due Date</label>
+                    <input 
+                      id="actionitem-duedate"
+                      type="datetime-local" 
+                      [(ngModel)]="newActionItem.dueDate"
+                      title="Set due date for this action item"
+                      class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  </div>
+                  
+                  <!-- Priority -->
+                  <div>
+                    <label for="actionitem-priority" class="block text-xs font-medium text-gray-700 mb-1">Priority</label>
+                    <select 
+                      id="actionitem-priority"
+                      [(ngModel)]="newActionItem.priority"
+                      title="Set priority level for this action item"
+                      class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="LOW">Low</option>
+                      <option value="MEDIUM">Medium</option>
+                      <option value="HIGH">High</option>
+                      <option value="URGENT">Urgent</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex items-center space-x-2 pt-2">
+                  <button 
+                    type="button"
+                    (click)="handleAddActionItem()"
+                    [disabled]="!newActionItem.title?.trim() || !newActionItem.description?.trim()"
+                    class="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
+                    Add Action Item
+                  </button>
+                  <button 
+                    type="button"
+                    (click)="isEditingActionItems = false; resetNewActionItem()"
+                    class="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Action Items List -->
+            <ng-container *ngIf="editedMeeting.actionItems && editedMeeting.actionItems.length; else noActionItems">
+              <div class="space-y-2">
+                <div *ngFor="let item of editedMeeting.actionItems; let i = index" 
+                     class="border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                  
+                  <!-- Read-only view -->
+                  <div *ngIf="!item.editing" class="flex items-center justify-between p-3">
+                    <div class="flex items-center space-x-3">
+                      <!-- Checkbox -->
+                      <div class="flex-shrink-0">
+                        <label class="sr-only" [for]="'checkbox-' + item.id">{{ (item.status === 'completed' || item.status === 'COMPLETED') ? 'Mark as incomplete' : 'Mark as complete' }}</label>
+                        <input type="checkbox" 
+                               [id]="'checkbox-' + item.id"
+                               [checked]="(item.status === 'completed' || item.status === 'COMPLETED')"
+                               [title]="(item.status === 'completed' || item.status === 'COMPLETED') ? 'Mark as incomplete' : 'Mark as complete'"
+                               [attr.aria-label]="(item.status === 'completed' || item.status === 'COMPLETED') ? 'Mark as incomplete' : 'Mark as complete'"
+                               (change)="toggleActionItemStatus(item)"
+                               class="rounded border-gray-300 text-green-600 focus:ring-green-500">
+                      </div>
+                      
+                      <!-- Task Info -->
+                      <div class="flex-1 min-w-0">
+                        <h4 class="text-sm font-medium text-gray-900">{{ item.title || item.description }}</h4>
+                        <div class="flex items-center space-x-4 text-xs text-gray-500 mt-1">
+                          <span>Assigned to: {{ item.assignedTo || item.assignee?.firstName || 'Unassigned' }}</span>
+                          <span *ngIf="item.dueDate">Due: {{ item.dueDate | date:'M/d/yy, h:mm a' }}</span>
+                          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                                [ngClass]="getPriorityColor(item.priority || 'MEDIUM')">
+                            {{ item.priority || 'MEDIUM' }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="flex items-center space-x-2">
+                      <!-- Priority Badge -->
+                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" 
+                            [ngClass]="getStatusColor(item.status || 'pending')">
+                        {{ item.status || 'OPEN' }}
+                      </span>
+                      
+                      <!-- Edit button (only visible in edit mode) -->
+                      <button 
+                        *ngIf="isEditing"
+                        type="button"
+                        (click)="startEditActionItem(item)"
+                        class="p-1 text-blue-400 hover:text-blue-600 transition-colors"
+                        title="Edit action item">
+                        <mat-icon class="w-4 h-4">edit</mat-icon>
+                      </button>
+                      
+                      <!-- Delete button (only visible in edit mode) -->
+                      <button 
+                        *ngIf="isEditing"
+                        type="button"
+                        (click)="handleDeleteActionItem(item.id)"
+                        class="p-1 text-red-400 hover:text-red-600 transition-colors"
+                        title="Delete action item">
+                        <mat-icon class="w-4 h-4">delete</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- Edit view -->
+                  <div *ngIf="item.editing" class="p-3 bg-gray-50">
+                    <h5 class="text-sm font-medium text-gray-900 mb-3">Edit Action Item</h5>
+                    
+                    <div class="space-y-3">
+                      <!-- Title -->
+                      <div>
+                        <label [for]="'edit-actionitem-title-' + i" class="block text-xs font-medium text-gray-700 mb-1">Title *</label>
+                        <input 
+                          [id]="'edit-actionitem-title-' + i"
+                          type="text" 
+                          [(ngModel)]="item.title"
+                          placeholder="Enter action item title..."
+                          class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      </div>
+                      
+                      <!-- Description -->
+                      <div>
+                        <label [for]="'edit-actionitem-description-' + i" class="block text-xs font-medium text-gray-700 mb-1">Description *</label>
+                        <textarea 
+                          [id]="'edit-actionitem-description-' + i"
+                          [(ngModel)]="item.description"
+                          placeholder="Enter detailed description..."
+                          rows="2"
+                          class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </textarea>
+                      </div>
+                      
+                      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <!-- Assigned To -->
+                        <div>
+                          <label [for]="'edit-actionitem-assignee-' + i" class="block text-xs font-medium text-gray-700 mb-1">Assigned To</label>
+                          <select 
+                            [id]="'edit-actionitem-assignee-' + i"
+                            [(ngModel)]="item.assignedTo"
+                            title="Select assignee for this action item"
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select assignee...</option>
+                            <option *ngFor="let participant of editedMeeting.participants" [value]="participant.name">
+                              {{ participant.name }}
+                            </option>
+                          </select>
+                        </div>
+                        
+                        <!-- Due Date -->
+                        <div>
+                          <label [for]="'edit-actionitem-duedate-' + i" class="block text-xs font-medium text-gray-700 mb-1">Due Date</label>
+                          <input 
+                            [id]="'edit-actionitem-duedate-' + i"
+                            type="datetime-local" 
+                            [(ngModel)]="item.dueDate"
+                            title="Set due date for this action item"
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <!-- Priority -->
+                        <div>
+                          <label [for]="'edit-actionitem-priority-' + i" class="block text-xs font-medium text-gray-700 mb-1">Priority</label>
+                          <select 
+                            [id]="'edit-actionitem-priority-' + i"
+                            [(ngModel)]="item.priority"
+                            title="Set priority level for this action item"
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="LOW">Low</option>
+                            <option value="MEDIUM">Medium</option>
+                            <option value="HIGH">High</option>
+                            <option value="URGENT">Urgent</option>
+                          </select>
+                        </div>
+                      </div>
+                      
+                      <!-- Action Buttons -->
+                      <div class="flex items-center space-x-2 pt-2">
+                        <button 
+                          type="button"
+                          (click)="saveEditActionItem(item)"
+                          [disabled]="!item.title.trim() && !item.description.trim()"
+                          class="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
+                          Save Changes
+                        </button>
+                        <button 
+                          type="button"
+                          (click)="cancelEditActionItem(item)"
+                          class="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors">
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+            
+            <ng-template #noActionItems>
+              <div class="text-center py-6">
+                <mat-icon class="w-8 h-8 text-gray-400 mx-auto mb-2">checklist</mat-icon>
+                <p class="text-sm text-gray-500">No action items for this meeting</p>
+                <button 
+                  *ngIf="isEditing"
+                  type="button"
+                  (click)="isEditingActionItems = true"
+                  class="mt-2 px-3 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors">
+                  + Add First Action Item
+                </button>
+              </div>
+            </ng-template>
+          </div>
+        </div>
+
       </div>
-    </ng-container>
-    <ng-template #noActionItems>
-      <p class="text-gray-500 text-center py-8">No action items recorded for this meeting.</p>
-    </ng-template>
-    <div *ngIf="isEditing" class="mt-6 p-4 bg-gray-50 rounded-lg">
-      <h3 class="text-sm font-medium text-gray-700 mb-3">Add New Action Item</h3>
-      <div class="space-y-4">
-        <div>
-          <label for="new-action-item-title" class="block text-sm font-medium text-gray-700 mb-2">Title</label>
-          <input id="new-action-item-title" type="text" [(ngModel)]="newActionItem.title" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" title="Task title" placeholder="Enter task title..." />
-        </div>
-        <div>
-          <label for="new-action-item-description" class="block text-sm font-medium text-gray-700 mb-2">Task Description</label>
-          <textarea id="new-action-item-description" [(ngModel)]="newActionItem.description" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none" rows="2" title="Task description" placeholder="Enter task description..."></textarea>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label for="new-action-item-assignee" class="block text-sm font-medium text-gray-700 mb-2">Assignee</label>
-            <select id="new-action-item-assignee" disabled class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50" title="Assignee">
-              <option>Select assignee... (disabled)</option>
-            </select>
-          </div>
-          <div>
-            <label for="new-action-item-due-date" class="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
-            <input id="new-action-item-due-date" type="date" [(ngModel)]="newActionItem.dueDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" title="Due date" placeholder="Due date" />
-          </div>
-          <div>
-            <label for="new-action-item-priority" class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-            <select id="new-action-item-priority" [(ngModel)]="newActionItem.priority" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" title="Priority">
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-            </select>
-          </div>
-          <div>
-            <label for="new-action-item-status" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-            <select id="new-action-item-status" [(ngModel)]="newActionItem.status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" title="Status">
-              <option value="OPEN">Open</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="COMPLETED">Completed</option>
-            </select>
-          </div>
-        </div>
-        <div class="flex items-end">
-          <button 
-            (click)="handleAddActionItem()" 
-            [disabled]="!newActionItem.title?.trim() || !newActionItem.description?.trim()"
-            class="w-full flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-            </svg>
-            Add Action Item
-          </button>
-        </div>
+
+      <!-- Sidebar -->
+      <div class="md:w-1/3 w-full flex-shrink-0">
+        <app-meeting-intelligence-panel 
+          [meeting]="editedMeeting"
+          (actionItemAdded)="handleSuggestedActionItem($event)"
+          (followUpScheduled)="handleFollowUpScheduled()">
+        </app-meeting-intelligence-panel>
       </div>
+
     </div>
   </div>
-
-  <!-- AI Assistant with Meeting Context -->
-  <app-ai-chat 
-    pageType="detail" 
-    [meetingContext]="editedMeeting"
-    context="Meeting Details">
-  </app-ai-chat>
-
-  </div>
-
-  <!-- AI Intelligence Sidebar -->
-  <div class="w-96 flex-shrink-0">
-    <app-meeting-intelligence-panel 
-      [meeting]="editedMeeting"
-      (actionItemAdded)="handleSuggestedActionItem($event)"
-      (followUpScheduled)="handleFollowUpScheduled()">
-    </app-meeting-intelligence-panel>
-  </div>
-
 </div>
