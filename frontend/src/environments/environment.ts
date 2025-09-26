@@ -6,7 +6,7 @@ export const environment = {
   // Note: Quill Editor is completely free - no API keys required!
 };
 
-// Debug: Log environment loading
+// Debug: Log environment loading (development only)
 console.log('🔧 Environment.ts loaded:', {
   production: false,
   apiUrl: '/api'
