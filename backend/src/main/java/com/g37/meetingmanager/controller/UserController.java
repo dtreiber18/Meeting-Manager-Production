@@ -6,6 +6,7 @@ import com.g37.meetingmanager.service.AuthService;
 import com.g37.meetingmanager.repository.mongodb.UserProfileRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -25,18 +26,23 @@ public class UserController {
     private final AuthService authService;
     private final UserProfileRepository userProfileRepository;
 
-    public UserController(AuthService authService, UserProfileRepository userProfileRepository) {
+    public UserController(AuthService authService, @Autowired(required = false) UserProfileRepository userProfileRepository) {
         this.authService = authService;
         this.userProfileRepository = userProfileRepository;
-        log.info("✅ UserController initialized - MONGODB INTEGRATION CONFIRMED");
+        
+        if (userProfileRepository != null) {
+            log.info("✅ UserController initialized - MONGODB INTEGRATION CONFIRMED");
+        } else {
+            log.warn("⚠️ UserController initialized WITHOUT MongoDB - Fallback mode");
+        }
     }
 
     @GetMapping("/profile")
-    public ResponseEntity<UserProfile> getUserProfile(
+    public ResponseEntity<?> getUserProfile(
             @RequestParam(required = false) String email,
             Authentication authentication) {
         try {
-            log.info("✅ MONGODB Profile request - email: {}, auth: {}", email, 
+            log.info("🔍 Profile request - email: {}, auth: {}", email, 
                 authentication != null ? authentication.getName() : "null");
             
             String userEmail = email;
@@ -49,6 +55,43 @@ public class UserController {
                 return ResponseEntity.badRequest().build();
             }
 
+            // Check if MongoDB is available
+            if (userProfileRepository == null) {
+                log.warn("⚠️ MongoDB unavailable - returning fallback user profile for: {}", userEmail);
+                
+                // Try to get user data from MySQL
+                User mysqlUser = authService.findUserByEmail(userEmail);
+                
+                UserProfile fallbackProfile = new UserProfile();
+                if (mysqlUser != null) {
+                    fallbackProfile.setEmail(mysqlUser.getEmail());
+                    fallbackProfile.setFirstName(mysqlUser.getFirstName());
+                    fallbackProfile.setLastName(mysqlUser.getLastName());
+                } else {
+                    fallbackProfile.setEmail(userEmail);
+                    fallbackProfile.setFirstName("User");
+                    fallbackProfile.setLastName("Profile");
+                }
+                
+                // Set safe defaults
+                fallbackProfile.setIsActive(true);
+                fallbackProfile.setEmailNotifications(true);
+                fallbackProfile.setPushNotifications(false);
+                fallbackProfile.setTimezone("UTC");
+                fallbackProfile.setLanguage("en");
+                fallbackProfile.setTheme("light");
+                fallbackProfile.setRoles(Arrays.asList("USER"));
+                
+                return ResponseEntity.ok(Map.of(
+                    "profile", fallbackProfile,
+                    "fallback", true,
+                    "message", "Profile service temporarily unavailable - showing basic profile"
+                ));
+            }
+
+            // MongoDB is available - normal operation
+            log.info("✅ MONGODB Profile request - MONGODB INTEGRATION ACTIVE");
+            
             // First try to find existing MongoDB UserProfile
             Optional<UserProfile> existingProfile = userProfileRepository.findByEmail(userEmail);
             
@@ -94,12 +137,10 @@ public class UserController {
     }
 
     @PutMapping("/profile")
-    public ResponseEntity<UserProfile> updateUserProfile(
+    public ResponseEntity<?> updateUserProfile(
             @RequestBody Map<String, Object> updates,
             Authentication authentication) {
         try {
-            log.info("✅ MONGODB Profile UPDATE - DATABASE WRITE OPERATION");
-            
             String email = (String) updates.get("email");
             if (email == null && authentication != null) {
                 email = authentication.getName();
@@ -108,6 +149,20 @@ public class UserController {
             if (email == null) {
                 return ResponseEntity.badRequest().build();
             }
+
+            // Check if MongoDB is available
+            if (userProfileRepository == null) {
+                log.warn("⚠️ MongoDB unavailable - profile update not saved for: {}", email);
+                
+                return ResponseEntity.ok(Map.of(
+                    "success", false,
+                    "fallback", true,
+                    "message", "Profile updates cannot be saved - service temporarily unavailable",
+                    "received", updates
+                ));
+            }
+
+            log.info("✅ MONGODB Profile UPDATE - DATABASE WRITE OPERATION");
 
             // Find or create MongoDB profile
             Optional<UserProfile> profileOpt = userProfileRepository.findByEmail(email);

@@ -22,16 +22,25 @@ public class NotificationController {
     
     private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);
     
-    @Autowired
+    @Autowired(required = false)
     private NotificationMongoRepository notificationRepository;
 
     public NotificationController() {
-        logger.info("NotificationController initialized with MongoDB integration - Production Ready");
+        if (notificationRepository != null) {
+            logger.info("NotificationController initialized with MongoDB integration - Production Ready");
+        } else {
+            logger.warn("NotificationController initialized WITHOUT MongoDB - Fallback mode");
+        }
     }
     
     @GetMapping
     public ResponseEntity<List<NotificationDocument>> getNotifications(@RequestParam(required = false) String email) {
-        logger.info("✅ NotificationController: Getting notifications from MongoDB - NO MOCK DATA");
+        logger.info("✅ NotificationController: Getting notifications - NO MOCK DATA");
+        
+        if (notificationRepository == null) {
+            logger.warn("MongoDB not available, returning empty notification list");
+            return ResponseEntity.ok(Collections.emptyList());
+        }
         
         try {
             List<NotificationDocument> notifications;
@@ -53,7 +62,12 @@ public class NotificationController {
     
     @GetMapping("/unread/count")
     public ResponseEntity<Map<String, Long>> getUnreadCount(@RequestParam(required = false) String email) {
-        logger.info("Getting unread count from MongoDB for email: {}", email);
+        logger.info("Getting unread count for email: {}", email);
+        
+        if (notificationRepository == null) {
+            logger.warn("MongoDB not available, returning 0 unread count");
+            return ResponseEntity.ok(Map.of("count", 0L));
+        }
         
         try {
             long unreadCount;
@@ -75,7 +89,12 @@ public class NotificationController {
     
     @PostMapping
     public ResponseEntity<NotificationDocument> createNotification(@RequestBody NotificationDocument notification) {
-        logger.info("Creating new notification in MongoDB for user: {}", notification.getUserEmail());
+        logger.info("Creating new notification for user: {}", notification.getUserEmail());
+        
+        if (notificationRepository == null) {
+            logger.warn("MongoDB not available, cannot create notification");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        }
         
         try {
             // Set creation time
@@ -96,6 +115,11 @@ public class NotificationController {
     public ResponseEntity<NotificationDocument> markAsRead(@PathVariable String notificationId) {
         logger.info("Marking notification as read: {}", notificationId);
         
+        if (notificationRepository == null) {
+            logger.warn("MongoDB not available, cannot mark notification as read");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        }
+        
         try {
             NotificationDocument notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
@@ -115,16 +139,29 @@ public class NotificationController {
     
     @GetMapping("/test")
     public ResponseEntity<Map<String, Object>> testEndpoint() {
-        logger.info("MongoDB notification controller test endpoint called");
+        logger.info("Notification controller test endpoint called");
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", LocalDateTime.now().toString());
+        
+        if (notificationRepository == null) {
+            response.put("status", "fallback");
+            response.put("message", "NotificationController running in fallback mode - MongoDB not available");
+            response.put("database", "None (Fallback Mode)");
+            response.put("totalNotifications", 0);
+            response.put("unreadCount", 0);
+            response.put("version", "fallback-mode");
+            
+            logger.warn("NotificationController in fallback mode - MongoDB not connected");
+            return ResponseEntity.ok(response);
+        }
         
         try {
             long totalNotifications = notificationRepository.count();
             long unreadNotifications = notificationRepository.countUnreadNotifications();
             
-            Map<String, Object> response = new HashMap<>();
             response.put("status", "ok");
             response.put("message", "NotificationController MongoDB integration working");
-            response.put("timestamp", LocalDateTime.now().toString());
             response.put("totalNotifications", totalNotifications);
             response.put("unreadCount", unreadNotifications);
             response.put("version", "mongodb-integrated");
@@ -133,12 +170,13 @@ public class NotificationController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("MongoDB connection error: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-                .body(Map.of(
-                    "status", "error", 
-                    "message", "MongoDB connection failed",
-                    "error", e.getMessage()
-                ));
+            response.put("status", "error");
+            response.put("message", "MongoDB connection failed");
+            response.put("error", e.getMessage());
+            response.put("database", "MongoDB (Error)");
+            response.put("version", "mongodb-error");
+            
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
         }
     }
 }
