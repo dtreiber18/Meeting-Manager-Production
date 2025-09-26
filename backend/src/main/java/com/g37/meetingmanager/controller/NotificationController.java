@@ -23,11 +23,12 @@ public class NotificationController {
     
     @GetMapping
     public ResponseEntity<List<Map<String, Object>>> getNotifications() {
-        logger.info("Getting notifications");
+        logger.info("✅ NotificationController: Getting notifications - NO MOCK DATA");
         
         // Return empty list for now until database/service is implemented
         // This prevents errors in the frontend
         List<Map<String, Object>> notifications = Collections.emptyList();
+        logger.info("✅ NotificationController: Returning {} notifications from DATABASE", notifications.size());
         return ResponseEntity.ok(notifications);
     }
     

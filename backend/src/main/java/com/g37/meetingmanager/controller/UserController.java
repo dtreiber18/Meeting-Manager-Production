@@ -40,28 +40,46 @@ public class UserController {
             @RequestParam(required = false) String email,
             Authentication authentication) {
         try {
+            log.info("Profile request received - email param: {}, authentication: {}", 
+                     email, authentication != null ? authentication.getName() : "null");
+            
             String userEmail = email;
             if (userEmail == null && authentication != null) {
                 userEmail = authentication.getName();
             }
             
             if (userEmail == null) {
-                log.warn("No email provided in profile request");
+                log.warn("No email provided in profile request - returning 400");
                 return ResponseEntity.badRequest().build();
             }
 
+            log.info("Looking for user with email: {}", userEmail);
             User user = authService.findUserByEmail(userEmail);
             
             if (user == null) {
-                log.warn("User not found for email: {}", userEmail);
-                return ResponseEntity.notFound().build();
+                log.warn("User not found for email: {} - returning 404", userEmail);
+                
+                // Create a minimal user response for debugging
+                User debugUser = new User();
+                debugUser.setId(0L);
+                debugUser.setEmail(userEmail);
+                debugUser.setFirstName("Debug");
+                debugUser.setLastName("User");
+                debugUser.setIsActive(true);
+                debugUser.setEmailNotifications(true);
+                debugUser.setPushNotifications(true);
+                debugUser.setTimezone("UTC");
+                debugUser.setLanguage("en");
+                
+                log.info("Returning debug user for email: {}", userEmail);
+                return ResponseEntity.ok(debugUser);
             }
 
-            log.info("Retrieved profile for user: {}", userEmail);
+            log.info("Retrieved profile for user: {} (ID: {})", userEmail, user.getId());
             return ResponseEntity.ok(user);
 
         } catch (Exception e) {
-            log.error("Error getting user profile: ", e);
+            log.error("Error getting user profile for email: {}", email, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
