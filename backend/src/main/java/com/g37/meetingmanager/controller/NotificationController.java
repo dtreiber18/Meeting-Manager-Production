@@ -22,8 +22,8 @@ public class NotificationController {
     
     private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);
     
-    @Autowired
-    private NotificationService notificationService;
+    // @Autowired
+    // private NotificationService notificationService;
     
     /**
      * Get current user ID from JWT token (simplified for demo)
@@ -39,13 +39,17 @@ public class NotificationController {
      * Get all notifications for the current user
      */
     @GetMapping
-    public ResponseEntity<List<Notification>> getNotifications(HttpServletRequest request) {
+    public ResponseEntity<Map<String, Object>> getNotifications(HttpServletRequest request) {
         try {
             Long userId = getCurrentUserId(request);
             logger.info("Getting notifications for user: {}", userId);
             
-            List<Notification> notifications = notificationService.getNotificationsForUser(userId);
-            return ResponseEntity.ok(notifications);
+            // Temporarily return mock data to test controller registration
+            return ResponseEntity.ok(Map.of(
+                "message", "NotificationController is working!", 
+                "userId", userId,
+                "notifications", List.of()
+            ));
         } catch (Exception e) {
             logger.error("Error getting notifications", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
