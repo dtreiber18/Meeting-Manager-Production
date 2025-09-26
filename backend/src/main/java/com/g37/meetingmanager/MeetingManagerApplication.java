@@ -5,7 +5,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
-@SpringBootApplication(scanBasePackages = "com.g37.meetingmanager")
+@SpringBootApplication(
+    scanBasePackages = "com.g37.meetingmanager",
+    exclude = {org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration.class}
+)
 @EnableJpaRepositories(basePackages = "com.g37.meetingmanager.repository.mysql")
 @EnableMongoRepositories(basePackages = "com.g37.meetingmanager.repository.mongodb")
 public class MeetingManagerApplication {
