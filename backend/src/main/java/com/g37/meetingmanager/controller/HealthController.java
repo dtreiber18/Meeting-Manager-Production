@@ -20,6 +20,15 @@ public class HealthController {
     @Value("${azure.openai.deployment-name:not-configured}")
     private String deploymentName;
     
+    @GetMapping
+    public ResponseEntity<Map<String, String>> health() {
+        Map<String, String> response = new HashMap<>();
+        response.put("status", "UP");
+        response.put("message", "Meeting Manager Backend is healthy");
+        response.put("timestamp", String.valueOf(System.currentTimeMillis()));
+        return ResponseEntity.ok(response);
+    }
+    
     @GetMapping("/config")
     public ResponseEntity<Map<String, Object>> getConfiguration() {
         Map<String, Object> config = new HashMap<>();
