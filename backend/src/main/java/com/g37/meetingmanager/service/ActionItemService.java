@@ -125,8 +125,7 @@ public class ActionItemService {
             notificationService.createActionItemAssignment(
                 savedActionItem.getAssignee().getId(),
                 savedActionItem.getTitle(),
-                savedActionItem.getId().toString(),
-                savedActionItem.getDueDate()
+                savedActionItem.getId().toString()
             );
         }
 
@@ -156,7 +155,7 @@ public class ActionItemService {
         actionItem.setRecurringPattern(actionItemDetails.getRecurringPattern());
 
         // Handle completion status
-        if (actionItemDetails.getCompleted() != null && actionItemDetails.getCompleted() != actionItem.getCompleted()) {
+        if (actionItemDetails.getCompleted() != null && !actionItemDetails.getCompleted().equals(actionItem.getCompleted())) {
             if (actionItemDetails.getCompleted()) {
                 actionItem.markAsCompleted();
                 actionItem.setCompletionNotes(actionItemDetails.getCompletionNotes());
@@ -322,7 +321,7 @@ public class ActionItemService {
                 predicates.add(criteriaBuilder.or(titleMatch, descriptionMatch, notesMatch));
             }
 
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+            return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
         };
     }
 
