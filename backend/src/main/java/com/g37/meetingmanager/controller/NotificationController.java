@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.annotation.PostConstruct;
+
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,11 +27,12 @@ public class NotificationController {
     @Autowired(required = false)
     private NotificationMongoRepository notificationRepository;
 
-    public NotificationController() {
+    @PostConstruct
+    public void init() {
         if (notificationRepository != null) {
-            logger.info("NotificationController initialized with MongoDB integration - Production Ready");
+            logger.info("✅ NotificationController initialized with MongoDB integration - Production Ready");
         } else {
-            logger.warn("NotificationController initialized WITHOUT MongoDB - Fallback mode");
+            logger.warn("⚠️ NotificationController initialized WITHOUT MongoDB - Fallback mode");
         }
     }
     

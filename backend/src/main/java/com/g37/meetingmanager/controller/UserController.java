@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import jakarta.annotation.PostConstruct;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +30,10 @@ public class UserController {
     public UserController(AuthService authService, @Autowired(required = false) UserProfileRepository userProfileRepository) {
         this.authService = authService;
         this.userProfileRepository = userProfileRepository;
-        
+    }
+    
+    @PostConstruct
+    public void init() {
         if (userProfileRepository != null) {
             log.info("✅ UserController initialized - MONGODB INTEGRATION CONFIRMED");
         } else {
