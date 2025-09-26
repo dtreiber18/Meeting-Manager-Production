@@ -184,9 +184,9 @@ module backend './modules/container-app.bicep' = {
         value: mysql.outputs.fullyQualifiedDomainName
       }
       {
-        name: 'MONGODB_URI'
-        value: 'mongodb://${cosmosDb.outputs.accountName}.mongo.cosmos.azure.com:10255/?ssl=true&retrywrites=false'
-      }
+          name: 'MONGODB_URI'
+          value: 'mongodb://${cosmosDb.outputs.accountName}:${listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', '${abbrs.documentDBDatabaseAccounts}${resourceToken}'), '2023-09-15').primaryMasterKey}@${cosmosDb.outputs.accountName}.mongo.cosmos.azure.com:10255/meeting_manager?ssl=true&retrywrites=false&maxIdleTimeMS=120000&appName=@${cosmosDb.outputs.accountName}@'
+        }
       {
         name: 'AZURE_OPENAI_ENDPOINT'
         value: openAi.outputs.endpoint
