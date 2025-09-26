@@ -216,4 +216,16 @@ public class MeetingController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+    
+    /**
+     * Temporary notification endpoint to test if it works via MeetingController
+     */
+    @GetMapping("/test-notifications")
+    public ResponseEntity<List<java.util.Map<String, Object>>> getTestNotifications() {
+        logger.info("Testing notifications via MeetingController");
+        return ResponseEntity.ok(List.of(
+            java.util.Map.of("id", 1, "message", "Test notification from MeetingController", "read", false),
+            java.util.Map.of("id", 2, "message", "Another test notification", "read", true)
+        ));
+    }
 }
