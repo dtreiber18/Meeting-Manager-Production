@@ -220,6 +220,12 @@ public class MeetingController {
     /**
      * Temporary notification endpoints - integrated into MeetingController while debugging controller registration
      */
+    @GetMapping("/test-simple")
+    public ResponseEntity<String> testSimpleEndpoint() {
+        logger.info("Simple test endpoint called via MeetingController");
+        return ResponseEntity.ok("MeetingController simple test endpoint works!");
+    }
+    
     @GetMapping("/notifications")
     public ResponseEntity<List<java.util.Map<String, Object>>> getNotifications() {
         logger.info("Getting notifications via MeetingController");
