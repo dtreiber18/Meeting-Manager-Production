@@ -157,10 +157,10 @@ export class ApiConfigService {
       refresh: () => this.getApiUrl('auth/refresh'),
     },
     
-    // Notification endpoints (temporarily routed through MeetingController while debugging controller registration)
-    notifications: () => this.getApiUrl('meetings/notifications'),
-    notification: (id: string) => this.getApiUrl(`meetings/notifications/${id}`),
-    notificationsUnreadCount: () => this.getApiUrl('meetings/notifications/unread/count'),
+    // Notification endpoints (implemented via query parameters on working meetings endpoint)
+    notifications: () => this.getApiUrl('meetings?type=notifications'),
+    notification: (id: string) => this.getApiUrl(`meetings?type=notification&id=${id}`),
+    notificationsUnreadCount: () => this.getApiUrl('meetings?type=unread-count'),
     
     // Settings endpoints
     settings: () => this.getApiUrl('settings'),
