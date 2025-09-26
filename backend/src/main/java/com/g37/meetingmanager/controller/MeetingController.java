@@ -93,18 +93,12 @@ public class MeetingController {
                 request.getStatus() : Meeting.MeetingStatus.SCHEDULED);
             meeting.setPriority(request.getPriority() != null ? 
                 request.getPriority() : Meeting.Priority.MEDIUM);
-            meeting.setIsRecurring(request.getIsRecurring() != null ? 
-                request.getIsRecurring() : false);
-            meeting.setIsPublic(request.getIsPublic() != null ? 
-                request.getIsPublic() : false);
-            meeting.setRequiresApproval(request.getRequiresApproval() != null ? 
-                request.getRequiresApproval() : false);
-            meeting.setAllowRecording(request.getAllowRecording() != null ? 
-                request.getAllowRecording() : true);
-            meeting.setAutoTranscription(request.getAutoTranscription() != null ? 
-                request.getAutoTranscription() : false);
-            meeting.setAiAnalysisEnabled(request.getAiAnalysisEnabled() != null ? 
-                request.getAiAnalysisEnabled() : false);
+            meeting.setIsRecurring(Boolean.TRUE.equals(request.getIsRecurring()));
+            meeting.setIsPublic(Boolean.TRUE.equals(request.getIsPublic()));
+            meeting.setRequiresApproval(Boolean.TRUE.equals(request.getRequiresApproval()));
+            meeting.setAllowRecording(request.getAllowRecording() == null || Boolean.TRUE.equals(request.getAllowRecording()));
+            meeting.setAutoTranscription(Boolean.TRUE.equals(request.getAutoTranscription()));
+            meeting.setAiAnalysisEnabled(Boolean.TRUE.equals(request.getAiAnalysisEnabled()));
             
             // Set optional fields
             meeting.setAgenda(request.getAgenda());

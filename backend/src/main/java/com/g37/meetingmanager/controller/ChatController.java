@@ -3,7 +3,6 @@ package com.g37.meetingmanager.controller;
 import com.g37.meetingmanager.service.ChatService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/api/chat")
