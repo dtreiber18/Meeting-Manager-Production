@@ -1,12 +1,8 @@
 package com.g37.meetingmanager.controller;
 
-import com.g37.meetingmanager.model.Notification;
-import com.g37.meetingmanager.service.NotificationService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,25 +16,33 @@ public class NotificationController {
     
     private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);
     
-    @Autowired
-    private NotificationService notificationService;
-    
     private Long getCurrentUserId(HttpServletRequest request) {
         logger.debug("Getting current user ID, using default: 1");
         return 1L;
     }
     
     @GetMapping
-    public ResponseEntity<List<Notification>> getNotifications(HttpServletRequest request) {
+    public ResponseEntity<List<Map<String, Object>>> getNotifications(HttpServletRequest request) {
         try {
             Long userId = getCurrentUserId(request);
             logger.info("Getting notifications for user: {}", userId);
             
-            List<Notification> notifications = notificationService.getNotificationsForUser(userId);
+            // Return mock notifications for now until database is set up
+            List<Map<String, Object>> notifications = List.of(
+                Map.of(
+                    "id", 1L,
+                    "title", "Sample Notification",
+                    "message", "This is a sample notification",
+                    "type", "SYSTEM_ANNOUNCEMENT",
+                    "priority", "NORMAL",
+                    "isRead", false,
+                    "createdAt", java.time.LocalDateTime.now().toString()
+                )
+            );
             return ResponseEntity.ok(notifications);
         } catch (Exception e) {
             logger.error("Error getting notifications", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(500).build();
         }
     }
     
@@ -48,11 +52,11 @@ public class NotificationController {
             Long userId = getCurrentUserId(request);
             logger.debug("Getting unread count for user: {}", userId);
             
-            long count = notificationService.getUnreadCount(userId);
-            return ResponseEntity.ok(Map.of("count", count));
+            // Return mock count for now
+            return ResponseEntity.ok(Map.of("count", 3L));
         } catch (Exception e) {
             logger.error("Error getting unread count", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(500).build();
         }
     }
     
@@ -62,15 +66,15 @@ public class NotificationController {
         
         try {
             Long userId = getCurrentUserId(request);
-            long notificationCount = notificationService.getUnreadCount(userId);
             
             return ResponseEntity.ok(Map.of(
                 "status", "ok",
-                "message", "NotificationController is working properly",
+                "message", "NotificationController is working properly (mock implementation)",
                 "timestamp", java.time.LocalDateTime.now().toString(),
                 "userId", userId,
-                "unreadCount", notificationCount,
-                "version", "production"
+                "unreadCount", 3L,
+                "version", "production-mock",
+                "note", "This is a temporary mock implementation for production deployment testing"
             ));
         } catch (Exception e) {
             logger.error("Error in test endpoint", e);
