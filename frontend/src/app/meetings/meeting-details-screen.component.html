@@ -468,6 +468,7 @@
                     <select 
                       id="pending-priority"
                       [(ngModel)]="newPendingAction.priority"
+                      title="Select priority level for this pending action"
                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                       <option value="LOW">Low</option>
                       <option value="MEDIUM">Medium</option>
@@ -595,6 +596,7 @@
                           <select 
                             [id]="'edit-pending-assignee-' + i"
                             [(ngModel)]="action.assigneeName"
+                            title="Select assignee for this pending action"
                             class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">Select assignee...</option>
                             <option *ngFor="let participant of editedMeeting.participants" [value]="participant.name">
@@ -610,6 +612,7 @@
                             [id]="'edit-pending-duedate-' + i"
                             type="datetime-local" 
                             [(ngModel)]="action.dueDate"
+                            title="Set due date for this pending action"
                             class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         
@@ -619,6 +622,7 @@
                           <select 
                             [id]="'edit-pending-priority-' + i"
                             [(ngModel)]="action.priority"
+                            title="Select priority level for this pending action"
                             class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="LOW">Low</option>
                             <option value="MEDIUM">Medium</option>
@@ -814,7 +818,7 @@
                         <input type="checkbox" 
                                [id]="'checkbox-' + item.id"
                                [checked]="(item.status === 'completed' || item.status === 'COMPLETED')"
-                               [title]="(item.status === 'completed' || item.status === 'COMPLETED') ? 'Mark as incomplete' : 'Mark as complete'"
+                               title="{{ (item.status === 'completed' || item.status === 'COMPLETED') ? 'Mark as incomplete' : 'Mark as complete' }}"
                                [attr.aria-label]="(item.status === 'completed' || item.status === 'COMPLETED') ? 'Mark as incomplete' : 'Mark as complete'"
                                (change)="toggleActionItemStatus(item)"
                                class="rounded border-gray-300 text-green-600 focus:ring-green-500">
