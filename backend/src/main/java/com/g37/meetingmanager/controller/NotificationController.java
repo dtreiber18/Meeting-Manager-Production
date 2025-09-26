@@ -26,7 +26,7 @@ public class NotificationController {
     private NotificationMongoRepository notificationRepository;
 
     public NotificationController() {
-        logger.info("NotificationController initialized with MongoDB integration");
+        logger.info("NotificationController initialized with MongoDB integration - Production Ready");
     }
     
     @GetMapping
