@@ -9,14 +9,14 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/notifications")
+@RequestMapping("/api/test-notifications")
 @CrossOrigin(origins = "*")
 public class NotificationController {
     
     private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);
 
     public NotificationController() {
-        logger.info("NotificationController initialized");
+        logger.info("NotificationController initialized - renamed to test-notifications");
     }
     
     @GetMapping
