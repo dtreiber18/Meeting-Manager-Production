@@ -10,10 +10,14 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/notifications")
-@CrossOrigin(origins = {"http://localhost:4200", "http://localhost:4201", "https://dtreiber18.github.io"})
+@CrossOrigin(origins = "*")
 public class NotificationController {
     
     private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);
+
+    public NotificationController() {
+        logger.info("NotificationController initialized");
+    }
     
     @GetMapping
     public ResponseEntity<List<Map<String, Object>>> getNotifications() {

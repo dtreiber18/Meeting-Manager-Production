@@ -9,10 +9,14 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/status")
-@CrossOrigin(origins = {"http://localhost:4200", "http://localhost:4201", "https://dtreiber18.github.io"})
+@CrossOrigin(origins = "*")
 public class StatusController {
     
     private static final Logger logger = LoggerFactory.getLogger(StatusController.class);
+
+    public StatusController() {
+        logger.info("StatusController initialized");
+    }
     
     @GetMapping("/test")
     public ResponseEntity<Map<String, Object>> testStatus() {
