@@ -58,3 +58,4 @@ public class NotificationController {
         ));
     }
 }
+// Trigger fresh deployment after GitHub Actions infrastructure issue
