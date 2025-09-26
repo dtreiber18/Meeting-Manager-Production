@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { ApiConfigService } from '../core/services/api-config.service';
 
 export interface PendingAction {
   id?: string;
@@ -65,9 +66,15 @@ export interface PendingActionStatistics {
   providedIn: 'root'
 })
 export class PendingActionService {
-  private readonly apiUrl = '/api/pending-actions';
+  private readonly apiUrl: string;
 
-  constructor(private readonly http: HttpClient) {}
+  constructor(
+    private readonly http: HttpClient,
+    private readonly apiConfig: ApiConfigService
+  ) {
+    this.apiUrl = this.apiConfig.getApiUrl('pending-actions');
+    console.log('🔧 PendingActionService using ApiConfigService, URL:', this.apiUrl);
+  }
 
   /**
    * Get all pending actions for a specific meeting

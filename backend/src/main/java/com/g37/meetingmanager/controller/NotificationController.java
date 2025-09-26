@@ -5,36 +5,29 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
+
 import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/test-notifications")
+@RequestMapping("/api/notifications")
 @CrossOrigin(origins = "*")
 public class NotificationController {
     
     private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);
 
     public NotificationController() {
-        logger.info("NotificationController initialized - renamed to test-notifications");
+        logger.info("NotificationController initialized");
     }
     
     @GetMapping
     public ResponseEntity<List<Map<String, Object>>> getNotifications() {
         logger.info("Getting notifications");
         
-        // Return mock notifications for now until database is set up
-        List<Map<String, Object>> notifications = List.of(
-            Map.of(
-                "id", 1L,
-                "title", "Sample Notification",
-                "message", "This is a sample notification",
-                "type", "SYSTEM_ANNOUNCEMENT",
-                "priority", "NORMAL",
-                "isRead", false,
-                "createdAt", java.time.LocalDateTime.now().toString()
-            )
-        );
+        // Return empty list for now until database/service is implemented
+        // This prevents errors in the frontend
+        List<Map<String, Object>> notifications = Collections.emptyList();
         return ResponseEntity.ok(notifications);
     }
     
