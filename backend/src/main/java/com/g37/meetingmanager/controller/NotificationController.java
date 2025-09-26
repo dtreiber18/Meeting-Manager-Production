@@ -53,6 +53,19 @@ public class NotificationController {
     }
     
     /**
+     * Simple test endpoint to verify controller is working
+     */
+    @GetMapping("/test")
+    public ResponseEntity<Map<String, String>> testEndpoint() {
+        logger.info("Test endpoint called successfully");
+        return ResponseEntity.ok(Map.of(
+            "status", "ok",
+            "message", "NotificationController is working",
+            "timestamp", java.time.LocalDateTime.now().toString()
+        ));
+    }
+    
+    /**
      * Get unread notification count
      */
     @GetMapping("/unread/count")
