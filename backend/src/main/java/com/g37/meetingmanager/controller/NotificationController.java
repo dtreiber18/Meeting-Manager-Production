@@ -31,6 +31,7 @@ public class NotificationController {
     private Long getCurrentUserId(HttpServletRequest request) {
         // For demo purposes, return user ID 1
         // In production, extract from JWT token
+        logger.debug("Getting current user ID, returning default: 1");
         return 1L;
     }
     
