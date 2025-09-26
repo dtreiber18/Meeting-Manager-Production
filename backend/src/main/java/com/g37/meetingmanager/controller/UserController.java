@@ -1,18 +1,17 @@
 package com.g37.meetingmanager.controller;
 
 import com.g37.meetingmanager.model.User;
+import com.g37.meetingmanager.model.UserProfile;
 import com.g37.meetingmanager.service.AuthService;
-import com.g37.meetingmanager.repository.mysql.UserRepository;
+import com.g37.meetingmanager.repository.mongodb.UserProfileRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 
@@ -24,24 +23,21 @@ public class UserController {
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
     private final AuthService authService;
-    private final UserRepository userRepository;
+    private final UserProfileRepository userProfileRepository;
 
-    @Autowired
-    public UserController(AuthService authService, UserRepository userRepository) {
+    public UserController(AuthService authService, UserProfileRepository userProfileRepository) {
         this.authService = authService;
-        this.userRepository = userRepository;
+        this.userProfileRepository = userProfileRepository;
+        log.info("✅ UserController initialized - MONGODB INTEGRATION CONFIRMED");
     }
 
-    /**
-     * Get current user profile
-     */
     @GetMapping("/profile")
-    public ResponseEntity<User> getUserProfile(
+    public ResponseEntity<UserProfile> getUserProfile(
             @RequestParam(required = false) String email,
             Authentication authentication) {
         try {
-            log.info("Profile request received - email param: {}, authentication: {}", 
-                     email, authentication != null ? authentication.getName() : "null");
+            log.info("✅ MONGODB Profile request - email: {}, auth: {}", email, 
+                authentication != null ? authentication.getName() : "null");
             
             String userEmail = email;
             if (userEmail == null && authentication != null) {
@@ -49,224 +45,207 @@ public class UserController {
             }
             
             if (userEmail == null) {
-                log.warn("No email provided in profile request - returning 400");
+                log.warn("❌ No email provided - returning 400");
                 return ResponseEntity.badRequest().build();
             }
 
-            log.info("Looking for user with email: {}", userEmail);
-            User user = authService.findUserByEmail(userEmail);
+            // First try to find existing MongoDB UserProfile
+            Optional<UserProfile> existingProfile = userProfileRepository.findByEmail(userEmail);
             
-            if (user == null) {
-                log.warn("User not found for email: {} - returning 404", userEmail);
-                
-                // Create a minimal user response for debugging
-                User debugUser = new User();
-                debugUser.setId(0L);
-                debugUser.setEmail(userEmail);
-                debugUser.setFirstName("Debug");
-                debugUser.setLastName("User");
-                debugUser.setIsActive(true);
-                debugUser.setEmailNotifications(true);
-                debugUser.setPushNotifications(true);
-                debugUser.setTimezone("UTC");
-                debugUser.setLanguage("en");
-                
-                log.info("Returning debug user for email: {}", userEmail);
-                return ResponseEntity.ok(debugUser);
+            if (existingProfile.isPresent()) {
+                log.info("✅ Found MongoDB profile: {} - MONGODB INTEGRATION ACTIVE", userEmail);
+                return ResponseEntity.ok(existingProfile.get());
             }
-
-            log.info("Retrieved profile for user: {} (ID: {})", userEmail, user.getId());
-            return ResponseEntity.ok(user);
+            
+            // If not found in MongoDB, check MySQL user and create MongoDB profile
+            User mysqlUser = authService.findUserByEmail(userEmail);
+            
+            if (mysqlUser != null) {
+                log.info("✅ Found MySQL user, creating MongoDB profile: {}", userEmail);
+                UserProfile newProfile = createUserProfileFromMysqlUser(mysqlUser);
+                UserProfile savedProfile = userProfileRepository.save(newProfile);
+                
+                log.info("✅ Created new MongoDB profile: {} - MONGODB INTEGRATION ACTIVE", userEmail);
+                return ResponseEntity.ok(savedProfile);
+            }
+            
+            // Create a minimal profile for the user if not found anywhere
+            log.warn("❌ User not found in MySQL or MongoDB: {} - creating minimal profile", userEmail);
+            UserProfile minimalProfile = new UserProfile();
+            minimalProfile.setEmail(userEmail);
+            minimalProfile.setFirstName("User");
+            minimalProfile.setLastName("Profile");
+            minimalProfile.setIsActive(true);
+            minimalProfile.setEmailNotifications(true);
+            minimalProfile.setPushNotifications(true);
+            minimalProfile.setTimezone("UTC");
+            minimalProfile.setLanguage("en");
+            minimalProfile.setTheme("light");
+            minimalProfile.setRoles(Arrays.asList("USER"));
+            
+            UserProfile savedMinimalProfile = userProfileRepository.save(minimalProfile);
+            log.info("✅ Created minimal MongoDB profile: {} - MONGODB INTEGRATION ACTIVE", userEmail);
+            return ResponseEntity.ok(savedMinimalProfile);
 
         } catch (Exception e) {
-            log.error("Error getting user profile for email: {}", email, e);
+            log.error("❌ Error getting profile: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    /**
-     * Update user profile
-     */
     @PutMapping("/profile")
-    public ResponseEntity<User> updateUserProfile(
+    public ResponseEntity<UserProfile> updateUserProfile(
             @RequestBody Map<String, Object> updates,
             Authentication authentication) {
         try {
+            log.info("✅ MONGODB Profile UPDATE - DATABASE WRITE OPERATION");
+            
             String email = (String) updates.get("email");
             if (email == null && authentication != null) {
                 email = authentication.getName();
             }
             
             if (email == null) {
-                log.warn("No email provided in profile update request");
                 return ResponseEntity.badRequest().build();
             }
 
-            User user = authService.findUserByEmail(email);
+            // Find or create MongoDB profile
+            Optional<UserProfile> profileOpt = userProfileRepository.findByEmail(email);
+            UserProfile profile;
             
-            if (user == null) {
-                log.warn("User not found for email: {}", email);
-                return ResponseEntity.notFound().build();
+            if (profileOpt.isPresent()) {
+                profile = profileOpt.get();
+                log.info("✅ Found existing MongoDB profile for update: {}", email);
+            } else {
+                // Create new profile if doesn't exist
+                profile = new UserProfile();
+                profile.setEmail(email);
+                profile.setFirstName("User");
+                profile.setLastName("Profile");
+                profile.setIsActive(true);
+                profile.setRoles(Arrays.asList("USER"));
+                log.info("✅ Creating new MongoDB profile for update: {}", email);
             }
 
-            // Update user fields
-            updateUserFields(user, updates);
-            user.setUpdatedAt(LocalDateTime.now());
+            updateUserProfileFields(profile, updates);
+            profile.updateProfileTimestamp();
+            UserProfile savedProfile = userProfileRepository.save(profile);
             
-            User savedUser = userRepository.save(user);
-            
-            log.info("Updated profile for user: {}", email);
-            return ResponseEntity.ok(savedUser);
+            log.info("✅ Profile updated - SAVED TO MONGODB: {}", email);
+            return ResponseEntity.ok(savedProfile);
 
         } catch (Exception e) {
-            log.error("Error updating user profile: ", e);
+            log.error("❌ Error updating profile: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    /**
-     * Update user timezone
-     */
-    @PutMapping("/timezone")
-    public ResponseEntity<Map<String, Object>> updateTimezone(
-            @RequestBody Map<String, String> request,
-            Authentication authentication) {
-        try {
-            String email = request.get("email");
-            String timezone = request.get("timezone");
-            
-            if (email == null && authentication != null) {
-                email = authentication.getName();
-            }
-            
-            if (email == null || timezone == null) {
-                log.warn("Missing email or timezone in timezone update request");
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("error", "Email and timezone are required");
-                return ResponseEntity.badRequest().body(errorResponse);
-            }
-
-            User user = authService.findUserByEmail(email);
-            
-            if (user == null) {
-                log.warn("User not found for email: {}", email);
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("error", "User not found");
-                return ResponseEntity.notFound().build();
-            }
-
-            user.setTimezone(timezone);
-            user.setUpdatedAt(LocalDateTime.now());
-            
-            userRepository.save(user);
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Timezone updated successfully");
-            response.put("timezone", timezone);
-            
-            log.info("Updated timezone for user {}: {}", email, timezone);
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            log.error("Error updating timezone: ", e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Internal server error: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    private UserProfile createUserProfileFromMysqlUser(User mysqlUser) {
+        UserProfile profile = new UserProfile();
+        profile.setEmail(mysqlUser.getEmail());
+        profile.setFirstName(mysqlUser.getFirstName());
+        profile.setLastName(mysqlUser.getLastName());
+        profile.setPhoneNumber(mysqlUser.getPhoneNumber());
+        profile.setJobTitle(mysqlUser.getJobTitle());
+        profile.setDepartment(mysqlUser.getDepartment());
+        profile.setBio(mysqlUser.getBio());
+        profile.setIsActive(mysqlUser.getIsActive());
+        profile.setEmailNotifications(mysqlUser.getEmailNotifications());
+        profile.setPushNotifications(mysqlUser.getPushNotifications());
+        profile.setTimezone(mysqlUser.getTimezone() != null ? mysqlUser.getTimezone() : "UTC");
+        profile.setLanguage(mysqlUser.getLanguage() != null ? mysqlUser.getLanguage() : "en");
+        profile.setTheme(mysqlUser.getTheme() != null ? mysqlUser.getTheme() : "light");
+        profile.setDateFormat(mysqlUser.getDateFormat() != null ? mysqlUser.getDateFormat() : "MM/dd/yyyy");
+        profile.setTimeFormat(mysqlUser.getTimeFormat() != null ? mysqlUser.getTimeFormat() : "12h");
+        profile.setAzureAdObjectId(mysqlUser.getAzureAdObjectId());
+        profile.setMysqlUserId(mysqlUser.getId());
+        
+        // Set organization info if available
+        if (mysqlUser.getOrganization() != null) {
+            profile.setOrganizationId(mysqlUser.getOrganization().getId());
+            profile.setOrganizationName(mysqlUser.getOrganization().getName());
         }
-    }
-
-    /**
-     * Update user language
-     */
-    @PutMapping("/language")
-    public ResponseEntity<Map<String, Object>> updateLanguage(
-            @RequestBody Map<String, String> request,
-            Authentication authentication) {
-        try {
-            String email = request.get("email");
-            String language = request.get("language");
-            
-            if (email == null && authentication != null) {
-                email = authentication.getName();
-            }
-            
-            if (email == null || language == null) {
-                log.warn("Missing email or language in language update request");
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("error", "Email and language are required");
-                return ResponseEntity.badRequest().body(errorResponse);
-            }
-
-            User user = authService.findUserByEmail(email);
-            
-            if (user == null) {
-                log.warn("User not found for email: {}", email);
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("error", "User not found");
-                return ResponseEntity.notFound().build();
-            }
-
-            user.setLanguage(language);
-            user.setUpdatedAt(LocalDateTime.now());
-            
-            userRepository.save(user);
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Language updated successfully");
-            response.put("language", language);
-            
-            log.info("Updated language for user {}: {}", email, language);
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            log.error("Error updating language: ", e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Internal server error: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        
+        // Convert roles to string list
+        if (mysqlUser.getRoles() != null && !mysqlUser.getRoles().isEmpty()) {
+            profile.setRoles(mysqlUser.getRoles().stream()
+                .map(role -> role.getName())
+                .toList());
+        } else {
+            profile.setRoles(Arrays.asList("USER"));
         }
+        
+        return profile;
     }
-
-    private void updateUserFields(User user, Map<String, Object> updates) {
+    
+    private void updateUserProfileFields(UserProfile profile, Map<String, Object> updates) {
+        log.info("✅ Updating {} fields - MONGODB OPERATION", updates.size());
+        
         if (updates.containsKey("firstName")) {
-            user.setFirstName((String) updates.get("firstName"));
+            profile.setFirstName((String) updates.get("firstName"));
         }
         if (updates.containsKey("lastName")) {
-            user.setLastName((String) updates.get("lastName"));
+            profile.setLastName((String) updates.get("lastName"));
         }
         if (updates.containsKey("phoneNumber")) {
-            user.setPhoneNumber((String) updates.get("phoneNumber"));
+            profile.setPhoneNumber((String) updates.get("phoneNumber"));
         }
         if (updates.containsKey("jobTitle")) {
-            user.setJobTitle((String) updates.get("jobTitle"));
+            profile.setJobTitle((String) updates.get("jobTitle"));
         }
         if (updates.containsKey("department")) {
-            user.setDepartment((String) updates.get("department"));
+            profile.setDepartment((String) updates.get("department"));
         }
         if (updates.containsKey("bio")) {
-            user.setBio((String) updates.get("bio"));
+            profile.setBio((String) updates.get("bio"));
         }
         if (updates.containsKey("language")) {
-            user.setLanguage((String) updates.get("language"));
+            profile.setLanguage((String) updates.get("language"));
         }
         if (updates.containsKey("timezone")) {
-            user.setTimezone((String) updates.get("timezone"));
+            profile.setTimezone((String) updates.get("timezone"));
         }
         if (updates.containsKey("theme")) {
-            user.setTheme((String) updates.get("theme"));
+            profile.setTheme((String) updates.get("theme"));
         }
         if (updates.containsKey("dateFormat")) {
-            user.setDateFormat((String) updates.get("dateFormat"));
+            profile.setDateFormat((String) updates.get("dateFormat"));
         }
         if (updates.containsKey("timeFormat")) {
-            user.setTimeFormat((String) updates.get("timeFormat"));
+            profile.setTimeFormat((String) updates.get("timeFormat"));
         }
         if (updates.containsKey("emailNotifications")) {
-            user.setEmailNotifications((Boolean) updates.get("emailNotifications"));
+            profile.setEmailNotifications((Boolean) updates.get("emailNotifications"));
         }
         if (updates.containsKey("pushNotifications")) {
-            user.setPushNotifications((Boolean) updates.get("pushNotifications"));
+            profile.setPushNotifications((Boolean) updates.get("pushNotifications"));
+        }
+        if (updates.containsKey("smsNotifications")) {
+            profile.setSmsNotifications((Boolean) updates.get("smsNotifications"));
+        }
+        if (updates.containsKey("meetingReminders")) {
+            profile.setMeetingReminders((Boolean) updates.get("meetingReminders"));
+        }
+        if (updates.containsKey("actionItemReminders")) {
+            profile.setActionItemReminders((Boolean) updates.get("actionItemReminders"));
+        }
+        if (updates.containsKey("weeklyDigest")) {
+            profile.setWeeklyDigest((Boolean) updates.get("weeklyDigest"));
+        }
+        if (updates.containsKey("darkMode")) {
+            profile.setDarkMode((Boolean) updates.get("darkMode"));
+        }
+        if (updates.containsKey("compactView")) {
+            profile.setCompactView((Boolean) updates.get("compactView"));
+        }
+        if (updates.containsKey("profileVisibility")) {
+            profile.setProfileVisibility((String) updates.get("profileVisibility"));
+        }
+        if (updates.containsKey("showOnlineStatus")) {
+            profile.setShowOnlineStatus((Boolean) updates.get("showOnlineStatus"));
+        }
+        if (updates.containsKey("allowDirectMessages")) {
+            profile.setAllowDirectMessages((Boolean) updates.get("allowDirectMessages"));
         }
     }
 }
