@@ -1,0 +1,112 @@
+# Production Configuration - MySQL Only (No MongoDB)
+spring:
+  application:
+    name: meeting-manager
+  
+  # Database Configuration - MySQL for production
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/meeting_manager?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USERNAME:meetingmanager}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      connection-timeout: 20000
+  
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    database-platform: org.hibernate.dialect.MySQLDialect
+    show-sql: ${JPA_SHOW_SQL:false}
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        generate_statistics: false
+  
+  # Explicitly disable MongoDB and Redis for production
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.cache.CacheAutoConfiguration
+  
+  # Security Configuration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER_URI:}
+          audiences: ${OAUTH2_AUDIENCES:}
+  
+  # File Upload Configuration
+  servlet:
+    multipart:
+      max-file-size: ${MAX_FILE_SIZE:50MB}
+      max-request-size: ${MAX_REQUEST_SIZE:50MB}
+      enabled: true
+
+# Application-specific Configuration
+app:
+  # CORS Configuration
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://dtreiber18.github.io}
+    allowed-methods: ${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH}
+    allowed-headers: ${CORS_ALLOWED_HEADERS:*}
+    allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
+  
+  # JWT Configuration
+  jwt:
+    secret: ${JWT_SECRET:C8oebVYJ6beuAlXwAX0Vf6llLgnHN/6NbnN0p6fGR0I=}
+    expiration: ${JWT_EXPIRATION:86400000} # 24 hours
+  frontend-url: ${FRONTEND_URL:https://dtreiber18.github.io}
+  microsoft:
+    graph:
+      enabled: true
+      base-url: https://graph.microsoft.com/v1.0
+      client-id: ${MICROSOFT_CLIENT_ID:your-microsoft-client-id-here}
+      client-secret: ${MICROSOFT_CLIENT_SECRET:your-microsoft-client-secret-here}
+      tenant-id: ${MICROSOFT_TENANT_ID:your-microsoft-tenant-id-here}
+      redirect-uri: ${MICROSOFT_REDIRECT_URI:https://dtreiber18.github.io/auth/callback}
+      login-base-url: https://login.microsoftonline.com
+
+# Azure OpenAI Configuration
+azure:
+  openai:
+    endpoint: ${AZURE_OPENAI_ENDPOINT:https://your-openai-resource.openai.azure.com/}
+    api-key: ${AZURE_OPENAI_API_KEY:your-api-key-here}
+    deployment-name: ${AZURE_OPENAI_DEPLOYMENT_NAME:gpt-35-turbo}
+    api-version: ${AZURE_OPENAI_API_VERSION:2024-02-15-preview}
+  
+# JWT Configuration (for backward compatibility)
+jwt:
+  secret: ${JWT_SECRET:C8oebVYJ6beuAlXwAX0Vf6llLgnHN/6NbnN0p6fGR0I=}
+  expiration: 86400000 # 24 hours
+  
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+      
+# Logging Configuration
+logging:
+  level:
+    com.g37.meetingmanager: INFO
+    org.springframework.security: INFO
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Server Configuration
+server:
+  port: 8080

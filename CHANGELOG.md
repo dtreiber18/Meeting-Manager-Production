@@ -5,6 +5,48 @@ All notable changes to the Meeting Manager project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.1] - 2025-09-30 - Production Login Fix & MongoDB Complete Removal
+
+### 🔧 Fixed - Production Login Failures
+- **500 Error Resolution** - Fixed critical production login failures
+  - Resolved persistent MongoDB dependency injection errors preventing Spring Boot startup
+  - Completely eliminated MongoDB dependencies from production deployment
+  - Fixed "Parameter 0 of method setUserProfileRepository required a bean named 'mongoTemplate'" errors
+  - Application now starts successfully in production environment
+- **UserController Complete Rewrite** - Implemented MySQL-only production mode
+  - Completely rewrote UserController to eliminate all MongoDB dependencies
+  - Implemented pure MySQL-based profile management with production defaults
+  - Created `createUserProfileFromMysqlUser()` method for clean profile creation
+  - Removed constructor injection of UserProfileRepository to prevent dependency conflicts
+- **MongoDB Component Disabling** - Complete separation of MongoDB from production
+  - Disabled `UserProfileRepository.java` by renaming to `.disabled`
+  - Maintained `PendingActionService.java.disabled` and related components
+  - Applied comprehensive MongoDB autoconfiguration exclusions
+  - Created production-specific `application-prod.yml` configuration
+
+### 🗄️ Enhanced - Production Database Architecture
+- **MySQL-Only Production Mode** - Streamlined production database configuration
+  - Successfully deployed with MySQL as sole database dependency
+  - Clean Spring Boot startup without MongoDB template bean requirements
+  - Verified database connectivity to `mysql-meetingmanager-dev.mysql.database.azure.com`
+  - Optimized connection pooling with HikariCP for production performance
+- **Environment Configuration** - Production-ready application settings
+  - Fixed invalid `spring.profiles.active` configuration in `application-prod.yml`
+  - Proper Spring Boot profile-specific configuration implementation
+  - Comprehensive MongoDB exclusion strategy for clean production deployment
+
+### ✅ Verified - Production Deployment Success
+- **Azure Container Apps** - Successful production deployment
+  - Backend running successfully at `https://ca-backend.salmonfield-f21211f0.eastus.azurecontainerapps.io`
+  - Health endpoint responding with status "UP"
+  - Login endpoint properly handling authentication requests (401 for invalid credentials)
+  - Application logs show clean startup without dependency injection errors
+- **Database Connectivity** - Production MySQL integration
+  - HikariPool connection established successfully
+  - JPA entity manager initialized for MySQL persistence
+  - System data initialization completed successfully
+  - No MongoDB-related startup errors or warnings
+
 ## [3.2.0] - 2025-09-30 - Production Deployment Fixes & Database Architecture
 
 ### 🔧 Fixed - Critical Production Issues

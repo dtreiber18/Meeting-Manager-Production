@@ -10,7 +10,23 @@ A modern, enterprise-grade meeting management application built with Angular 17+
 
 ## 🔧 Recent Updates (September 2025)
 
-### ✅ **Production Deployment Fixes & Database Architecture (v3.2.0) - LATEST**
+### ✅ **PRODUCTION DEPLOYED! Login Fix & MongoDB Removal (v3.2.1) - LATEST**
+- **🚀 Live Production System**: Successfully deployed and running on Azure!
+  - **Frontend URL**: https://salmonfield-f21211f0.eastus.4.azurestaticapps.net
+  - **Backend API**: https://ca-backend.salmonfield-f21211f0.eastus.azurecontainerapps.io
+  - **Health Status**: Application running with "UP" status ✅
+- **🔧 Critical 500 Login Error Resolution**: Fixed persistent production login failures
+  - **MongoDB Complete Removal**: Eliminated all MongoDB dependencies causing dependency injection conflicts
+  - **UserController Rewrite**: Complete MySQL-only implementation with production-safe profile management
+  - **Clean Spring Boot Startup**: No more "Parameter 0 of method required a bean named 'mongoTemplate'" errors
+  - **Verified Authentication**: Login endpoint properly handling requests (401 for invalid credentials as expected)
+- **🗄️ Production Database Success**: Pure MySQL deployment working flawlessly
+  - **Azure MySQL Integration**: Connected to `mysql-meetingmanager-dev.mysql.database.azure.com`
+  - **HikariCP Connection Pool**: Optimized database connectivity for production performance
+  - **System Data Initialization**: Clean startup with roles and permissions properly configured
+  - **Zero MongoDB Dependencies**: Complete architectural simplification for production stability
+
+### ✅ **Production Deployment Fixes & Database Architecture (v3.2.0)**
 - **🔧 Critical Production Issues Resolved**: Fixed Spring Boot startup failures in production Azure Container Apps
   - **MongoDB Dependency Resolution**: Resolved hybrid MySQL/MongoDB architecture conflicts causing 404 errors on `/api/notifications` and `/api/pending-actions`
   - **Container Health Fix**: Resolved "Unhealthy" container revision status with 0 replicas due to missing environment variables
