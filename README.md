@@ -10,7 +10,24 @@ A modern, enterprise-grade meeting management application built with Angular 17+
 
 ## 🔧 Recent Updates (September 2025)
 
-### ✅ **GitHub Actions CI/CD Pipeline Fix (v3.1.1) - LATEST**
+### ✅ **Production Deployment Fixes & Database Architecture (v3.2.0) - LATEST**
+- **🔧 Critical Production Issues Resolved**: Fixed Spring Boot startup failures in production Azure Container Apps
+  - **MongoDB Dependency Resolution**: Resolved hybrid MySQL/MongoDB architecture conflicts causing 404 errors on `/api/notifications` and `/api/pending-actions`
+  - **Container Health Fix**: Resolved "Unhealthy" container revision status with 0 replicas due to missing environment variables
+  - **Database Architecture Correction**: Fixed UserController to use MySQL as primary database instead of MongoDB
+  - **Conditional Service Loading**: Implemented `@ConditionalOnProperty` annotations for MongoDB services to prevent startup failures
+- **🗄️ Production Database Configuration**: Complete Azure MySQL Flexible Server integration
+  - **Database**: Successfully created `meeting_manager` database on `mysql-meetingmanager-dev.mysql.database.azure.com`
+  - **SSL Security**: Proper SSL configuration with certificate validation and connection pooling
+  - **Environment Variables**: Automated configuration script (`fix-container-env.sh`) for one-command deployment
+  - **Hybrid Architecture**: Stabilized MySQL primary + MongoDB optional pattern with graceful fallbacks
+- **🚀 Deployment Automation**: Streamlined production deployment process
+  - **Automated Script**: `fix-container-env.sh` handles complete environment variable configuration
+  - **Health Monitoring**: Real-time container health checking and deployment verification
+  - **Error Recovery**: Enhanced troubleshooting and diagnostic capabilities
+  - **Production Ready**: Verified working API endpoints with proper database connectivity
+
+### ✅ **GitHub Actions CI/CD Pipeline Fix (v3.1.1)**
 - **Fixed All Frontend Tests**: Resolved TypeScript compilation error in AuthService (NodeJS.Timeout type issue)
 - **Environment Configuration Fix**: Updated development environment to use relative URLs (`/api`) instead of absolute URLs for proper Angular proxy integration
 - **CI Test Compliance**: All 51 frontend tests now passing ✅, backend Maven tests passing ✅

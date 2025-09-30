@@ -2,6 +2,7 @@ package com.g37.meetingmanager.controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,6 +14,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/pending-actions")
 @CrossOrigin(origins = "*")
+@ConditionalOnProperty(name = "spring.data.mongodb.uri", matchIfMissing = false)
 public class PendingActionController {
     
     private static final Logger logger = LoggerFactory.getLogger(PendingActionController.class);

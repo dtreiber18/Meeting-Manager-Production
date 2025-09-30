@@ -2,6 +2,7 @@ package com.g37.meetingmanager.controller;
 
 import com.g37.meetingmanager.model.User;
 import com.g37.meetingmanager.model.UserProfile;
+import com.g37.meetingmanager.model.Role;
 import com.g37.meetingmanager.service.AuthService;
 import com.g37.meetingmanager.repository.mongodb.UserProfileRepository;
 import org.slf4j.Logger;
@@ -59,80 +60,34 @@ public class UserController {
                 return ResponseEntity.badRequest().build();
             }
 
-            // Check if MongoDB is available
-            if (userProfileRepository == null) {
-                log.warn("⚠️ MongoDB unavailable - returning fallback user profile for: {}", userEmail);
-                
-                // Try to get user data from MySQL
-                User mysqlUser = authService.findUserByEmail(userEmail);
-                
-                UserProfile fallbackProfile = new UserProfile();
-                if (mysqlUser != null) {
-                    fallbackProfile.setEmail(mysqlUser.getEmail());
-                    fallbackProfile.setFirstName(mysqlUser.getFirstName());
-                    fallbackProfile.setLastName(mysqlUser.getLastName());
-                } else {
-                    fallbackProfile.setEmail(userEmail);
-                    fallbackProfile.setFirstName("User");
-                    fallbackProfile.setLastName("Profile");
-                }
-                
-                // Set safe defaults
-                fallbackProfile.setIsActive(true);
-                fallbackProfile.setEmailNotifications(true);
-                fallbackProfile.setPushNotifications(false);
-                fallbackProfile.setTimezone("UTC");
-                fallbackProfile.setLanguage("en");
-                fallbackProfile.setTheme("light");
-                fallbackProfile.setRoles(Arrays.asList("USER"));
-                
-                return ResponseEntity.ok(Map.of(
-                    "profile", fallbackProfile,
-                    "fallback", true,
-                    "message", "Profile service temporarily unavailable - showing basic profile"
-                ));
-            }
-
-            // MongoDB is available - normal operation
-            log.info("✅ MONGODB Profile request - MONGODB INTEGRATION ACTIVE");
-            
-            // First try to find existing MongoDB UserProfile
-            Optional<UserProfile> existingProfile = userProfileRepository.findByEmail(userEmail);
-            
-            if (existingProfile.isPresent()) {
-                log.info("✅ Found MongoDB profile: {} - MONGODB INTEGRATION ACTIVE", userEmail);
-                return ResponseEntity.ok(existingProfile.get());
-            }
-            
-            // If not found in MongoDB, check MySQL user and create MongoDB profile
+            // Always try to get core user data from MySQL first
             User mysqlUser = authService.findUserByEmail(userEmail);
             
-            if (mysqlUser != null) {
-                log.info("✅ Found MySQL user, creating MongoDB profile: {}", userEmail);
-                UserProfile newProfile = createUserProfileFromMysqlUser(mysqlUser);
-                UserProfile savedProfile = userProfileRepository.save(newProfile);
-                
-                log.info("✅ Created new MongoDB profile: {} - MONGODB INTEGRATION ACTIVE", userEmail);
-                return ResponseEntity.ok(savedProfile);
+            if (mysqlUser == null) {
+                log.warn("❌ User not found in MySQL: {}", userEmail);
+                return ResponseEntity.notFound().build();
             }
             
-            // Create a minimal profile for the user if not found anywhere
-            log.warn("❌ User not found in MySQL or MongoDB: {} - creating minimal profile", userEmail);
-            UserProfile minimalProfile = new UserProfile();
-            minimalProfile.setEmail(userEmail);
-            minimalProfile.setFirstName("User");
-            minimalProfile.setLastName("Profile");
-            minimalProfile.setIsActive(true);
-            minimalProfile.setEmailNotifications(true);
-            minimalProfile.setPushNotifications(true);
-            minimalProfile.setTimezone("UTC");
-            minimalProfile.setLanguage("en");
-            minimalProfile.setTheme("light");
-            minimalProfile.setRoles(Arrays.asList("USER"));
+            log.info("✅ Found MySQL user: {}", userEmail);
             
-            UserProfile savedMinimalProfile = userProfileRepository.save(minimalProfile);
-            log.info("✅ Created minimal MongoDB profile: {} - MONGODB INTEGRATION ACTIVE", userEmail);
-            return ResponseEntity.ok(savedMinimalProfile);
+            // Create response with MySQL data as primary source
+            UserProfile profile = createUserProfileFromMysqlUser(mysqlUser);
+            
+            // Try to enhance with MongoDB extended profile data if available
+            if (userProfileRepository != null) {
+                try {
+                    Optional<UserProfile> mongoProfile = userProfileRepository.findByEmail(userEmail);
+                    if (mongoProfile.isPresent()) {
+                        log.info("✅ Enhanced with MongoDB profile data: {}", userEmail);
+                        // Merge MongoDB extended fields into MySQL-based profile
+                        mergeMongoProfileData(profile, mongoProfile.get());
+                    }
+                } catch (Exception e) {
+                    log.warn("⚠️ MongoDB unavailable for profile enhancement: {}", e.getMessage());
+                }
+            }
+            
+            return ResponseEntity.ok(profile);
 
         } catch (Exception e) {
             log.error("❌ Error getting profile: {}", e.getMessage(), e);
@@ -154,48 +109,85 @@ public class UserController {
                 return ResponseEntity.badRequest().build();
             }
 
-            // Check if MongoDB is available
-            if (userProfileRepository == null) {
-                log.warn("⚠️ MongoDB unavailable - profile update not saved for: {}", email);
-                
-                return ResponseEntity.ok(Map.of(
-                    "success", false,
-                    "fallback", true,
-                    "message", "Profile updates cannot be saved - service temporarily unavailable",
-                    "received", updates
-                ));
+            log.info("✅ Profile UPDATE for MySQL user: {}", email);
+
+            // Always get the user from MySQL first (primary source)
+            User mysqlUser = authService.findUserByEmail(email);
+            if (mysqlUser == null) {
+                log.warn("❌ User not found in MySQL: {}", email);
+                return ResponseEntity.notFound().build();
             }
 
-            log.info("✅ MONGODB Profile UPDATE - DATABASE WRITE OPERATION");
+            // Try to update MongoDB extended profile if available
+            if (userProfileRepository != null) {
+                try {
+                    Optional<UserProfile> profileOpt = userProfileRepository.findByEmail(email);
+                    UserProfile profile;
+                    
+                    if (profileOpt.isPresent()) {
+                        profile = profileOpt.get();
+                        log.info("✅ Found existing MongoDB profile for update: {}", email);
+                    } else {
+                        // Create new extended profile if doesn't exist
+                        profile = createUserProfileFromMysqlUser(mysqlUser);
+                        log.info("✅ Creating new MongoDB extended profile: {}", email);
+                    }
 
-            // Find or create MongoDB profile
-            Optional<UserProfile> profileOpt = userProfileRepository.findByEmail(email);
-            UserProfile profile;
-            
-            if (profileOpt.isPresent()) {
-                profile = profileOpt.get();
-                log.info("✅ Found existing MongoDB profile for update: {}", email);
-            } else {
-                // Create new profile if doesn't exist
-                profile = new UserProfile();
-                profile.setEmail(email);
-                profile.setFirstName("User");
-                profile.setLastName("Profile");
-                profile.setIsActive(true);
-                profile.setRoles(Arrays.asList("USER"));
-                log.info("✅ Creating new MongoDB profile for update: {}", email);
+                    updateUserProfileFields(profile, updates);
+                    profile.updateProfileTimestamp();
+                    UserProfile savedProfile = userProfileRepository.save(profile);
+                    
+                    log.info("✅ Extended profile updated in MongoDB: {}", email);
+                    return ResponseEntity.ok(savedProfile);
+                } catch (Exception e) {
+                    log.warn("⚠️ MongoDB update failed, returning MySQL data: {}", e.getMessage());
+                }
             }
 
-            updateUserProfileFields(profile, updates);
-            profile.updateProfileTimestamp();
-            UserProfile savedProfile = userProfileRepository.save(profile);
-            
-            log.info("✅ Profile updated - SAVED TO MONGODB: {}", email);
-            return ResponseEntity.ok(savedProfile);
+            // Fallback: Return MySQL user data even if MongoDB update failed
+            log.info("✅ Returning MySQL user profile (MongoDB unavailable): {}", email);
+            UserProfile fallbackProfile = createUserProfileFromMysqlUser(mysqlUser);
+            return ResponseEntity.ok(Map.of(
+                "profile", fallbackProfile,
+                "fallback", true,
+                "message", "Extended profile features temporarily unavailable",
+                "updatesReceived", updates
+            ));
 
         } catch (Exception e) {
             log.error("❌ Error updating profile: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    private void mergeMongoProfileData(UserProfile baseProfile, UserProfile mongoProfile) {
+        // Only merge non-core fields that are MongoDB-specific extensions
+        if (mongoProfile.getBio() != null) {
+            baseProfile.setBio(mongoProfile.getBio());
+        }
+        if (mongoProfile.getProfileVisibility() != null) {
+            baseProfile.setProfileVisibility(mongoProfile.getProfileVisibility());
+        }
+        if (mongoProfile.getShowOnlineStatus() != null) {
+            baseProfile.setShowOnlineStatus(mongoProfile.getShowOnlineStatus());
+        }
+        if (mongoProfile.getAllowDirectMessages() != null) {
+            baseProfile.setAllowDirectMessages(mongoProfile.getAllowDirectMessages());
+        }
+        if (mongoProfile.getSmsNotifications() != null) {
+            baseProfile.setSmsNotifications(mongoProfile.getSmsNotifications());
+        }
+        if (mongoProfile.getActionItemReminders() != null) {
+            baseProfile.setActionItemReminders(mongoProfile.getActionItemReminders());
+        }
+        if (mongoProfile.getWeeklyDigest() != null) {
+            baseProfile.setWeeklyDigest(mongoProfile.getWeeklyDigest());
+        }
+        if (mongoProfile.getDarkMode() != null) {
+            baseProfile.setDarkMode(mongoProfile.getDarkMode());
+        }
+        if (mongoProfile.getCompactView() != null) {
+            baseProfile.setCompactView(mongoProfile.getCompactView());
         }
     }
 
@@ -228,7 +220,7 @@ public class UserController {
         // Convert roles to string list
         if (mysqlUser.getRoles() != null && !mysqlUser.getRoles().isEmpty()) {
             profile.setRoles(mysqlUser.getRoles().stream()
-                .map(role -> role.getName())
+                .map(Role::getName)
                 .toList());
         } else {
             profile.setRoles(Arrays.asList("USER"));
