@@ -1,17 +1,13 @@
 name: Meeting Manager CI/CD
 
-# Temporarily disabled to prevent unwanted deployments
-# on:
-#   push:
-#     branches: [ main, develop ]
-#     tags: [ 'v*' ]
-#   pull_request:
-#     branches: [ main ]
-#   release:
-#     types: [ published ]
-
-# Manual trigger only for now
 on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
   workflow_dispatch:
 
 env:
@@ -99,7 +95,7 @@ jobs:
   publish-release:
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || github.event_name == 'workflow_dispatch'
     
     steps:
     - uses: actions/checkout@v4
@@ -277,7 +273,7 @@ jobs:
   build-and-push-images:
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') || github.event_name == 'workflow_dispatch'
     
     steps:
     - uses: actions/checkout@v4
@@ -304,7 +300,7 @@ jobs:
   deploy-to-azure:
     needs: build-and-push-images
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     
     steps:
     - uses: actions/checkout@v4
