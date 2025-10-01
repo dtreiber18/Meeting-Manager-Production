@@ -1,13 +1,18 @@
 name: Meeting Manager CI/CD
 
+# Temporarily disabled to prevent unwanted deployments
+# on:
+#   push:
+#     branches: [ main, develop ]
+#     tags: [ 'v*' ]
+#   pull_request:
+#     branches: [ main ]
+#   release:
+#     types: [ published ]
+
+# Manual trigger only for now
 on:
-  push:
-    branches: [ main, develop ]
-    tags: [ 'v*' ]
-  pull_request:
-    branches: [ main ]
-  release:
-    types: [ published ]
+  workflow_dispatch:
 
 env:
   AZURE_CONTAINER_REGISTRY: ${{ vars.AZURE_CONTAINER_REGISTRY }}
