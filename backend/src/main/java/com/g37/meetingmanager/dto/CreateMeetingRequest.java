@@ -1,7 +1,9 @@
 package com.g37.meetingmanager.dto;
 
 import com.g37.meetingmanager.model.Meeting;
+import com.g37.meetingmanager.model.MeetingParticipant;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class CreateMeetingRequest {
     private String title;
@@ -20,6 +22,7 @@ public class CreateMeetingRequest {
     private Boolean allowRecording;
     private Boolean autoTranscription;
     private Boolean aiAnalysisEnabled;
+    private List<MeetingParticipant> participants;
     
     // Default constructor
     public CreateMeetingRequest() {}
@@ -72,4 +75,7 @@ public class CreateMeetingRequest {
     
     public Boolean getAiAnalysisEnabled() { return aiAnalysisEnabled; }
     public void setAiAnalysisEnabled(Boolean aiAnalysisEnabled) { this.aiAnalysisEnabled = aiAnalysisEnabled; }
+    
+    public List<MeetingParticipant> getParticipants() { return participants; }
+    public void setParticipants(List<MeetingParticipant> participants) { this.participants = participants; }
 }

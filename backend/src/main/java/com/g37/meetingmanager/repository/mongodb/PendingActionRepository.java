@@ -1,6 +1,7 @@
 package com.g37.meetingmanager.repository.mongodb;
 
 import com.g37.meetingmanager.model.PendingAction;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
+@ConditionalOnProperty(name = "spring.data.mongodb.uri", matchIfMissing = false)
 public interface PendingActionRepository extends MongoRepository<PendingAction, String> {
     
     /**

@@ -131,6 +131,10 @@ public class MeetingParticipant {
         return participantRole == ParticipantRole.PRESENTER;
     }
 
+    public boolean isActionOwner() {
+        return participantRole == ParticipantRole.ACTION_OWNER;
+    }
+
     public void markAsJoined() {
         this.joinedAt = LocalDateTime.now();
         this.attendanceStatus = AttendanceStatus.PRESENT;
@@ -149,7 +153,8 @@ public class MeetingParticipant {
         PRESENTER,
         ATTENDEE,
         OPTIONAL,
-        OBSERVER
+        OBSERVER,
+        ACTION_OWNER
     }
 
     public enum InvitationStatus {

@@ -7,7 +7,8 @@ import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from 
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
-import { Meeting, ActionItem, Participant } from './meeting.model';
+import { Meeting, ActionItem } from './meeting.model';
+import { Participant, ParticipantType, ParticipantRole, InvitationStatus, AttendanceStatus } from '../models/meeting-participant.model';
 import { MeetingService } from './meeting.service';
 import { PendingAction, PendingActionService } from '../services/pending-action.service';
 
@@ -17,8 +18,6 @@ import { environment } from '../../environments/environment';
 import { ModalService } from '../shared/modal/modal.service';
 import { ModalContainerComponent } from '../shared/modal/modal-container/modal-container.component';
 
-
-type ParticipantType = 'CLIENT' | 'G37' | 'OTHER';
 
 interface N8nEventData {
   id?: string;
@@ -50,6 +49,12 @@ interface EditableMeeting extends Meeting {
   styleUrls: ['./meeting-details-screen.component.scss']
 })
 export class MeetingDetailsScreenComponent implements OnInit {
+  // Make enums available to template
+  ParticipantType = ParticipantType;
+  ParticipantRole = ParticipantRole;
+  InvitationStatus = InvitationStatus;
+  AttendanceStatus = AttendanceStatus;
+
   meeting?: Meeting & { source?: 'mm' | 'n8n' };
   loading = true;
   error: string | null = null;
@@ -87,6 +92,9 @@ export class MeetingDetailsScreenComponent implements OnInit {
   };
   filteredParticipants: Participant[] = [];
   
+  editingParticipantId: number | null = null;
+  editingParticipant: Partial<Participant> = {};
+  
   editedMeeting!: EditableMeeting;
   
   newActionItem: Partial<ActionItem> = {
@@ -103,18 +111,14 @@ export class MeetingDetailsScreenComponent implements OnInit {
   newParticipant: Partial<Participant> = {
     name: '',
     email: '',
-    participantRole: 'ATTENDEE',
-    participantType: 'OTHER',
-    invitationStatus: 'PENDING',
-    attendanceStatus: 'PENDING',
+    role: ParticipantRole.ATTENDEE,
+    type: ParticipantType.OTHER,
+    invitationStatus: InvitationStatus.PENDING,
+    attendanceStatus: AttendanceStatus.UNKNOWN,
     isRequired: false,
     canEdit: false,
     canInviteOthers: false,
-    organizer: false,
-    presenter: false,
-    external: true,
-    attended: false,
-    internal: false
+    attended: false
   };
 
   newPendingAction: Partial<PendingAction> = {
@@ -630,7 +634,12 @@ export class MeetingDetailsScreenComponent implements OnInit {
         // Overview changes are automatically saved via two-way binding
         break;
       case 'participants':
-        // Participant changes would trigger service calls if implemented
+        // Save any participant that is currently being edited
+        if (this.editingParticipantId) {
+          this.saveParticipantEdit();
+        }
+        // Update the meeting via service
+        this.updateMeeting();
         break;
       case 'pendingActions':
         // Pending action changes are handled by their dedicated service
@@ -760,6 +769,7 @@ export class MeetingDetailsScreenComponent implements OnInit {
 
   handleAddParticipant(): void {
     if (!this.newParticipant.name?.trim() || !this.newParticipant.email?.trim()) {
+      console.log('Missing required fields - name or email');
       return;
     }
 
@@ -770,47 +780,46 @@ export class MeetingDetailsScreenComponent implements OnInit {
       id: Date.now(), // Temporary ID for frontend - backend will assign real ID
       name,
       email,
-      participantRole: this.newParticipant.participantRole || 'ATTENDEE',
-      participantType: this.newParticipant.participantType || 'OTHER',
-      invitationStatus: 'PENDING',
-      attendanceStatus: 'PENDING',
+      role: this.newParticipant.role || ParticipantRole.ATTENDEE,
+      type: this.newParticipant.type || ParticipantType.OTHER,
+      invitationStatus: InvitationStatus.PENDING,
+      attendanceStatus: AttendanceStatus.UNKNOWN,
       isRequired: this.newParticipant.isRequired || false,
       canEdit: this.newParticipant.canEdit || false,
       canInviteOthers: this.newParticipant.canInviteOthers || false,
-      organizer: false,
-      presenter: false,
-      external: true,
       attended: false,
-      internal: false,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      invitedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString()
     };
+
+    console.log('Adding participant:', participant);
 
     this.editedMeeting = {
       ...this.editedMeeting,
       participants: [...(this.editedMeeting.participants || []), participant]
     };
 
+    console.log('Updated participants list:', this.editedMeeting.participants);
+
     // Reset form
     this.newParticipant = {
       name: '',
       email: '',
-      participantRole: 'ATTENDEE',
-      participantType: 'OTHER',
-      invitationStatus: 'PENDING',
-      attendanceStatus: 'PENDING',
+      role: ParticipantRole.ATTENDEE,
+      type: ParticipantType.OTHER,
+      invitationStatus: InvitationStatus.PENDING,
+      attendanceStatus: AttendanceStatus.UNKNOWN,
       isRequired: false,
       canEdit: false,
       canInviteOthers: false,
-      organizer: false,
-      presenter: false,
-      external: true,
-      attended: false,
-      internal: false
+      attended: false
     };
 
     this.isAddingParticipant = false;
+
+    // Save the updated meeting to the backend
+    console.log('Calling updateMeeting...');
+    this.updateMeeting();
   }
 
   cancelAddParticipant(): void {
@@ -818,18 +827,14 @@ export class MeetingDetailsScreenComponent implements OnInit {
     this.newParticipant = {
       name: '',
       email: '',
-      participantRole: 'ATTENDEE',
-      participantType: 'OTHER',
-      invitationStatus: 'PENDING',
-      attendanceStatus: 'PENDING',
+      role: ParticipantRole.ATTENDEE,
+      type: ParticipantType.OTHER,
+      invitationStatus: InvitationStatus.PENDING,
+      attendanceStatus: AttendanceStatus.UNKNOWN,
       isRequired: false,
       canEdit: false,
       canInviteOthers: false,
-      organizer: false,
-      presenter: false,
-      external: true,
-      attended: false,
-      internal: false
+      attended: false
     };
   }
 
@@ -869,7 +874,7 @@ export class MeetingDetailsScreenComponent implements OnInit {
 
     // Apply type filter
     if (this.participantFilter.type) {
-      filtered = filtered.filter(p => p.participantType === this.participantFilter.type);
+      filtered = filtered.filter(p => p.type === this.participantFilter.type);
     }
 
     // Apply attendance filter
@@ -889,7 +894,7 @@ export class MeetingDetailsScreenComponent implements OnInit {
 
     // Apply role filter
     if (this.participantFilter.role) {
-      filtered = filtered.filter(p => p.participantRole === this.participantFilter.role);
+      filtered = filtered.filter(p => p.role === this.participantFilter.role);
     }
 
     // Apply search filter
@@ -911,7 +916,7 @@ export class MeetingDetailsScreenComponent implements OnInit {
    */
   getParticipantsByType(type: ParticipantType): Participant[] {
     const participants = this.filteredParticipants.length > 0 ? this.filteredParticipants : this.editedMeeting.participants;
-    return participants.filter(p => (p.participantType || 'OTHER') === type);
+    return participants.filter(p => (p.type || ParticipantType.OTHER) === type);
   }
 
   /**
@@ -935,7 +940,7 @@ export class MeetingDetailsScreenComponent implements OnInit {
     } else {
       // Move between containers (change participant type)
       const participant = event.previousContainer.data[event.previousIndex];
-      participant.participantType = targetType;
+      participant.type = targetType;
       
       // Update the participant in the main list
       const participantIndex = this.editedMeeting.participants.findIndex(p => p.id === participant.id);
@@ -970,11 +975,96 @@ export class MeetingDetailsScreenComponent implements OnInit {
    * Edit participant details
    */
   editParticipant(participant: Participant): void {
-    // Implementation stub: Open participant editing modal or inline editing
-    console.log('Edit participant:', participant);
-    // This functionality would open a modal with detailed participant information
-    // including organization, title, contact details, etc.
-    // For now, this is a placeholder implementation
+    this.editingParticipantId = participant.id || null;
+    this.editingParticipant = { ...participant };
+    console.log('Editing participant:', participant);
+  }
+
+  /**
+   * Save participant edits
+   */
+  saveParticipantEdit(): void {
+    if (this.editingParticipantId && this.editingParticipant) {
+      const participantIndex = this.editedMeeting.participants.findIndex(p => p.id === this.editingParticipantId);
+      if (participantIndex !== -1) {
+        // Update the participant with the edited values
+        this.editedMeeting.participants[participantIndex] = {
+          ...this.editedMeeting.participants[participantIndex],
+          ...this.editingParticipant,
+          updatedAt: new Date().toISOString()
+        };
+        
+        // Refresh filters if active
+        if (this.showParticipantFilters) {
+          this.applyParticipantFilters();
+        }
+      }
+    }
+    
+    // Reset editing state
+    this.editingParticipantId = null;
+    this.editingParticipant = {};
+    console.log('Participant edit saved');
+  }
+
+  /**
+   * Cancel participant editing
+   */
+  cancelParticipantEdit(): void {
+    this.editingParticipantId = null;
+    this.editingParticipant = {};
+    console.log('Participant edit cancelled');
+  }
+
+  /**
+   * Check if a participant is currently being edited
+   */
+  isEditingParticipant(participantId: number | undefined): boolean {
+    return this.editingParticipantId === participantId;
+  }
+
+  /**
+   * Remove participant from meeting
+   */
+  removeParticipant(participant: Participant): void {
+    if (confirm(`Are you sure you want to remove ${participant.name} from this meeting?`)) {
+      this.editedMeeting.participants = this.editedMeeting.participants.filter(p => p.id !== participant.id);
+      
+      // Refresh filters if active
+      if (this.showParticipantFilters) {
+        this.applyParticipantFilters();
+      }
+    }
+  }
+
+  /**
+   * Update the meeting via the backend service
+   */
+  updateMeeting(): void {
+    if (!this.meetingId) {
+      console.error('Cannot update meeting: no meeting ID');
+      return;
+    }
+
+    const meetingToUpdate = { ...this.editedMeeting };
+    console.log('Sending meeting update to backend:', meetingToUpdate);
+    console.log('Number of participants to update:', meetingToUpdate.participants?.length || 0);
+    
+    this.meetingService.updateMeeting(this.meetingId, meetingToUpdate).subscribe({
+      next: (updatedMeeting) => {
+        console.log('Meeting updated successfully:', updatedMeeting);
+        console.log('Updated meeting participants:', updatedMeeting.participants?.length || 0);
+        this.meeting = updatedMeeting;
+        this.editedMeeting = { 
+          ...updatedMeeting,
+          actionItems: updatedMeeting.actionItems || []
+        };
+      },
+      error: (error) => {
+        console.error('Error updating meeting:', error);
+        // You might want to show a toast notification here
+      }
+    });
   }
 
   handleDeleteActionItem(id: number) {

@@ -186,25 +186,437 @@
           </div>
           
           <div class="p-4" [hidden]="cardState.participants.collapsed">
-            <!-- Simple Participant List -->
-            <div class="space-y-3">
+            <!-- Participant Edit Mode -->
+            <div *ngIf="cardState.participants.editing" class="space-y-4">
+              
+              <!-- Add Participant Button -->
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-medium text-gray-900">Manage Participants</h4>
+                <button 
+                  *ngIf="!isAddingParticipant"
+                  type="button"
+                  (click)="isAddingParticipant = true"
+                  class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 border border-transparent rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                  <mat-icon class="w-4 h-4 mr-1">add</mat-icon>
+                  Add Participant
+                </button>
+              </div>
+
+              <!-- Add Participant Form -->
+              <div *ngIf="isAddingParticipant" class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h5 class="text-sm font-medium text-gray-900 mb-3">Add New Participant</h5>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label for="participant-name" class="block text-xs font-medium text-gray-700 mb-1">Name *</label>
+                    <input 
+                      id="participant-name"
+                      type="text" 
+                      [(ngModel)]="newParticipant.name"
+                      placeholder="Enter participant name"
+                      class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  </div>
+                  <div>
+                    <label for="participant-email" class="block text-xs font-medium text-gray-700 mb-1">Email *</label>
+                    <input 
+                      id="participant-email"
+                      type="email" 
+                      [(ngModel)]="newParticipant.email"
+                      placeholder="Enter email address"
+                      class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  </div>
+                  <div>
+                    <label for="participant-type" class="block text-xs font-medium text-gray-700 mb-1">Type</label>
+                    <select 
+                      id="participant-type"
+                      title="Select participant type"
+                      [(ngModel)]="newParticipant.type"
+                      class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="CLIENT">Client</option>
+                      <option value="G37">G37 Team</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="participant-role" class="block text-xs font-medium text-gray-700 mb-1">Role</label>
+                    <select 
+                      id="participant-role"
+                      title="Select participant role"
+                      [(ngModel)]="newParticipant.role"
+                      class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="ATTENDEE">Attendee</option>
+                      <option value="ORGANIZER">Organizer</option>
+                      <option value="PRESENTER">Presenter</option>
+                      <option value="OBSERVER">Observer</option>
+                      <option value="ACTION_OWNER">Action Owner</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="flex items-center mt-3">
+                  <input 
+                    type="checkbox" 
+                    id="required-participant"
+                    [(ngModel)]="newParticipant.isRequired"
+                    class="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                  <label for="required-participant" class="text-xs text-gray-700">Required participant</label>
+                </div>
+                <div class="flex justify-end space-x-2 mt-4">
+                  <button 
+                    type="button"
+                    (click)="cancelAddParticipant()"
+                    class="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Cancel
+                  </button>
+                  <button 
+                    type="button"
+                    (click)="handleAddParticipant()"
+                    [disabled]="!newParticipant.name?.trim() || !newParticipant.email?.trim()"
+                    class="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Add Participant
+                  </button>
+                </div>
+              </div>
+
+              <!-- Editable Participant List -->
+              <div class="space-y-3">
+                
+                <!-- Client Participants -->
+                <div>
+                  <div class="flex items-center mb-2">
+                    <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                    <h4 class="text-sm font-medium text-gray-900">Client Participants ({{ getParticipantsByType(ParticipantType.CLIENT).length }})</h4>
+                    <span class="ml-auto text-xs text-gray-500">{{ getAttendanceStats(ParticipantType.CLIENT).attended }} attended • {{ getAttendanceStats(ParticipantType.CLIENT).absent }} absent</span>
+                  </div>
+                  <div class="ml-5 space-y-1">
+                    <div *ngFor="let participant of getParticipantsByType(ParticipantType.CLIENT)" class="space-y-2">
+                      <!-- Display Mode -->
+                      <div *ngIf="!isEditingParticipant(participant.id)" class="flex items-center justify-between py-2 px-3 bg-white border border-gray-200 rounded-md">
+                        <div class="flex items-center space-x-3">
+                          <div class="flex flex-col">
+                            <span class="text-sm text-gray-800 font-medium">{{ participant.name }}</span>
+                            <span class="text-xs text-gray-500">{{ participant.email }}</span>
+                          </div>
+                          <span class="text-xs px-2 py-1 rounded-full" 
+                                [ngClass]="{
+                                  'bg-blue-100 text-blue-800': participant.role !== 'ACTION_OWNER',
+                                  'bg-purple-100 text-purple-800': participant.role === 'ACTION_OWNER'
+                                }">{{ participant.role }}</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                          <button 
+                            type="button"
+                            (click)="toggleParticipantAttendance(participant)"
+                            class="text-xs px-2 py-1 rounded-full border"
+                            [ngClass]="participant.attended ? 'bg-green-100 text-green-800 border-green-300' : 'bg-red-100 text-red-800 border-red-300'">
+                            {{ participant.attended ? 'Present' : 'Absent' }}
+                          </button>
+                          <button 
+                            type="button"
+                            (click)="editParticipant(participant)"
+                            class="text-blue-600 hover:text-blue-800 p-1">
+                            <mat-icon class="w-4 h-4">edit</mat-icon>
+                          </button>
+                          <button 
+                            type="button"
+                            (click)="removeParticipant(participant)"
+                            class="text-red-600 hover:text-red-800 p-1">
+                            <mat-icon class="w-4 h-4">delete</mat-icon>
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Edit Mode -->
+                      <div *ngIf="isEditingParticipant(participant.id)" class="py-3 px-3 bg-blue-50 border border-blue-200 rounded-md">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div>
+                            <label for="edit-name-{{participant.id}}" class="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                            <input
+                              id="edit-name-{{participant.id}}"
+                              type="text"
+                              [(ngModel)]="editingParticipant.name"
+                              class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Participant name">
+                          </div>
+                          <div>
+                            <label for="edit-email-{{participant.id}}" class="block text-xs font-medium text-gray-700 mb-1">Email</label>
+                            <input
+                              id="edit-email-{{participant.id}}"
+                              type="email"
+                              [(ngModel)]="editingParticipant.email"
+                              class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="email@example.com">
+                          </div>
+                          <div>
+                            <label for="edit-role-{{participant.id}}" class="block text-xs font-medium text-gray-700 mb-1">Role</label>
+                            <select
+                              id="edit-role-{{participant.id}}"
+                              [(ngModel)]="editingParticipant.role"
+                              title="Select participant role"
+                              class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                              <option value="ORGANIZER">Organizer</option>
+                              <option value="PRESENTER">Presenter</option>
+                              <option value="ATTENDEE">Attendee</option>
+                              <option value="OPTIONAL">Optional</option>
+                              <option value="OBSERVER">Observer</option>
+                              <option value="ACTION_OWNER">Action Owner</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div class="flex justify-end space-x-2 mt-3">
+                          <button
+                            type="button"
+                            (click)="cancelParticipantEdit()"
+                            class="px-3 py-1 text-xs text-gray-600 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200">
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            (click)="saveParticipantEdit()"
+                            class="px-3 py-1 text-xs text-white bg-blue-600 border border-blue-600 rounded-md hover:bg-blue-700">
+                            Save Changes
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div *ngIf="getParticipantsByType(ParticipantType.CLIENT).length === 0" class="ml-3 text-xs text-gray-500 italic">
+                      No client participants added
+                    </div>
+                  </div>
+                </div>
+
+                <!-- G37 Team -->
+                <div>
+                  <div class="flex items-center mb-2">
+                    <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                    <h4 class="text-sm font-medium text-gray-900">G37 Team ({{ getParticipantsByType(ParticipantType.G37).length }})</h4>
+                    <span class="ml-auto text-xs text-gray-500">{{ getAttendanceStats(ParticipantType.G37).attended }} attended • {{ getAttendanceStats(ParticipantType.G37).absent }} absent</span>
+                  </div>
+                  <div class="ml-5 space-y-1">
+                    <div *ngFor="let participant of getParticipantsByType(ParticipantType.G37)" class="space-y-2">
+                      <!-- Display Mode -->
+                      <div *ngIf="!isEditingParticipant(participant.id)" class="flex items-center justify-between py-2 px-3 bg-white border border-gray-200 rounded-md">
+                        <div class="flex items-center space-x-3">
+                          <div class="flex flex-col">
+                            <span class="text-sm text-gray-800 font-medium">{{ participant.name }}</span>
+                            <span class="text-xs text-gray-500">{{ participant.email }}</span>
+                          </div>
+                          <span class="text-xs px-2 py-1 rounded-full" 
+                                [ngClass]="{
+                                  'bg-green-100 text-green-800': participant.role !== 'ACTION_OWNER',
+                                  'bg-purple-100 text-purple-800': participant.role === 'ACTION_OWNER'
+                                }">{{ participant.role }}</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                          <button 
+                            type="button"
+                            (click)="toggleParticipantAttendance(participant)"
+                            class="text-xs px-2 py-1 rounded-full border"
+                            [ngClass]="participant.attended ? 'bg-green-100 text-green-800 border-green-300' : 'bg-red-100 text-red-800 border-red-300'">
+                            {{ participant.attended ? 'Present' : 'Absent' }}
+                          </button>
+                          <button 
+                            type="button"
+                            (click)="editParticipant(participant)"
+                            class="text-blue-600 hover:text-blue-800 p-1">
+                            <mat-icon class="w-4 h-4">edit</mat-icon>
+                          </button>
+                          <button 
+                            type="button"
+                            (click)="removeParticipant(participant)"
+                            class="text-red-600 hover:text-red-800 p-1">
+                            <mat-icon class="w-4 h-4">delete</mat-icon>
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Edit Mode -->
+                      <div *ngIf="isEditingParticipant(participant.id)" class="py-3 px-3 bg-green-50 border border-green-200 rounded-md">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div>
+                            <label for="edit-name-g37-{{participant.id}}" class="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                            <input
+                              id="edit-name-g37-{{participant.id}}"
+                              type="text"
+                              [(ngModel)]="editingParticipant.name"
+                              class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                              placeholder="Participant name">
+                          </div>
+                          <div>
+                            <label for="edit-email-g37-{{participant.id}}" class="block text-xs font-medium text-gray-700 mb-1">Email</label>
+                            <input
+                              id="edit-email-g37-{{participant.id}}"
+                              type="email"
+                              [(ngModel)]="editingParticipant.email"
+                              class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                              placeholder="email@example.com">
+                          </div>
+                          <div>
+                            <label for="edit-role-g37-{{participant.id}}" class="block text-xs font-medium text-gray-700 mb-1">Role</label>
+                            <select
+                              id="edit-role-g37-{{participant.id}}"
+                              [(ngModel)]="editingParticipant.role"
+                              title="Select participant role"
+                              class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                              <option value="ORGANIZER">Organizer</option>
+                              <option value="PRESENTER">Presenter</option>
+                              <option value="ATTENDEE">Attendee</option>
+                              <option value="OPTIONAL">Optional</option>
+                              <option value="OBSERVER">Observer</option>
+                              <option value="ACTION_OWNER">Action Owner</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div class="flex justify-end space-x-2 mt-3">
+                          <button
+                            type="button"
+                            (click)="cancelParticipantEdit()"
+                            class="px-3 py-1 text-xs text-gray-600 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200">
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            (click)="saveParticipantEdit()"
+                            class="px-3 py-1 text-xs text-white bg-green-600 border border-green-600 rounded-md hover:bg-green-700">
+                            Save Changes
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div *ngIf="getParticipantsByType(ParticipantType.G37).length === 0" class="ml-3 text-xs text-gray-500 italic">
+                      No G37 team members added
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Other Participants -->
+                <div>
+                  <div class="flex items-center mb-2">
+                    <div class="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
+                    <h4 class="text-sm font-medium text-gray-900">Other Participants ({{ getParticipantsByType(ParticipantType.OTHER).length }})</h4>
+                    <span class="ml-auto text-xs text-gray-500">{{ getAttendanceStats(ParticipantType.OTHER).attended }} attended • {{ getAttendanceStats(ParticipantType.OTHER).absent }} absent</span>
+                  </div>
+                  <div class="ml-5 space-y-1">
+                    <div *ngFor="let participant of getParticipantsByType(ParticipantType.OTHER)" class="space-y-2">
+                      <!-- Display Mode -->
+                      <div *ngIf="!isEditingParticipant(participant.id)" class="flex items-center justify-between py-2 px-3 bg-white border border-gray-200 rounded-md">
+                        <div class="flex items-center space-x-3">
+                          <div class="flex flex-col">
+                            <span class="text-sm text-gray-800 font-medium">{{ participant.name }}</span>
+                            <span class="text-xs text-gray-500">{{ participant.email }}</span>
+                          </div>
+                          <span class="text-xs px-2 py-1 rounded-full" 
+                                [ngClass]="{
+                                  'bg-orange-100 text-orange-800': participant.role !== 'ACTION_OWNER',
+                                  'bg-purple-100 text-purple-800': participant.role === 'ACTION_OWNER'
+                                }">{{ participant.role }}</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                          <button 
+                            type="button"
+                            (click)="toggleParticipantAttendance(participant)"
+                            class="text-xs px-2 py-1 rounded-full border"
+                            [ngClass]="participant.attended ? 'bg-green-100 text-green-800 border-green-300' : 'bg-red-100 text-red-800 border-red-300'">
+                            {{ participant.attended ? 'Present' : 'Absent' }}
+                          </button>
+                          <button 
+                            type="button"
+                            (click)="editParticipant(participant)"
+                            class="text-blue-600 hover:text-blue-800 p-1">
+                            <mat-icon class="w-4 h-4">edit</mat-icon>
+                          </button>
+                          <button 
+                            type="button"
+                            (click)="removeParticipant(participant)"
+                            class="text-red-600 hover:text-red-800 p-1">
+                            <mat-icon class="w-4 h-4">delete</mat-icon>
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Edit Mode -->
+                      <div *ngIf="isEditingParticipant(participant.id)" class="py-3 px-3 bg-orange-50 border border-orange-200 rounded-md">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div>
+                            <label for="edit-name-other-{{participant.id}}" class="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                            <input
+                              id="edit-name-other-{{participant.id}}"
+                              type="text"
+                              [(ngModel)]="editingParticipant.name"
+                              class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+                              placeholder="Participant name">
+                          </div>
+                          <div>
+                            <label for="edit-email-other-{{participant.id}}" class="block text-xs font-medium text-gray-700 mb-1">Email</label>
+                            <input
+                              id="edit-email-other-{{participant.id}}"
+                              type="email"
+                              [(ngModel)]="editingParticipant.email"
+                              class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+                              placeholder="email@example.com">
+                          </div>
+                          <div>
+                            <label for="edit-role-other-{{participant.id}}" class="block text-xs font-medium text-gray-700 mb-1">Role</label>
+                            <select
+                              id="edit-role-other-{{participant.id}}"
+                              [(ngModel)]="editingParticipant.role"
+                              title="Select participant role"
+                              class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500">
+                              <option value="ORGANIZER">Organizer</option>
+                              <option value="PRESENTER">Presenter</option>
+                              <option value="ATTENDEE">Attendee</option>
+                              <option value="OPTIONAL">Optional</option>
+                              <option value="OBSERVER">Observer</option>
+                              <option value="ACTION_OWNER">Action Owner</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div class="flex justify-end space-x-2 mt-3">
+                          <button
+                            type="button"
+                            (click)="cancelParticipantEdit()"
+                            class="px-3 py-1 text-xs text-gray-600 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200">
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            (click)="saveParticipantEdit()"
+                            class="px-3 py-1 text-xs text-white bg-orange-600 border border-orange-600 rounded-md hover:bg-orange-700">
+                            Save Changes
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div *ngIf="getParticipantsByType(ParticipantType.OTHER).length === 0" class="ml-3 text-xs text-gray-500 italic">
+                      No other participants added
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Participant View Mode -->
+            <div *ngIf="!cardState.participants.editing" class="space-y-3">
               
               <!-- Client Participants -->
               <div>
                 <div class="flex items-center mb-2">
                   <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                  <h4 class="text-sm font-medium text-gray-900">Client Participants ({{ getParticipantsByType('CLIENT').length }})</h4>
-                  <span class="ml-auto text-xs text-gray-500">{{ getAttendanceStats('CLIENT').attended }} attended • {{ getAttendanceStats('CLIENT').absent }} absent</span>
+                  <h4 class="text-sm font-medium text-gray-900">Client Participants ({{ getParticipantsByType(ParticipantType.CLIENT).length }})</h4>
+                  <span class="ml-auto text-xs text-gray-500">{{ getAttendanceStats(ParticipantType.CLIENT).attended }} attended • {{ getAttendanceStats(ParticipantType.CLIENT).absent }} absent</span>
                 </div>
                 <div class="ml-5 space-y-1">
-                  <div *ngFor="let participant of getParticipantsByType('CLIENT')" class="flex items-center justify-between py-1">
+                  <div *ngFor="let participant of getParticipantsByType(ParticipantType.CLIENT)" class="flex items-center justify-between py-1">
                     <div class="flex items-center space-x-2">
                       <span class="text-sm text-gray-800">{{ participant.name }}</span>
-                      <span *ngIf="participant.organizer" class="text-xs text-orange-600 font-medium">ATTENDEE</span>
+                      <span *ngIf="participant.role === ParticipantRole.ORGANIZER" class="text-xs text-orange-600 font-medium">ORGANIZER</span>
+                      <span *ngIf="participant.role === ParticipantRole.ACTION_OWNER" class="text-xs text-purple-600 font-medium">ACTION OWNER</span>
                     </div>
                     <span class="text-xs" [ngClass]="participant.attended ? 'text-green-600' : 'text-red-600'">
                       {{ participant.attended ? 'attended' : 'absent' }}
                     </span>
+                  </div>
+                  <div *ngIf="getParticipantsByType(ParticipantType.CLIENT).length === 0" class="ml-3 text-xs text-gray-500 italic">
+                    No client participants
                   </div>
                 </div>
               </div>
@@ -213,34 +625,39 @@
               <div>
                 <div class="flex items-center mb-2">
                   <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                  <h4 class="text-sm font-medium text-gray-900">G37 Team ({{ getParticipantsByType('G37').length }})</h4>
-                  <span class="ml-auto text-xs text-gray-500">{{ getAttendanceStats('G37').attended }} attended • {{ getAttendanceStats('G37').absent }} absent</span>
+                  <h4 class="text-sm font-medium text-gray-900">G37 Team ({{ getParticipantsByType(ParticipantType.G37).length }})</h4>
+                  <span class="ml-auto text-xs text-gray-500">{{ getAttendanceStats(ParticipantType.G37).attended }} attended • {{ getAttendanceStats(ParticipantType.G37).absent }} absent</span>
                 </div>
                 <div class="ml-5 space-y-1">
-                  <div *ngFor="let participant of getParticipantsByType('G37')" class="flex items-center justify-between py-1">
+                  <div *ngFor="let participant of getParticipantsByType(ParticipantType.G37)" class="flex items-center justify-between py-1">
                     <div class="flex items-center space-x-2">
                       <span class="text-sm text-gray-800">{{ participant.name }}</span>
-                      <span *ngIf="participant.organizer" class="text-xs text-orange-600 font-medium">ATTENDEE</span>
+                      <span *ngIf="participant.role === ParticipantRole.ORGANIZER" class="text-xs text-orange-600 font-medium">ORGANIZER</span>
+                      <span *ngIf="participant.role === ParticipantRole.ACTION_OWNER" class="text-xs text-purple-600 font-medium">ACTION OWNER</span>
                     </div>
                     <span class="text-xs" [ngClass]="participant.attended ? 'text-green-600' : 'text-red-600'">
                       {{ participant.attended ? 'attended' : 'absent' }}
                     </span>
                   </div>
+                  <div *ngIf="getParticipantsByType(ParticipantType.G37).length === 0" class="ml-3 text-xs text-gray-500 italic">
+                    No G37 team members
+                  </div>
                 </div>
               </div>
 
               <!-- Other Participants -->
-              <div *ngIf="getParticipantsByType('OTHER').length > 0">
+              <div *ngIf="getParticipantsByType(ParticipantType.OTHER).length > 0">
                 <div class="flex items-center mb-2">
                   <div class="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
-                  <h4 class="text-sm font-medium text-gray-900">Other Participants ({{ getParticipantsByType('OTHER').length }})</h4>
-                  <span class="ml-auto text-xs text-gray-500">{{ getAttendanceStats('OTHER').attended }} attended • {{ getAttendanceStats('OTHER').absent }} absent</span>
+                  <h4 class="text-sm font-medium text-gray-900">Other Participants ({{ getParticipantsByType(ParticipantType.OTHER).length }})</h4>
+                  <span class="ml-auto text-xs text-gray-500">{{ getAttendanceStats(ParticipantType.OTHER).attended }} attended • {{ getAttendanceStats(ParticipantType.OTHER).absent }} absent</span>
                 </div>
                 <div class="ml-5 space-y-1">
-                  <div *ngFor="let participant of getParticipantsByType('OTHER')" class="flex items-center justify-between py-1">
+                  <div *ngFor="let participant of getParticipantsByType(ParticipantType.OTHER)" class="flex items-center justify-between py-1">
                     <div class="flex items-center space-x-2">
                       <span class="text-sm text-gray-800">{{ participant.name }}</span>
-                      <span *ngIf="participant.organizer" class="text-xs text-orange-600 font-medium">ATTENDEE</span>
+                      <span *ngIf="participant.role === ParticipantRole.ORGANIZER" class="text-xs text-orange-600 font-medium">ORGANIZER</span>
+                      <span *ngIf="participant.role === ParticipantRole.ACTION_OWNER" class="text-xs text-purple-600 font-medium">ACTION OWNER</span>
                     </div>
                     <span class="text-xs" [ngClass]="participant.attended ? 'text-green-600' : 'text-red-600'">
                       {{ participant.attended ? 'attended' : 'absent' }}

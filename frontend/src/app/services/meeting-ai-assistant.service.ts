@@ -259,7 +259,7 @@ export class MeetingAiAssistantService {
       participantInsights: {
         totalParticipants: participants.length,
         attendanceRate,
-        keyParticipants: participants.filter(p => p.presenter || p.organizer).map(p => p.name),
+        keyParticipants: participants.filter(p => p.role === 'PRESENTER' || p.role === 'ORGANIZER').map(p => p.name),
         missingStakeholders: participants.filter(p => p.isRequired && !p.attended).map(p => p.name)
       },
       meetingEffectiveness: {
@@ -438,8 +438,8 @@ export class MeetingAiAssistantService {
     }
 
     // Analyze participant types
-    const clientParticipants = participants.filter(p => p.participantType === 'CLIENT');
-    const g37Participants = participants.filter(p => p.participantType === 'G37');
+    const clientParticipants = participants.filter(p => p.type === 'CLIENT');
+    const g37Participants = participants.filter(p => p.type === 'G37');
     
     if (clientParticipants.length > 0) {
       response += `\n\n👥 Client participants: ${clientParticipants.length}`;

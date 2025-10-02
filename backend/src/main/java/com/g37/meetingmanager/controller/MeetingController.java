@@ -2,6 +2,7 @@ package com.g37.meetingmanager.controller;
 
 import com.g37.meetingmanager.dto.CreateMeetingRequest;
 import com.g37.meetingmanager.model.Meeting;
+import com.g37.meetingmanager.model.MeetingParticipant;
 import com.g37.meetingmanager.model.Organization;
 import com.g37.meetingmanager.model.User;
 import com.g37.meetingmanager.repository.mysql.MeetingRepository;
@@ -200,6 +201,17 @@ public class MeetingController {
             }
             if (request.getAiAnalysisEnabled() != null) {
                 meeting.setAiAnalysisEnabled(request.getAiAnalysisEnabled());
+            }
+            
+            // Handle participants update
+            if (request.getParticipants() != null) {
+                // Clear existing participants and add new ones
+                meeting.getParticipants().clear();
+                for (MeetingParticipant participant : request.getParticipants()) {
+                    // Set the meeting reference for each participant
+                    participant.setMeeting(meeting);
+                    meeting.getParticipants().add(participant);
+                }
             }
             
             Meeting updatedMeeting = meetingRepository.save(meeting);

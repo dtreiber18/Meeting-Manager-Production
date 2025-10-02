@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Meeting } from './meeting.model';
+import { Participant, ParticipantType, ParticipantRole, InvitationStatus, AttendanceStatus } from '../models/meeting-participant.model';
 
 // Backend data interfaces (what we receive from API)
 interface BackendMeetingData {
@@ -20,10 +21,16 @@ interface BackendMeetingData {
 }
 
 interface BackendParticipant {
-  id: number;
+  id?: number;
   name: string;
   email: string;
   attended?: boolean;
+  participantRole?: string;
+  invitationStatus?: string;
+  attendanceStatus?: string;
+  isRequired?: boolean;
+  canEdit?: boolean;
+  canInviteOthers?: boolean;
   [key: string]: unknown;
 }
 
@@ -57,26 +64,17 @@ export class MeetingMapperService {
       id: p.id,
       email: p.email,
       name: p.name,
-      participantRole: 'ATTENDEE',
-      invitationStatus: 'ACCEPTED',
-      attendanceStatus: p.attended ? 'ATTENDED' : 'NOT_ATTENDED',
+      role: ParticipantRole.ATTENDEE,
+      invitationStatus: InvitationStatus.ACCEPTED,
+      attendanceStatus: p.attended ? AttendanceStatus.PRESENT : AttendanceStatus.ABSENT,
       isRequired: false,
       canEdit: false,
       canInviteOthers: false,
       attendanceDurationMinutes: undefined,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      user: undefined,
-      organizer: false,
-      presenter: false,
-      external: false,
       attended: p.attended || false,
-      internal: true,
-      participantType: 'OTHER' as const,
-      department: undefined,
-      organization: undefined,
-      title: undefined,
-      invitedAt: new Date().toISOString()
+      type: ParticipantType.OTHER
     })) || [];
 
     // Map action items to simple format
@@ -274,5 +272,31 @@ export class MeetingMapperService {
    */
   transformMeetingsFromBackend(backendMeetings: BackendMeetingData[]): Meeting[] {
     return backendMeetings.map(meeting => this.transformMeetingFromBackend(meeting));
+  }
+
+  /**
+   * Transforms frontend meeting data to backend-compatible format for updates
+   */
+  transformMeetingToBackend(frontendMeeting: Meeting): BackendMeetingData {
+    return {
+      id: frontendMeeting.id,
+      title: frontendMeeting.title,
+      description: frontendMeeting.description,
+      startTime: frontendMeeting.startTime,
+      endTime: frontendMeeting.endTime,
+      meetingType: frontendMeeting.meetingType,
+      status: frontendMeeting.status,
+      participants: frontendMeeting.participants?.map(p => ({
+        id: p.id === Date.now() ? undefined : p.id, // Don't send temporary IDs
+        name: p.name,
+        email: p.email,
+        participantRole: p.role,
+        invitationStatus: p.invitationStatus || 'PENDING',
+        attendanceStatus: p.attendanceStatus || 'UNKNOWN',
+        isRequired: p.isRequired || false,
+        canEdit: p.canEdit || false,
+        canInviteOthers: p.canInviteOthers || false
+      })) || []
+    } as BackendMeetingData;
   }
 }

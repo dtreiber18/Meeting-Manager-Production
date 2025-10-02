@@ -165,81 +165,64 @@ export class HelpAdminComponent implements OnInit {
 
   private loadArticles(): void {
     this.isLoading = true;
-    // Mock data for now - replace with actual API call
-    setTimeout(() => {
-      this.articles = [
-        {
-          id: '1',
-          title: 'Getting Started with Meeting Manager',
-          category: 'getting-started',
-          description: 'Learn the basics of using Meeting Manager',
-          content: 'Complete guide to getting started...',
-          tags: ['beginner', 'setup'],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          viewCount: 245,
-          isPublished: true,
-          sortOrder: 1
-        },
-        {
-          id: '2',
-          title: 'Advanced Meeting Features',
-          category: 'user-guide',
-          description: 'Explore advanced features for power users',
-          content: 'Advanced features include...',
-          tags: ['advanced', 'features'],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          viewCount: 132,
-          isPublished: false,
-          sortOrder: 2
-        }
-      ];
-      this.isLoading = false;
-    }, 1000);
+    // Use actual backend service instead of mock data
+    this.helpService.getHelpArticles().subscribe({
+      next: (articles) => {
+        this.articles = articles.map(article => ({
+          ...article,
+          isPublished: article.isPublished ?? true, // Default for existing articles
+          sortOrder: article.sortOrder ?? 0 // Default sort order
+        }));
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading help articles:', error);
+        this.isLoading = false;
+        this.snackBar.open('Error loading help articles', 'Close', { duration: 3000 });
+        // Fallback to empty array instead of mock data
+        this.articles = [];
+      }
+    });
   }
 
   private loadFaqs(): void {
-    // Mock data for now - replace with actual API call
-    this.faqs = [
-      {
-        id: '1',
-        question: 'How do I create a meeting?',
-        answer: 'Click the "New Meeting" button on the dashboard...',
-        category: 'getting-started',
-        tags: ['meeting', 'creation'],
-        createdAt: new Date(),
-        viewCount: 0
+    this.isLoading = true;
+    // Use actual backend service instead of mock data
+    this.helpService.getFAQs().subscribe({
+      next: (faqs) => {
+        this.faqs = faqs.map(faq => ({
+          ...faq,
+          isPublished: true, // Default for existing FAQs
+          sortOrder: 0 // Default sort order
+        }));
+        this.isLoading = false;
       },
-      {
-        id: '2',
-        question: 'Can I export meeting data?',
-        answer: 'Yes, you can export meetings as PDF or Excel...',
-        category: 'user-guide',
-        tags: ['export', 'data'],
-        createdAt: new Date(),
-        viewCount: 0
+      error: (error) => {
+        console.error('Error loading FAQs:', error);
+        this.isLoading = false;
+        this.snackBar.open('Error loading FAQs', 'Close', { duration: 3000 });
+        // Fallback to empty array instead of mock data
+        this.faqs = [];
       }
-    ];
+    });
   }
 
   private loadTickets(): void {
-    // Mock data for now - replace with actual API call
-    this.tickets = [
-      {
-        id: 1,
-        ticketNumber: 'HELP-001',
-        subject: 'Cannot access my account',
-        description: 'User is unable to log into their account after password reset',
-        priority: 'high',
-        category: 'account',
-        status: 'open',
-        submittedBy: 'user@example.com',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        responses: []
+    this.isLoading = true;
+    // Use actual backend service instead of mock data
+    this.helpAdminService.getTickets(0, 20).subscribe({
+      next: (response) => {
+        this.tickets = response.content;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading support tickets:', error);
+        this.isLoading = false;
+        this.snackBar.open('Error loading support tickets', 'Close', { duration: 3000 });
+        // Fallback to empty array instead of mock data
+        this.tickets = [];
       }
-    ];
+    });
   }
 
   // Article management

@@ -85,11 +85,13 @@ export class MeetingService {
   }
 
   updateMeeting(id: string | number, meeting: Meeting): Observable<Meeting> {
-    return this.http.put<Meeting>(this.apiConfig.endpoints.meeting(id), meeting).pipe(
+    const backendMeeting = this.mapper.transformMeetingToBackend(meeting);
+    return this.http.put<BackendMeeting>(this.apiConfig.endpoints.meeting(id), backendMeeting).pipe(
       tap(() => {
         // Notify subscribers that meetings have been updated
         this._meetingsUpdated.next(true);
-      })
+      }),
+      map(backendResponse => this.mapper.transformMeetingFromBackend(backendResponse))
     );
   }
 

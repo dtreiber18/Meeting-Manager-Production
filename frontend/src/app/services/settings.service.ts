@@ -1,18 +1,23 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject } from 'rxjs';
+import { Observable, BehaviorSubject, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { User, AppConfig } from '../models/settings.model';
 import { environment } from '../../environments/environment';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SettingsService {
-  private readonly API_URL = `${environment.apiUrl}/settings`;
-  private currentUserSubject = new BehaviorSubject<User | null>(null);
+  private readonly API_URL = `${environment.apiUrl}/api/settings`;
+  private readonly currentUserSubject = new BehaviorSubject<User | null>(null);
   
-  constructor(private http: HttpClient) {
-    console.log('🔧 SettingsService API_URL:', this.API_URL); // Debug log
+  constructor(
+    private readonly http: HttpClient,
+    private readonly authService: AuthService
+  ) {
+    console.log('🔧 SettingsService API_URL:', this.API_URL);
     this.loadCurrentUser();
   }
 
@@ -38,34 +43,56 @@ export class SettingsService {
   }
 
   updateUser(user: User): Observable<User> {
-    return new Observable(observer => {
-      // Simulate API call
-      setTimeout(() => {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) {
+      throw new Error('User not authenticated');
+    }
+
+    return this.http.put<User>(`${this.API_URL}/user-profile`, {
+      ...user,
+      email: currentUser.email
+    }).pipe(
+      map((updatedUser: User) => {
+        this.currentUserSubject.next(updatedUser);
+        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+        return updatedUser;
+      }),
+      catchError((error) => {
+        console.error('Error updating user profile:', error);
+        // Fallback: update local state for better UX
         const updatedUser = { ...user, updatedAt: new Date() };
         this.currentUserSubject.next(updatedUser);
         localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-        observer.next(updatedUser);
-        observer.complete();
-      }, 500);
-    });
+        throw error;
+      })
+    );
   }
 
   changePassword(currentPassword: string, newPassword: string): Observable<boolean> {
-    return new Observable(observer => {
-      // Simulate API call
-      setTimeout(() => {
-        // In real implementation, validate current password
-        observer.next(true);
-        observer.complete();
-      }, 500);
-    });
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) {
+      throw new Error('User not authenticated');
+    }
+
+    return this.http.put<{ success: boolean }>(`${this.API_URL}/password`, {
+      email: currentUser.email,
+      currentPassword,
+      newPassword
+    }).pipe(
+      map(response => response.success),
+      catchError((error) => {
+        console.error('Error changing password:', error);
+        throw error;
+      })
+    );
   }
 
   getSourceApps(): Observable<AppConfig[]> {
-    return new Observable(observer => {
-      // Simulate API call with sample data
-      setTimeout(() => {
-        const sourceApps: AppConfig[] = [
+    return this.http.get<AppConfig[]>(`${this.API_URL}/source-apps`).pipe(
+      catchError((error) => {
+        console.error('Error fetching source apps:', error);
+        // Fallback data for development/demo purposes
+        const fallbackApps: AppConfig[] = [
           {
             id: '1',
             name: 'Fathom.video',
@@ -109,17 +136,17 @@ export class SettingsService {
             isActive: false
           }
         ];
-        observer.next(sourceApps);
-        observer.complete();
-      }, 300);
-    });
+        return of(fallbackApps);
+      })
+    );
   }
 
   getDestinationApps(): Observable<AppConfig[]> {
-    return new Observable(observer => {
-      // Simulate API call with sample data
-      setTimeout(() => {
-        const destinationApps: AppConfig[] = [
+    return this.http.get<AppConfig[]>(`${this.API_URL}/destination-apps`).pipe(
+      catchError((error) => {
+        console.error('Error fetching destination apps:', error);
+        // Fallback data for development/demo purposes
+        const fallbackApps: AppConfig[] = [
           {
             id: '1',
             name: 'Google Calendar',
@@ -159,44 +186,39 @@ export class SettingsService {
             isActive: true
           }
         ];
-        observer.next(destinationApps);
-        observer.complete();
-      }, 300);
-    });
+        return of(fallbackApps);
+      })
+    );
   }
 
   saveAppConfig(app: AppConfig): Observable<AppConfig> {
-    return new Observable(observer => {
-      // Simulate API call
-      setTimeout(() => {
-        const savedApp = { ...app, updatedAt: new Date() };
-        observer.next(savedApp);
-        observer.complete();
-      }, 500);
-    });
+    return this.http.post<AppConfig>(`${this.API_URL}/app-configs`, app).pipe(
+      catchError((error) => {
+        console.error('Error saving app config:', error);
+        throw error;
+      })
+    );
   }
 
   deleteAppConfig(id: string): Observable<boolean> {
-    return new Observable(observer => {
-      // Simulate API call
-      setTimeout(() => {
-        observer.next(true);
-        observer.complete();
-      }, 300);
-    });
+    return this.http.delete<{ success: boolean }>(`${this.API_URL}/app-configs/${id}`).pipe(
+      map(response => response.success),
+      catchError((error) => {
+        console.error('Error deleting app config:', error);
+        throw error;
+      })
+    );
   }
 
   testConnection(app: AppConfig): Observable<{ success: boolean; message: string }> {
-    return new Observable(observer => {
-      // Simulate API call
-      setTimeout(() => {
-        const success = Math.random() > 0.3; // 70% success rate for demo
-        observer.next({
-          success,
-          message: success ? 'Connection successful!' : 'Connection failed. Please check your credentials.'
+    return this.http.post<{ success: boolean; message: string }>(`${this.API_URL}/test-connection`, app).pipe(
+      catchError((error) => {
+        console.error('Error testing connection:', error);
+        return of({
+          success: false,
+          message: 'Connection failed. Please check your credentials and try again.'
         });
-        observer.complete();
-      }, 1000);
-    });
+      })
+    );
   }
 }
