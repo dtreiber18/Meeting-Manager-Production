@@ -81,6 +81,9 @@ export class MeetingDetailsScreenComponent implements OnInit {
   isAddingPendingAction = false;
   pendingActions: EditablePendingAction[] = [];
   canManageApprovals = true; // This should be set based on user role
+  selectedPendingActionIds: string[] = [];
+  isSyncingFromN8n = false;
+  n8nAvailable = false;
   
   // Enhanced Participant Management Properties
   showClassificationView = true;
@@ -522,6 +525,164 @@ export class MeetingDetailsScreenComponent implements OnInit {
   }
 
   /**
+   * N8N Integration Methods
+   */
+
+  /**
+   * Sync pending operations from N8N
+   */
+  syncFromN8n(): void {
+    if (!this.meetingId) {
+      this.toastService.showError('Meeting ID not available');
+      return;
+    }
+
+    this.isSyncingFromN8n = true;
+    this.pendingActionService.fetchFromN8n(this.meetingId.toString()).subscribe({
+      next: (response) => {
+        if (response.status === 'success') {
+          // Add new operations to the list
+          this.pendingActions.push(...response.operations);
+          this.toastService.showSuccess(`Synced ${response.count} operations from N8N`);
+        } else if (response.status === 'unavailable') {
+          this.toastService.showWarning('N8N service is not enabled or configured');
+        } else {
+          this.toastService.showWarning(response.message);
+        }
+        this.isSyncingFromN8n = false;
+      },
+      error: (error) => {
+        console.error('Error syncing from N8N:', error);
+        this.toastService.showError('Failed to sync from N8N');
+        this.isSyncingFromN8n = false;
+      }
+    });
+  }
+
+  /**
+   * Test N8N connection and update availability status
+   */
+  testN8nConnection(): void {
+    this.pendingActionService.testN8nConnection().subscribe({
+      next: (response) => {
+        this.n8nAvailable = response.available;
+        if (response.available) {
+          this.toastService.showSuccess('N8N service is available');
+        } else {
+          this.toastService.showWarning('N8N service is not configured');
+        }
+      },
+      error: (error) => {
+        console.error('Error testing N8N connection:', error);
+        this.n8nAvailable = false;
+        this.toastService.showError('Failed to test N8N connection');
+      }
+    });
+  }
+
+  /**
+   * Toggle selection of a pending action for bulk operations
+   */
+  togglePendingActionSelection(actionId: string): void {
+    const index = this.selectedPendingActionIds.indexOf(actionId);
+    if (index > -1) {
+      this.selectedPendingActionIds.splice(index, 1);
+    } else {
+      this.selectedPendingActionIds.push(actionId);
+    }
+  }
+
+  /**
+   * Check if a pending action is selected
+   */
+  isPendingActionSelected(actionId: string): boolean {
+    return this.selectedPendingActionIds.includes(actionId);
+  }
+
+  /**
+   * Select or deselect all pending actions
+   */
+  toggleAllPendingActions(): void {
+    if (this.selectedPendingActionIds.length === this.pendingActions.length) {
+      this.selectedPendingActionIds = [];
+    } else {
+      this.selectedPendingActionIds = this.pendingActions
+        .filter(a => a.id)
+        .map(a => a.id!);
+    }
+  }
+
+  /**
+   * Bulk approve selected pending actions
+   */
+  bulkApprovePendingActions(): void {
+    if (this.selectedPendingActionIds.length === 0) {
+      this.toastService.showWarning('No pending actions selected');
+      return;
+    }
+
+    const approvalNotes = prompt('Enter approval notes (optional):');
+    if (approvalNotes === null) return; // User cancelled
+
+    this.pendingActionService.bulkApprovePendingActions(
+      this.selectedPendingActionIds,
+      1, // Should be current user ID
+      approvalNotes || undefined
+    ).subscribe({
+      next: (updatedActions) => {
+        // Update the pending actions list
+        updatedActions.forEach(updatedAction => {
+          const index = this.pendingActions.findIndex(a => a.id === updatedAction.id);
+          if (index !== -1) {
+            this.pendingActions[index] = updatedAction;
+          }
+        });
+        this.toastService.showSuccess(`Approved ${updatedActions.length} pending actions`);
+        this.selectedPendingActionIds = [];
+      },
+      error: (error) => {
+        console.error('Error bulk approving pending actions:', error);
+        this.toastService.showError('Failed to approve selected actions');
+      }
+    });
+  }
+
+  /**
+   * Bulk reject selected pending actions
+   */
+  bulkRejectPendingActions(): void {
+    if (this.selectedPendingActionIds.length === 0) {
+      this.toastService.showWarning('No pending actions selected');
+      return;
+    }
+
+    const rejectionReason = prompt('Enter rejection reason (required):');
+    if (!rejectionReason?.trim()) return; // User cancelled or no reason
+
+    this.pendingActionService.bulkRejectPendingActions(
+      this.selectedPendingActionIds,
+      1, // Should be current user ID
+      rejectionReason
+    ).subscribe({
+      next: (updatedActions) => {
+        // Update the pending actions list
+        updatedActions.forEach(updatedAction => {
+          const index = this.pendingActions.findIndex(a => a.id === updatedAction.id);
+          if (index !== -1) {
+            this.pendingActions[index] = updatedAction;
+          }
+        });
+        this.toastService.showSuccess(`Rejected ${updatedActions.length} pending actions`);
+        this.selectedPendingActionIds = [];
+      },
+      error: (error) => {
+        console.error('Error bulk rejecting pending actions:', error);
+        this.toastService.showError('Failed to reject selected actions');
+      }
+    });
+  }
+
+  /**
    * Get pending action border class based on status
    */
   getPendingActionBorderClass(status: PendingAction['status']): string {
@@ -587,28 +748,58 @@ export class MeetingDetailsScreenComponent implements OnInit {
     }
   }
 
-  toggleEditMode(): void {
-    console.log('toggleEditMode called, current isEditing:', this.isEditing);
-    this.isEditing = !this.isEditing;
-    console.log('toggleEditMode finished, new isEditing:', this.isEditing);
-    if (!this.isEditing) {
-      // When exiting edit mode, also exit all sub-edit modes
-      this.isEditingOverview = false;
-      this.isEditingActionItems = false;
-      this.isAddingParticipant = false;
-      this.isAddingPendingAction = false;
-      this.showParticipantFilters = false;
-      // Reset any pending changes
-      if (this.meeting && this.meeting.id !== undefined) {
-        this.editedMeeting = { ...this.meeting } as EditableMeeting;
-      }
-      this.loadPendingActions(); // Reload pending actions
-      this.applyParticipantFilters(); // Refresh participant filters
-      // Reset all card editing states
-      Object.keys(this.cardState).forEach(key => {
-        this.cardState[key as keyof typeof this.cardState].editing = false;
-      });
+  /**
+   * Enter edit mode - makes all sections editable
+   */
+  enterEditMode(): void {
+    console.log('Entering edit mode');
+    this.isEditing = true;
+    // Make a deep copy for editing
+    if (this.meeting && this.meeting.id !== undefined) {
+      this.editedMeeting = JSON.parse(JSON.stringify(this.meeting)) as EditableMeeting;
     }
+  }
+
+  /**
+   * Cancel edit mode - discard all changes
+   */
+  cancelEditMode(): void {
+    console.log('Canceling edit mode');
+    this.isEditing = false;
+    // Exit all sub-edit modes
+    this.isEditingOverview = false;
+    this.isEditingActionItems = false;
+    this.isAddingParticipant = false;
+    this.isAddingPendingAction = false;
+    this.showParticipantFilters = false;
+    // Reset any pending changes
+    if (this.meeting && this.meeting.id !== undefined) {
+      this.editedMeeting = JSON.parse(JSON.stringify(this.meeting)) as EditableMeeting;
+    }
+    // Clear any pending action selections
+    this.selectedPendingActionIds = [];
+    // Reset all card editing states
+    Object.keys(this.cardState).forEach(key => {
+      this.cardState[key as keyof typeof this.cardState].editing = false;
+    });
+  }
+
+  /**
+   * Save all changes across all sections
+   */
+  saveAllChanges(): void {
+    console.log('Saving all changes');
+    if (!this.meeting || !this.meeting.id) {
+      this.toastService.showError('No meeting to save');
+      return;
+    }
+
+    // Use the existing updateMeeting method which handles everything
+    this.updateMeeting();
+
+    // Exit edit mode after save is triggered
+    // Note: updateMeeting() already handles the reload and success toast
+    this.isEditing = false;
   }
 
   // Toggle collapse/expand for individual cards

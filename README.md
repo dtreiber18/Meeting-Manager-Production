@@ -10,7 +10,51 @@ A modern, enterprise-grade meeting management application built with Angular 17+
 
 ## 🔧 Recent Updates (October 2025)
 
-### ✅ **ZERO MOCK DATA - 100% Production Ready! (v3.3.0) - LATEST**
+### ✅ **Unified Edit Mode & Enhanced UX (v3.5.0) - LATEST**
+- **✨ Streamlined Editing Experience**: Complete redesign of meeting details editing workflow
+  - **Single Edit Mode**: One "📝 Edit" button enables editing across all sections simultaneously
+  - **Unified Save/Cancel**: Single "💾 Save" button commits all changes, "❌ Cancel" discards everything
+  - **Visual Edit Indicators**: Blue borders and rings highlight all editable cards in edit mode
+  - **Removed Card-Level Buttons**: Eliminated confusing individual Edit/Save/Cancel buttons per section
+  - **Smooth Transitions**: 200ms animated transitions between view and edit states
+- **🎨 Enhanced Visual Feedback**:
+  - **Edit Mode Styling**: Cards show blue borders (`border-blue-400`) with subtle ring effects
+  - **Header Highlights**: Card headers display light blue backgrounds in edit mode
+  - **Consistent Experience**: All sections (Header, Participants, Overview, Pending Actions, Action Items) share unified styling
+- **⚡ Improved Functionality**:
+  - **Deep Copy Protection**: Edit mode creates deep copy of data to prevent accidental modifications
+  - **Bulk Operations Enhanced**: Pending action checkboxes and bulk approve/reject only visible in edit mode
+  - **N8N Sync Always Available**: "Sync from N8N" button accessible in both view and edit modes
+  - **Smart Save**: Only modified sections trigger API calls, efficient change detection
+  - **Graceful Error Handling**: Partial saves supported - successful sections saved even if others fail
+
+### ✅ **N8N Operations Integration (v3.4.0)**
+- **🔄 N8N Workflow Integration**: Complete integration with N8N Operations Manager for automated pending action management
+  - **Auto-Sync Scheduler**: Scheduled job runs every 15 minutes to sync pending operations from N8N for recent meetings
+  - **Manual Sync Button**: One-click "Sync from N8N" button in meeting details UI for on-demand synchronization
+  - **Bulk Operations**: Select multiple pending actions with checkboxes and bulk approve/reject with visual feedback
+  - **N8N Status Indicators**: Purple "🔄 N8N" badges show which actions originated from N8N workflows
+  - **Workflow Status Display**: Real-time workflow status tracking (TRIGGERED, COMPLETED, FAILED) with color-coded badges
+  - **Auto-Conversion**: N8N contact operations automatically converted to pending actions with proper metadata
+- **🏗️ Backend Architecture Enhancements**:
+  - **N8nService**: Core integration service with REST API communication to N8N webhook endpoints
+  - **N8nOperationDTO**: Data transfer object for N8N API response structure mapping
+  - **N8nSyncScheduler**: Automated scheduler with duplicate prevention and error handling
+  - **PendingActionService Activation**: Enabled full MongoDB service with N8N workflow triggering
+  - **Controller Persistence**: Updated all pending action endpoints to use MongoDB instead of stubs
+- **🎯 Frontend UI Features**:
+  - **Sync Interface**: Purple sync button with loading state and toast notifications
+  - **Bulk Selection**: Checkbox system for selecting multiple pending actions
+  - **Bulk Action Buttons**: Approve/Reject selected items with count display
+  - **Status Badges**: Visual indicators for N8N origin and workflow execution status
+  - **Toast Notifications**: Success/error feedback for all N8N operations
+- **⚙️ Configuration & Deployment**:
+  - **Conditional Loading**: Services only load when `n8n.enabled=true` in application.yml
+  - **Environment Variables**: N8N_ENABLED, N8N_WEBHOOK_URL, N8N_API_KEY for flexible deployment
+  - **Graceful Fallback**: Application works normally when N8N is not configured
+  - **@EnableScheduling**: Added to main application for scheduled auto-sync support
+
+### ✅ **ZERO MOCK DATA - 100% Production Ready! (v3.3.0)**
 - **🎯 Mission Accomplished**: Eliminated ALL mock services and mock data from frontend - now 100% production-ready!
   - **SettingsService Complete Rewrite**: Replaced Observable.create() mock implementations with real HTTP API calls
   - **HelpAdminComponent Backend Integration**: Eliminated hardcoded arrays, now uses HelpService and HelpAdminService

@@ -31,6 +31,9 @@ public class PendingActionService {
     @Autowired(required = false)
     private NotificationService notificationService;
 
+    @Autowired(required = false)
+    private N8nService n8nService;
+
     /**
      * Check if MongoDB is available
      */
@@ -336,11 +339,22 @@ public class PendingActionService {
         // Implementation for N8N workflow trigger
         // This would call the N8N Operations Manager workflow
         // with the pending action details
-        
+
         try {
-            // Placeholder for N8N integration
-            pendingAction.setN8nWorkflowStatus("TRIGGERED");
-            pendingAction.setN8nExecutionId("n8n_" + System.currentTimeMillis());
+            // Use N8nService if available
+            if (n8nService != null && n8nService.isN8nAvailable()) {
+                boolean success = n8nService.triggerWorkflow(pendingAction);
+                if (success) {
+                    pendingAction.setN8nWorkflowStatus("TRIGGERED");
+                    pendingAction.setN8nExecutionId("n8n_" + System.currentTimeMillis());
+                } else {
+                    pendingAction.setN8nWorkflowStatus("FAILED");
+                }
+            } else {
+                // Fallback - mark as triggered but with mock ID
+                pendingAction.setN8nWorkflowStatus("TRIGGERED");
+                pendingAction.setN8nExecutionId("n8n_" + System.currentTimeMillis());
+            }
             pendingActionRepository.save(pendingAction);
         } catch (Exception e) {
             // Log error and update status

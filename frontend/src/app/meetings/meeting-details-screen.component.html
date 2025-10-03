@@ -41,35 +41,13 @@
       <div class="flex-1 md:w-2/3 space-y-4">
       
         <!-- Meeting Header Card -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="bg-white rounded-lg shadow-sm border transition-all duration-200"
+             [ngClass]="isEditing ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-200'">
           <!-- Card Header -->
-          <div class="flex items-center justify-between p-4 border-b border-gray-200">
+          <div class="flex items-center justify-between p-4 border-b"
+               [ngClass]="isEditing ? 'border-blue-300 bg-blue-50/50' : 'border-gray-200'">
             <h3 class="text-base font-semibold text-gray-900">Meeting Details</h3>
             <div class="flex items-center space-x-2">
-              <!-- Edit button (visible when in global edit mode and not editing this card) -->
-              <button 
-                *ngIf="isEditing && !cardState.header.editing"
-                type="button"
-                (click)="toggleCardEdit('header')"
-                class="px-2 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors">
-                Edit
-              </button>
-              <!-- Cancel button (only visible when editing this card) -->
-              <button 
-                *ngIf="cardState.header.editing"
-                type="button"
-                (click)="toggleCardEdit('header')"
-                class="px-2 py-1 text-xs bg-red-100 text-red-700 hover:bg-red-200 rounded-md transition-colors">
-                Cancel
-              </button>
-              <!-- Save button (only visible when editing this card) -->
-              <button 
-                *ngIf="cardState.header.editing"
-                type="button"
-                (click)="saveCard('header')"
-                class="px-2 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded-md transition-colors">
-                Save
-              </button>
               <!-- Collapse/Expand button -->
               <button 
                 type="button"
@@ -77,13 +55,38 @@
                 class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
                 <mat-icon class="w-4 h-4">{{ cardState.header.collapsed ? 'expand_more' : 'expand_less' }}</mat-icon>
               </button>
-              <!-- Global Edit button (only on header card) -->
-              <button 
-                type="button"
-                (click)="toggleEditMode(); $event.preventDefault(); $event.stopPropagation()"
-                class="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-                {{ isEditing ? 'Exit Edit' : 'Edit Meeting' }}
-              </button>
+              <!-- Global Edit/Save/Cancel buttons (only on header card) -->
+              <div class="flex items-center space-x-2">
+                <!-- Edit button (shown when NOT editing) -->
+                <button
+                  *ngIf="!isEditing"
+                  type="button"
+                  (click)="enterEditMode(); $event.preventDefault(); $event.stopPropagation()"
+                  class="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-1">
+                  <mat-icon class="w-4 h-4">edit</mat-icon>
+                  <span>Edit</span>
+                </button>
+
+                <!-- Save button (shown when editing) -->
+                <button
+                  *ngIf="isEditing"
+                  type="button"
+                  (click)="saveAllChanges(); $event.preventDefault(); $event.stopPropagation()"
+                  class="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center space-x-1">
+                  <mat-icon class="w-4 h-4">save</mat-icon>
+                  <span>Save</span>
+                </button>
+
+                <!-- Cancel button (shown when editing) -->
+                <button
+                  *ngIf="isEditing"
+                  type="button"
+                  (click)="cancelEditMode(); $event.preventDefault(); $event.stopPropagation()"
+                  class="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center space-x-1">
+                  <mat-icon class="w-4 h-4">close</mat-icon>
+                  <span>Cancel</span>
+                </button>
+              </div>
             </div>
           </div>
           
@@ -146,35 +149,13 @@
         </div>
 
         <!-- Meeting Participants -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="bg-white rounded-lg shadow-sm border transition-all duration-200"
+             [ngClass]="isEditing ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-200'">
           <!-- Card Header -->
-          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <div class="flex items-center justify-between px-4 py-3 border-b"
+               [ngClass]="isEditing ? 'border-blue-300 bg-blue-50/50' : 'border-gray-200'">
             <h3 class="text-base font-semibold text-gray-900">Meeting Participants ({{ allParticipants.length }} total)</h3>
             <div class="flex items-center space-x-2">
-              <!-- Edit button (visible when in global edit mode and not editing this card) -->
-              <button 
-                *ngIf="isEditing && !cardState.participants.editing"
-                type="button"
-                (click)="toggleCardEdit('participants')"
-                class="px-2 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md transition-colors">
-                Edit
-              </button>
-              <!-- Cancel button (only visible when editing this card) -->
-              <button 
-                *ngIf="cardState.participants.editing"
-                type="button"
-                (click)="toggleCardEdit('participants')"
-                class="px-2 py-1 text-xs bg-red-100 text-red-700 hover:bg-red-200 rounded-md transition-colors">
-                Cancel
-              </button>
-              <!-- Save button (only visible when editing this card) -->
-              <button 
-                *ngIf="cardState.participants.editing"
-                type="button"
-                (click)="saveCard('participants')"
-                class="px-2 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded-md transition-colors">
-                Save
-              </button>
               <!-- Collapse/Expand button -->
               <button 
                 type="button"
@@ -187,7 +168,7 @@
           
           <div class="p-4" [hidden]="cardState.participants.collapsed">
             <!-- Participant Edit Mode -->
-            <div *ngIf="cardState.participants.editing" class="space-y-4">
+            <div *ngIf="isEditing" class="space-y-4">
               
               <!-- Add Participant Button -->
               <div class="flex items-center justify-between">
@@ -595,7 +576,7 @@
             </div>
 
             <!-- Participant View Mode -->
-            <div *ngIf="!cardState.participants.editing" class="space-y-3">
+            <div *ngIf="!isEditing" class="space-y-3">
               
               <!-- Client Participants -->
               <div>
@@ -671,7 +652,8 @@
         </div>
 
         <!-- Meeting Overview -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="bg-white rounded-lg shadow-sm border transition-all duration-200"
+             [ngClass]="isEditing ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-200'">
           <!-- Card Header -->
           <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
             <h3 class="text-base font-semibold text-gray-900">Meeting Overview</h3>
@@ -778,13 +760,38 @@
         </div>
 
         <!-- Pending Actions -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="bg-white rounded-lg shadow-sm border transition-all duration-200"
+             [ngClass]="isEditing ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-200'">
           <!-- Card Header -->
           <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
             <h3 class="text-base font-semibold text-gray-900">Pending Actions <span class="text-sm text-gray-500 font-normal">(Approval Workflow)</span></h3>
             <div class="flex items-center space-x-2">
+              <!-- Sync from N8N button (available in both view and edit modes) -->
+              <button
+                type="button"
+                (click)="syncFromN8n()"
+                [disabled]="isSyncingFromN8n"
+                class="px-2 py-1 text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1">
+                <span *ngIf="!isSyncingFromN8n">🔄 Sync from N8N</span>
+                <span *ngIf="isSyncingFromN8n">⏳ Syncing...</span>
+              </button>
+              <!-- Bulk action buttons (only visible when items are selected) -->
+              <button
+                *ngIf="selectedPendingActionIds.length > 0"
+                type="button"
+                (click)="bulkApprovePendingActions()"
+                class="px-2 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded-md transition-colors">
+                ✅ Approve Selected ({{ selectedPendingActionIds.length }})
+              </button>
+              <button
+                *ngIf="selectedPendingActionIds.length > 0"
+                type="button"
+                (click)="bulkRejectPendingActions()"
+                class="px-2 py-1 text-xs bg-red-100 text-red-700 hover:bg-red-200 rounded-md transition-colors">
+                ❌ Reject Selected ({{ selectedPendingActionIds.length }})
+              </button>
               <!-- Add Pending Action button (only visible when in global edit mode and not adding/editing) -->
-              <button 
+              <button
                 *ngIf="isEditing && !isAddingPendingAction && !cardState.pendingActions.editing"
                 type="button"
                 (click)="isAddingPendingAction = true"
@@ -922,20 +929,49 @@
                   
                   <!-- Read-only view -->
                   <div *ngIf="!action.editing" class="flex items-center justify-between p-3">
-                    <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-3 flex-1">
+                      <!-- Selection Checkbox (only visible in edit mode) -->
+                      <div *ngIf="isEditing && action.id" class="flex-shrink-0">
+                        <input
+                          type="checkbox"
+                          [checked]="isPendingActionSelected(action.id)"
+                          (change)="togglePendingActionSelection(action.id)"
+                          class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          title="Select for bulk operations">
+                      </div>
+
                       <!-- Status Icon -->
                       <div class="flex-shrink-0">
-                        <mat-icon class="w-5 h-5" 
-                                  [ngClass]="action.status === 'APPROVED' ? 'text-green-600' : 
+                        <mat-icon class="w-5 h-5"
+                                  [ngClass]="action.status === 'APPROVED' ? 'text-green-600' :
                                             action.status === 'REJECTED' ? 'text-red-600' : 'text-yellow-600'">
-                          {{ action.status === 'APPROVED' ? 'check_circle' : 
+                          {{ action.status === 'APPROVED' ? 'check_circle' :
                              action.status === 'REJECTED' ? 'cancel' : 'pending' }}
                         </mat-icon>
                       </div>
-                      
+
                       <!-- Action Info -->
                       <div class="flex-1 min-w-0">
-                        <h4 class="text-sm font-medium text-gray-900">{{ action.title }}</h4>
+                        <div class="flex items-center space-x-2">
+                          <h4 class="text-sm font-medium text-gray-900">{{ action.title }}</h4>
+                          <!-- N8N Badge -->
+                          <span *ngIf="action.n8nExecutionId"
+                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800"
+                                title="From N8N Operations Manager">
+                            🔄 N8N
+                          </span>
+                          <!-- N8N Workflow Status Badge -->
+                          <span *ngIf="action.n8nWorkflowStatus"
+                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                                [ngClass]="{
+                                  'bg-blue-100 text-blue-800': action.n8nWorkflowStatus === 'TRIGGERED',
+                                  'bg-green-100 text-green-800': action.n8nWorkflowStatus === 'SUCCESS',
+                                  'bg-red-100 text-red-800': action.n8nWorkflowStatus === 'FAILED'
+                                }"
+                                [title]="'N8N Workflow Status: ' + action.n8nWorkflowStatus">
+                            {{ action.n8nWorkflowStatus }}
+                          </span>
+                        </div>
                         <p class="text-xs text-gray-600 mt-1">{{ action.description }}</p>
                         <div class="flex items-center space-x-4 text-xs text-gray-500 mt-1">
                           <span>Assigned to: {{ action.assigneeName || 'Unassigned' }}</span>
@@ -1081,7 +1117,8 @@
         </div>
 
         <!-- Action Items -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="bg-white rounded-lg shadow-sm border transition-all duration-200"
+             [ngClass]="isEditing ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-200'">
           <!-- Card Header -->
           <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
             <h3 class="text-base font-semibold text-gray-900">Action Items <span class="text-sm text-gray-500 font-normal">(Regular Tasks)</span></h3>

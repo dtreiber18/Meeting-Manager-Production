@@ -302,4 +302,40 @@ export class PendingActionService {
       default: return 'task_alt';
     }
   }
+
+  /**
+   * N8N Integration Methods
+   */
+
+  /**
+   * Fetch pending operations from N8N for a specific event
+   */
+  fetchFromN8n(eventId: string): Observable<{
+    status: string;
+    message: string;
+    count?: number;
+    operations: PendingAction[];
+  }> {
+    return this.http.get<{
+      status: string;
+      message: string;
+      count?: number;
+      operations: PendingAction[];
+    }>(`${this.apiUrl}/n8n/fetch/${eventId}`);
+  }
+
+  /**
+   * Test N8N connectivity
+   */
+  testN8nConnection(): Observable<{
+    status: string;
+    message: string;
+    available: boolean;
+  }> {
+    return this.http.get<{
+      status: string;
+      message: string;
+      available: boolean;
+    }>(`${this.apiUrl}/n8n/test`);
+  }
 }

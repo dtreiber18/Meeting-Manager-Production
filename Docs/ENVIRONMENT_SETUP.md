@@ -454,11 +454,92 @@ ONEDRIVE_REDIRECT_URI=http://localhost:8080/auth/onedrive/callback
 GOOGLE_DRIVE_CLIENT_ID=your-google-client-id
 GOOGLE_DRIVE_CLIENT_SECRET=your-google-client-secret
 GOOGLE_DRIVE_REDIRECT_URI=http://localhost:8080/auth/googledrive/callback
+
+# N8N Integration (Optional)
+N8N_ENABLED=false
+N8N_WEBHOOK_URL=
+N8N_API_KEY=
 EOF
 
 # Load environment variables
 source .env
 ```
+
+## 🔄 N8N Operations Integration (Optional)
+
+The application supports integration with N8N Operations Manager for automated pending action workflows.
+
+### N8N Configuration
+
+1. **Enable N8N Integration**
+   ```yaml
+   # backend/src/main/resources/application.yml
+   n8n:
+     enabled: ${N8N_ENABLED:false}
+     webhook:
+       url: ${N8N_WEBHOOK_URL:}
+     api:
+       key: ${N8N_API_KEY:}
+   ```
+
+2. **Environment Variables**
+   ```bash
+   # Enable N8N integration
+   N8N_ENABLED=true
+
+   # N8N webhook URL for Operations Manager workflow
+   N8N_WEBHOOK_URL=https://your-n8n-instance.com/webhook/pending-operations
+
+   # Optional: API key for N8N authentication
+   N8N_API_KEY=your-n8n-api-key
+   ```
+
+3. **N8N Workflow Setup**
+   - Create an N8N workflow with a webhook trigger
+   - Configure webhook to accept POST requests with JSON body
+   - Expected request format:
+     ```json
+     {
+       "action": "get_pending",
+       "event_id": "meeting-id"
+     }
+     ```
+   - Response format:
+     ```json
+     [
+       {
+         "id": "operation-id",
+         "createdTime": "2025-10-03T10:00:00Z",
+         "event_id": "meeting-id",
+         "status": "pending",
+         "operation_type": "Contact",
+         "operation": {
+           "FirstName": "John",
+           "LastName": "Doe",
+           "Email": "john.doe@example.com",
+           "Phone": "555-1234",
+           "Role": "Developer",
+           "Company": "Tech Corp"
+         }
+       }
+     ]
+     ```
+
+4. **Features When Enabled**
+   - **Auto-Sync**: Scheduled job runs every 15 minutes to fetch pending operations from N8N
+   - **Manual Sync**: "Sync from N8N" button in meeting details UI
+   - **Bulk Operations**: Approve/reject multiple pending actions at once
+   - **N8N Indicators**: Visual badges show which actions came from N8N
+   - **Workflow Status**: Real-time status tracking (TRIGGERED, COMPLETED, FAILED)
+
+5. **Disabling N8N (Default)**
+   ```bash
+   # Set to false or omit to disable N8N integration
+   N8N_ENABLED=false
+   ```
+   - Application runs normally without N8N
+   - Pending actions can still be created manually
+   - No scheduler or N8N-specific features active
 
 ## 🚀 Next Steps
 

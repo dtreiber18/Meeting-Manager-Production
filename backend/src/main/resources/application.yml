@@ -129,6 +129,20 @@ management:
       export:
         enabled: true
 
+# N8N Integration Configuration
+n8n:
+  enabled: ${N8N_ENABLED:false}
+  webhook:
+    url: ${N8N_WEBHOOK_URL:}
+  api:
+    key: ${N8N_API_KEY:}
+
+# Cloud Storage Configuration
+help:
+  default:
+    storage:
+      provider: ${HELP_STORAGE_PROVIDER:ONEDRIVE}
+
 # Logging Configuration
 logging:
   level:

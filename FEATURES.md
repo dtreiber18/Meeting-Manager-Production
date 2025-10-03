@@ -81,12 +81,21 @@
   - **Role Display**: Clear role identification (Attendee, Presenter, Organizer)
   - **Contact Information**: Email addresses and professional titles
 
-#### Advanced Action Items
+#### Advanced Action Items & Pending Operations
 - **✅ Action Item Tracking**
   - **Status Management**: Visual status indicators (Pending, In Progress, Completed)
   - **Assignment Tracking**: Clear assignee identification with due dates
   - **Priority Levels**: Color-coded priority indicators (High, Medium, Low)
   - **Progress Monitoring**: Visual progress indicators and completion tracking
+
+- **🔄 N8N Operations Integration (NEW - October 2025)**
+  - **N8N Sync**: One-click sync button to fetch pending operations from N8N Operations Manager
+  - **Bulk Operations**: Select multiple pending actions for bulk approve/reject with visual feedback
+  - **N8N Indicators**: Purple badges show which actions originated from N8N workflows
+  - **Workflow Status**: Real-time workflow status display (TRIGGERED, COMPLETED, FAILED)
+  - **Approval Workflow**: Complete NEW → ACTIVE → COMPLETE status progression
+  - **Auto-Conversion**: N8N contact operations automatically converted to pending actions
+  - **Conditional Loading**: Service only loads when N8N is configured, graceful fallback otherwise
 
 ### ✅ Intelligent Search & Filtering
 

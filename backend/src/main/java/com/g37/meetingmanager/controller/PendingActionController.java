@@ -1,7 +1,12 @@
 package com.g37.meetingmanager.controller;
 
+import com.g37.meetingmanager.dto.N8nOperationDTO;
+import com.g37.meetingmanager.model.PendingAction;
+import com.g37.meetingmanager.service.N8nService;
+import com.g37.meetingmanager.service.PendingActionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -10,33 +15,49 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/pending-actions")
 @CrossOrigin(origins = "*")
 @ConditionalOnProperty(name = "spring.data.mongodb.uri", matchIfMissing = false)
 public class PendingActionController {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(PendingActionController.class);
+
+    @Autowired(required = false)
+    private N8nService n8nService;
+
+    @Autowired(required = false)
+    private PendingActionService pendingActionService;
 
     public PendingActionController() {
         logger.info("PendingActionController initialized - MongoDB-enabled implementation");
     }
     
     @GetMapping("/meeting/{meetingId}")
-    public ResponseEntity<List<Map<String, Object>>> getPendingActionsByMeeting(@PathVariable Long meetingId) {
+    public ResponseEntity<List<PendingAction>> getPendingActionsByMeeting(@PathVariable Long meetingId) {
         logger.info("Getting pending actions for meeting ID: {}", meetingId);
-        
-        // Return empty list for now since MongoDB service is not yet available
-        List<Map<String, Object>> pendingActions = Collections.emptyList();
-        
+
+        if (pendingActionService == null) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+
+        List<PendingAction> pendingActions = pendingActionService.getPendingActionsByMeeting(meetingId);
         return ResponseEntity.ok(pendingActions);
     }
     
     @GetMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> getPendingActionById(@PathVariable String id) {
+    public ResponseEntity<PendingAction> getPendingActionById(@PathVariable String id) {
         logger.info("Getting pending action with ID: {}", id);
-        return ResponseEntity.notFound().build();
+
+        if (pendingActionService == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return pendingActionService.getPendingActionById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/assignee/{assigneeId}")
@@ -84,29 +105,43 @@ public class PendingActionController {
     }
 
     @PostMapping("/{id}/approve")
-    public ResponseEntity<Map<String, Object>> approvePendingAction(
-            @PathVariable String id, 
-            @RequestParam Long approvedById, 
+    public ResponseEntity<PendingAction> approvePendingAction(
+            @PathVariable String id,
+            @RequestParam Long approvedById,
             @RequestParam(required = false) String notes) {
         logger.info("Approving pending action {} by user {}", id, approvedById);
-        Map<String, Object> response = Map.of(
-            "message", "Pending action approval - MongoDB service integration pending",
-            "status", "accepted"
-        );
-        return ResponseEntity.accepted().body(response);
+
+        if (pendingActionService == null) {
+            return ResponseEntity.status(503).build();
+        }
+
+        try {
+            PendingAction approved = pendingActionService.approvePendingAction(id, approvedById, notes);
+            return ResponseEntity.ok(approved);
+        } catch (Exception e) {
+            logger.error("Error approving pending action", e);
+            return ResponseEntity.status(500).build();
+        }
     }
 
     @PostMapping("/{id}/reject")
-    public ResponseEntity<Map<String, Object>> rejectPendingAction(
-            @PathVariable String id, 
-            @RequestParam Long rejectedById, 
+    public ResponseEntity<PendingAction> rejectPendingAction(
+            @PathVariable String id,
+            @RequestParam Long rejectedById,
             @RequestParam(required = false) String notes) {
         logger.info("Rejecting pending action {} by user {}", id, rejectedById);
-        Map<String, Object> response = Map.of(
-            "message", "Pending action rejection - MongoDB service integration pending",
-            "status", "accepted"
-        );
-        return ResponseEntity.accepted().body(response);
+
+        if (pendingActionService == null) {
+            return ResponseEntity.status(503).build();
+        }
+
+        try {
+            PendingAction rejected = pendingActionService.rejectPendingAction(id, rejectedById, notes);
+            return ResponseEntity.ok(rejected);
+        } catch (Exception e) {
+            logger.error("Error rejecting pending action", e);
+            return ResponseEntity.status(500).build();
+        }
     }
 
     @PostMapping("/{id}/complete")
@@ -188,41 +223,124 @@ public class PendingActionController {
     }
 
     @PostMapping("/bulk/approve")
-    public ResponseEntity<Map<String, Object>> bulkApprovePendingActions(
+    public ResponseEntity<List<PendingAction>> bulkApprovePendingActions(
             @RequestBody List<String> ids,
             @RequestParam Long approvedById,
             @RequestParam(required = false) String notes) {
         logger.info("Bulk approving {} pending actions by user {}", ids.size(), approvedById);
-        Map<String, Object> response = Map.of(
-            "message", "Bulk approval - MongoDB service integration pending",
-            "status", "accepted"
-        );
-        return ResponseEntity.accepted().body(response);
+
+        if (pendingActionService == null) {
+            return ResponseEntity.status(503).build();
+        }
+
+        try {
+            List<PendingAction> approved = pendingActionService.bulkApprovePendingActions(ids, approvedById, notes);
+            return ResponseEntity.ok(approved);
+        } catch (Exception e) {
+            logger.error("Error bulk approving pending actions", e);
+            return ResponseEntity.status(500).build();
+        }
     }
 
     @PostMapping("/bulk/reject")
-    public ResponseEntity<Map<String, Object>> bulkRejectPendingActions(
+    public ResponseEntity<List<PendingAction>> bulkRejectPendingActions(
             @RequestBody List<String> ids,
             @RequestParam Long rejectedById,
             @RequestParam(required = false) String notes) {
         logger.info("Bulk rejecting {} pending actions by user {}", ids.size(), rejectedById);
-        Map<String, Object> response = Map.of(
-            "message", "Bulk rejection - MongoDB service integration pending",
-            "status", "accepted"
-        );
-        return ResponseEntity.accepted().body(response);
+
+        if (pendingActionService == null) {
+            return ResponseEntity.status(503).build();
+        }
+
+        try {
+            List<PendingAction> rejected = pendingActionService.bulkRejectPendingActions(ids, rejectedById, notes);
+            return ResponseEntity.ok(rejected);
+        } catch (Exception e) {
+            logger.error("Error bulk rejecting pending actions", e);
+            return ResponseEntity.status(500).build();
+        }
     }
     
     @GetMapping("/test")
     public ResponseEntity<Map<String, Object>> testEndpoint() {
         logger.info("Pending action controller test endpoint called");
-        
+
         return ResponseEntity.ok(Map.of(
             "status", "ok",
             "message", "PendingActionController is working - MongoDB-enabled but service integration pending",
             "timestamp", LocalDateTime.now().toString(),
             "mongoEnabled", "true",
             "serviceStatus", "pending"
+        ));
+    }
+
+    /**
+     * Fetch pending operations from N8N for a specific event/meeting
+     */
+    @GetMapping("/n8n/fetch/{eventId}")
+    public ResponseEntity<Map<String, Object>> fetchFromN8n(@PathVariable String eventId) {
+        logger.info("Fetching pending operations from N8N for event: {}", eventId);
+
+        if (n8nService == null || !n8nService.isN8nAvailable()) {
+            return ResponseEntity.ok(Map.of(
+                "status", "unavailable",
+                "message", "N8N service is not enabled or configured",
+                "operations", Collections.emptyList()
+            ));
+        }
+
+        try {
+            // Fetch operations from N8N
+            List<N8nOperationDTO> n8nOperations = n8nService.getPendingOperations(eventId);
+
+            // Convert to PendingAction models
+            List<PendingAction> pendingActions = n8nOperations.stream()
+                .map(n8nService::convertToPendingAction)
+                .collect(Collectors.toList());
+
+            logger.info("Successfully fetched {} operations from N8N", pendingActions.size());
+
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Fetched pending operations from N8N",
+                "count", pendingActions.size(),
+                "operations", pendingActions
+            ));
+
+        } catch (Exception e) {
+            logger.error("Error fetching operations from N8N: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(Map.of(
+                "status", "error",
+                "message", "Failed to fetch operations from N8N: " + e.getMessage(),
+                "operations", Collections.emptyList()
+            ));
+        }
+    }
+
+    /**
+     * Test N8N connectivity
+     */
+    @GetMapping("/n8n/test")
+    public ResponseEntity<Map<String, Object>> testN8nConnection() {
+        logger.info("Testing N8N connection");
+
+        if (n8nService == null) {
+            return ResponseEntity.ok(Map.of(
+                "status", "not_configured",
+                "message", "N8N service bean not found",
+                "available", false
+            ));
+        }
+
+        boolean available = n8nService.isN8nAvailable();
+
+        return ResponseEntity.ok(Map.of(
+            "status", available ? "available" : "unavailable",
+            "message", available
+                ? "N8N service is configured and ready"
+                : "N8N service is not properly configured",
+            "available", available
         ));
     }
 }
