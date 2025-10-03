@@ -3,7 +3,11 @@ package com.g37.meetingmanager.service.impl;
 import com.g37.meetingmanager.dto.*;
 import com.g37.meetingmanager.model.*;
 import com.g37.meetingmanager.repository.mysql.*;
+import com.g37.meetingmanager.service.CloudStorageService;
 import com.g37.meetingmanager.service.HelpService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,16 +23,27 @@ import java.util.Optional;
 @Transactional
 public class HelpServiceImpl implements HelpService {
 
+    private static final Logger logger = LoggerFactory.getLogger(HelpServiceImpl.class);
+
     private final HelpArticleRepository articleRepository;
     private final HelpFAQRepository faqRepository;
     private final SupportTicketRepository ticketRepository;
+    private final CloudStorageService cloudStorageService;
+    private final DocumentRepository documentRepository;
+
+    @Value("${help.default.storage.provider:ONEDRIVE}")
+    private String defaultStorageProvider;
 
     public HelpServiceImpl(HelpArticleRepository articleRepository,
                           HelpFAQRepository faqRepository,
-                          SupportTicketRepository ticketRepository) {
+                          SupportTicketRepository ticketRepository,
+                          CloudStorageService cloudStorageService,
+                          DocumentRepository documentRepository) {
         this.articleRepository = articleRepository;
         this.faqRepository = faqRepository;
         this.ticketRepository = ticketRepository;
+        this.cloudStorageService = cloudStorageService;
+        this.documentRepository = documentRepository;
     }
 
     // ===============================
@@ -519,8 +534,17 @@ public class HelpServiceImpl implements HelpService {
         Optional<SupportTicket> optionalTicket = ticketRepository.findById(id);
         if (optionalTicket.isPresent()) {
             SupportTicket ticket = optionalTicket.get();
-            // TODO: Add response to ticket (need to add responses field to entity)
-            // For now, just update status to in-progress
+
+            // Append response to description field until proper responses table is implemented
+            if (response != null && !response.trim().isEmpty()) {
+                String existingDescription = ticket.getDescription();
+                String timestamp = java.time.LocalDateTime.now().toString();
+                String updatedDescription = existingDescription +
+                    "\n\n--- Response [" + timestamp + "] ---\n" + response;
+                ticket.setDescription(updatedDescription);
+            }
+
+            // Update status to in-progress
             ticket.setStatus(SupportTicket.Status.IN_PROGRESS);
             ticket = ticketRepository.save(ticket);
             return convertToTicketDTO(ticket);
@@ -530,9 +554,49 @@ public class HelpServiceImpl implements HelpService {
 
     @Override
     public String uploadFile(MultipartFile file) {
-        // TODO: Implement file upload to cloud storage or local filesystem
-        // For now, return a mock file URL
-        return "/uploads/" + file.getOriginalFilename();
+        try {
+            // Validate file
+            if (file.isEmpty()) {
+                throw new IllegalArgumentException("File is empty");
+            }
+
+            // Create Document entity for the uploaded file
+            Document document = new Document();
+            document.setTitle(file.getOriginalFilename());
+            document.setFileName(file.getOriginalFilename());
+            document.setFileType(getFileExtension(file.getOriginalFilename()));
+            document.setFileSize(file.getSize());
+            document.setMimeType(file.getContentType());
+            document.setStorageProvider(Document.StorageProvider.valueOf(defaultStorageProvider));
+            document.setDocumentType(Document.DocumentType.ATTACHMENT);
+            document.setAccessPermissions(Document.AccessPermission.PUBLIC);
+            document.setUploadedBy(1L); // TODO: Get from security context
+
+            // Upload to cloud storage
+            logger.info("Uploading help article file: {} using provider: {}", file.getOriginalFilename(), defaultStorageProvider);
+            CloudStorageService.CloudUploadResult uploadResult = cloudStorageService.uploadFile(file, document);
+
+            // Update document with cloud storage details
+            document.setExternalFileId(uploadResult.getFileId());
+            document.setExternalUrl(uploadResult.getFileUrl());
+            document.setDownloadUrl(uploadResult.getDownloadUrl());
+
+            // Save document to database
+            Document savedDocument = documentRepository.save(document);
+            logger.info("File uploaded successfully. Document ID: {}, External URL: {}", savedDocument.getId(), savedDocument.getExternalUrl());
+
+            return savedDocument.getDownloadUrl() != null ? savedDocument.getDownloadUrl() : savedDocument.getExternalUrl();
+        } catch (Exception e) {
+            logger.error("Failed to upload file: {}", e.getMessage(), e);
+            throw new RuntimeException("File upload failed: " + e.getMessage(), e);
+        }
+    }
+
+    private String getFileExtension(String filename) {
+        if (filename == null || !filename.contains(".")) {
+            return "";
+        }
+        return filename.substring(filename.lastIndexOf(".") + 1);
     }
 
     @Override

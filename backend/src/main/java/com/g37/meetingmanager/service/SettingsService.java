@@ -1,8 +1,11 @@
 package com.g37.meetingmanager.service;
 
 import com.g37.meetingmanager.model.AppConfig;
+import com.g37.meetingmanager.model.User;
 import com.g37.meetingmanager.repository.AppConfigRepository;
+import com.g37.meetingmanager.repository.mysql.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -14,14 +17,50 @@ public class SettingsService {
     @Autowired(required = false)
     private AppConfigRepository appConfigRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     /**
      * Update user profile settings
      */
     public Map<String, Object> updateUserProfile(String email, Map<String, Object> profileData) {
-        // For now, we'll just return the updated data
-        // In a full implementation, this would update the user profile in the database
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            throw new RuntimeException("User not found: " + email);
+        }
+
+        User user = userOpt.get();
+
+        // Update fields from profileData
+        if (profileData.containsKey("firstName")) {
+            user.setFirstName((String) profileData.get("firstName"));
+        }
+        if (profileData.containsKey("lastName")) {
+            user.setLastName((String) profileData.get("lastName"));
+        }
+        if (profileData.containsKey("phoneNumber")) {
+            user.setPhoneNumber((String) profileData.get("phoneNumber"));
+        }
+        if (profileData.containsKey("jobTitle")) {
+            user.setJobTitle((String) profileData.get("jobTitle"));
+        }
+        if (profileData.containsKey("department")) {
+            user.setDepartment((String) profileData.get("department"));
+        }
+        if (profileData.containsKey("bio")) {
+            user.setBio((String) profileData.get("bio"));
+        }
+
+        // Save updated user to database
+        User savedUser = userRepository.save(user);
+
+        // Return updated profile data
         Map<String, Object> updatedProfile = new HashMap<>(profileData);
         updatedProfile.put("updatedAt", LocalDateTime.now());
+        updatedProfile.put("email", savedUser.getEmail());
         return updatedProfile;
     }
 
@@ -29,9 +68,22 @@ public class SettingsService {
      * Change user password
      */
     public boolean changePassword(String email, String currentPassword, String newPassword) {
-        // For now, we'll just return success
-        // In a full implementation, this would validate the current password
-        // and update it in the database
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            throw new RuntimeException("User not found: " + email);
+        }
+
+        User user = userOpt.get();
+
+        // Validate current password
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            return false; // Current password is incorrect
+        }
+
+        // Encode and update new password
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
         return true;
     }
 

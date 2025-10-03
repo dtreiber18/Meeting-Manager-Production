@@ -86,7 +86,12 @@ export class MeetingService {
 
   updateMeeting(id: string | number, meeting: Meeting): Observable<Meeting> {
     const backendMeeting = this.mapper.transformMeetingToBackend(meeting);
-    return this.http.put<BackendMeeting>(this.apiConfig.endpoints.meeting(id), backendMeeting).pipe(
+    return this.http.put<BackendMeeting>(this.apiConfig.endpoints.meeting(id), backendMeeting, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    }).pipe(
       tap(() => {
         // Notify subscribers that meetings have been updated
         this._meetingsUpdated.next(true);

@@ -58,6 +58,12 @@ spring:
           issuer-uri: ${OAUTH2_ISSUER_URI:}
           audiences: ${OAUTH2_AUDIENCES:}
   
+  # Jackson Configuration
+  jackson:
+    parser:
+      allow-trailing-comma: true
+      strict-duplicate-detection: false
+
   # File Upload Configuration
   servlet:
     multipart:

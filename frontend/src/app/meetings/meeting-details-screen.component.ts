@@ -17,6 +17,7 @@ import { ActionItemSuggestion } from '../services/meeting-ai-assistant.service';
 import { environment } from '../../environments/environment';
 import { ModalService } from '../shared/modal/modal.service';
 import { ModalContainerComponent } from '../shared/modal/modal-container/modal-container.component';
+import { ToastService } from '../shared/services/toast.service';
 
 
 interface N8nEventData {
@@ -138,7 +139,8 @@ export class MeetingDetailsScreenComponent implements OnInit {
     private readonly http: HttpClient,
     private readonly modalService: ModalService,
     private readonly dialog: MatDialog,
-    private readonly pendingActionService: PendingActionService
+    private readonly pendingActionService: PendingActionService,
+    private readonly toastService: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -1054,15 +1056,19 @@ export class MeetingDetailsScreenComponent implements OnInit {
       next: (updatedMeeting) => {
         console.log('Meeting updated successfully:', updatedMeeting);
         console.log('Updated meeting participants:', updatedMeeting.participants?.length || 0);
-        this.meeting = updatedMeeting;
-        this.editedMeeting = { 
-          ...updatedMeeting,
-          actionItems: updatedMeeting.actionItems || []
-        };
+
+        // Show success toast
+        this.toastService.showSuccess('Meeting updated successfully');
+
+        // Reload the meeting to get fresh data from the server
+        this.loadMeeting();
       },
       error: (error) => {
         console.error('Error updating meeting:', error);
-        // You might want to show a toast notification here
+
+        // Show error toast with details
+        const errorMessage = error?.error?.message || error?.message || 'Failed to update meeting';
+        this.toastService.showError(`Error: ${errorMessage}`);
       }
     });
   }

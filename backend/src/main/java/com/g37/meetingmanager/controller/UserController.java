@@ -4,6 +4,7 @@ import com.g37.meetingmanager.model.User;
 import com.g37.meetingmanager.model.UserProfile;
 import com.g37.meetingmanager.model.Role;
 import com.g37.meetingmanager.service.AuthService;
+import com.g37.meetingmanager.repository.mysql.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -23,9 +24,11 @@ public class UserController {
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
     private final AuthService authService;
+    private final UserRepository userRepository;
 
-    public UserController(AuthService authService) {
+    public UserController(AuthService authService, UserRepository userRepository) {
         this.authService = authService;
+        this.userRepository = userRepository;
     }
     
     @PostConstruct
@@ -95,14 +98,35 @@ public class UserController {
                 return ResponseEntity.notFound().build();
             }
 
-            // For production, return MySQL user data with update confirmation
-            log.info("✅ Returning MySQL user profile (production mode): {}", email);
-            UserProfile fallbackProfile = createUserProfileFromMysqlUser(mysqlUser);
+            // Update the user fields
+            if (updates.containsKey("firstName")) {
+                mysqlUser.setFirstName((String) updates.get("firstName"));
+            }
+            if (updates.containsKey("lastName")) {
+                mysqlUser.setLastName((String) updates.get("lastName"));
+            }
+            if (updates.containsKey("phoneNumber")) {
+                mysqlUser.setPhoneNumber((String) updates.get("phoneNumber"));
+            }
+            if (updates.containsKey("jobTitle")) {
+                mysqlUser.setJobTitle((String) updates.get("jobTitle"));
+            }
+            if (updates.containsKey("department")) {
+                mysqlUser.setDepartment((String) updates.get("department"));
+            }
+            if (updates.containsKey("bio")) {
+                mysqlUser.setBio((String) updates.get("bio"));
+            }
+
+            // Save the updated user to the database
+            User savedUser = userRepository.save(mysqlUser);
+
+            log.info("✅ Profile saved successfully for MySQL user: {}", email);
+            UserProfile updatedProfile = createUserProfileFromMysqlUser(savedUser);
             return ResponseEntity.ok(Map.of(
-                "profile", fallbackProfile,
+                "profile", updatedProfile,
                 "mode", "production",
-                "message", "Profile updates temporarily stored in session - extended profile features coming soon",
-                "updatesReceived", updates
+                "message", "Profile updated successfully"
             ));
 
         } catch (Exception e) {

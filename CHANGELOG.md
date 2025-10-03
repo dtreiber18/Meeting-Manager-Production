@@ -5,6 +5,94 @@ All notable changes to the Meeting Manager project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2025-10-03 - Database Persistence Fixes & Cloud Storage Integration
+
+### 🔧 Fixed - Critical Data Persistence Issues
+- **Meeting Participant Save Failures** - Fixed HTTP 415 errors preventing participant updates
+  - Root cause: Circular reference in JPA entity serialization with `@JsonBackReference`
+  - Created `ParticipantDTO` to decouple API layer from JPA entities
+  - Updated `CreateMeetingRequest` to use DTOs instead of entity objects
+  - Implemented proper DTO-to-entity conversion in `MeetingController`
+  - Added null-safe ENUM handling with default values (ATTENDEE, PENDING, UNKNOWN)
+- **Database ENUM Constraint** - Fixed SQL data truncation errors
+  - Added missing `ACTION_OWNER` value to `participant_role` ENUM column
+  - Updated database schema with ALTER TABLE statement
+  - Ensured all participant role values match database constraints
+- **Profile Update Persistence** - Fixed user profile changes not saving across sessions
+  - Root cause: `UserController.updateUserProfile()` returning success without calling `save()`
+  - Injected `UserRepository` and implemented actual database persistence
+  - Profile changes (department, job title, etc.) now persist correctly after logout/login
+- **Settings Service Fake Saves** - Eliminated mock implementations returning false success
+  - Fixed `updateUserProfile()` to fetch user, update fields, and save to database
+  - Implemented `changePassword()` with password validation using `PasswordEncoder`
+  - Validates current password before updating with properly encoded new password
+- **Help Ticket Response** - Fixed ticket responses not being saved
+  - Implemented actual response persistence by appending to ticket description with timestamp
+  - Updated ticket status to IN_PROGRESS when response added
+  - Saves updated ticket to database via `ticketRepository.save()`
+
+### ✨ Added - Cloud Storage Integration
+- **Help Article File Upload** - Implemented real cloud storage for help center files
+  - Integrated existing `CloudStorageService` infrastructure (OneDrive/Google Drive)
+  - Created `Document` entities for uploaded files with metadata
+  - Files uploaded to configured cloud provider (default: OneDrive)
+  - File metadata saved to MySQL `documents` table
+  - Returns cloud download URLs for uploaded files
+  - Configurable storage provider via `help.default.storage.provider` property
+- **Toast Notification System** - Added user feedback for save operations
+  - Integrated `ToastService` for success/error messages
+  - Shows "Meeting updated successfully" on successful saves
+  - Displays detailed error messages when save operations fail
+  - Auto-reload functionality refreshes data after successful saves
+
+### 🎨 Enhanced - User Experience
+- **Meeting Details Auto-Reload** - Improved data freshness after updates
+  - Automatically reloads meeting data after successful participant changes
+  - Ensures UI reflects latest database state without manual refresh
+  - Provides immediate visual feedback of saved changes
+- **Error Handling** - Improved error messages and logging
+  - Added comprehensive server-side logging for upload operations
+  - Client-side toast notifications with actionable error details
+  - Better debugging with debug logs throughout participant save flow
+
+### 🏗️ Technical Improvements
+- **DTO Pattern Implementation** - Proper API/entity layer separation
+  - Created `ParticipantDTO` with `toEntity()` conversion method
+  - Prevents Jackson serialization issues with bidirectional JPA relationships
+  - Handles null values gracefully with sensible defaults
+  - Clean separation of concerns between API and persistence layers
+- **Repository Injection** - Fixed missing database repository dependencies
+  - Added `UserRepository` injection to `SettingsService`
+  - Added `PasswordEncoder` injection for secure password updates
+  - Added `DocumentRepository` and `CloudStorageService` to `HelpServiceImpl`
+- **Code Quality** - Eliminated technical debt and incomplete implementations
+  - Removed "TODO" and "For now, just return" patterns
+  - Replaced mock implementations with real database operations
+  - Added proper error handling and validation throughout
+  - Comprehensive logging for troubleshooting and monitoring
+
+### 📝 Files Modified
+- Backend:
+  - `backend/src/main/java/com/g37/meetingmanager/dto/ParticipantDTO.java` (Created)
+  - `backend/src/main/java/com/g37/meetingmanager/dto/CreateMeetingRequest.java`
+  - `backend/src/main/java/com/g37/meetingmanager/controller/MeetingController.java`
+  - `backend/src/main/java/com/g37/meetingmanager/controller/UserController.java`
+  - `backend/src/main/java/com/g37/meetingmanager/service/SettingsService.java`
+  - `backend/src/main/java/com/g37/meetingmanager/service/impl/HelpServiceImpl.java`
+- Frontend:
+  - `frontend/src/app/meeting-details-screen/meeting-details-screen.component.ts`
+- Database:
+  - MySQL: ALTER TABLE `meeting_participants` - Added ACTION_OWNER to participant_role ENUM
+
+### ✅ Verified - All Changes Working
+- Meeting participant additions and updates save successfully to MySQL
+- User profile changes persist correctly across logout/login cycles
+- Password changes validated and updated with proper encryption
+- Help article files upload to OneDrive/Google Drive with metadata saved
+- Toast notifications provide clear feedback on all operations
+- Backend compiles cleanly with BUILD SUCCESS
+- Application running successfully on port 8080
+
 ## [3.2.1] - 2025-09-30 - Production Login Fix & MongoDB Complete Removal
 
 ### 🔧 Fixed - Production Login Failures

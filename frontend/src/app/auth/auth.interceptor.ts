@@ -39,19 +39,28 @@ export const authInterceptor: HttpInterceptorFn = (request: HttpRequest<unknown>
 function addAuthHeader(request: HttpRequest<unknown>, authService: AuthService): HttpRequest<unknown> {
   const token = authService.getToken();
   console.log('🔐 Token from service:', token ? `${token.substring(0, 10)}...` : 'null');
-  
+
   if (!token) {
     console.log('🔐 No token available, skipping auth header');
     return request;
   }
-  
+
+  // Use setHeaders to add Authorization while preserving other headers like Content-Type
+  const headers: { [name: string]: string } = {
+    'Authorization': `Bearer ${token}`
+  };
+
+  // Ensure Content-Type is set for PUT/POST requests if not already set
+  if ((request.method === 'PUT' || request.method === 'POST') && !request.headers.has('Content-Type')) {
+    headers['Content-Type'] = 'application/json';
+  }
+
   const newRequest = request.clone({
-    setHeaders: {
-      'Authorization': `Bearer ${token}`
-    }
+    setHeaders: headers
   });
-  
+
   console.log('🔐 Added Authorization header:', newRequest.headers.has('Authorization'));
+  console.log('🔐 Content-Type header:', newRequest.headers.get('Content-Type'));
   return newRequest;
 }
 

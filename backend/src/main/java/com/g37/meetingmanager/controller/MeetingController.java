@@ -205,9 +205,14 @@ public class MeetingController {
             
             // Handle participants update
             if (request.getParticipants() != null) {
+                System.out.println("DEBUG: Received " + request.getParticipants().size() + " participants");
                 // Clear existing participants and add new ones
                 meeting.getParticipants().clear();
-                for (MeetingParticipant participant : request.getParticipants()) {
+                for (com.g37.meetingmanager.dto.ParticipantDTO dto : request.getParticipants()) {
+                    System.out.println("DEBUG: Participant DTO - role: '" + dto.getParticipantRole() + "', name: '" + dto.getName() + "', email: '" + dto.getEmail() + "'");
+                    // Convert DTO to entity
+                    MeetingParticipant participant = dto.toEntity();
+                    System.out.println("DEBUG: After toEntity() - participantRole: " + participant.getParticipantRole());
                     // Set the meeting reference for each participant
                     participant.setMeeting(meeting);
                     meeting.getParticipants().add(participant);
