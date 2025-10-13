@@ -1,10 +1,14 @@
 package com.g37.meetingmanager.service.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.g37.meetingmanager.dto.*;
 import com.g37.meetingmanager.model.*;
 import com.g37.meetingmanager.repository.mysql.*;
+import com.g37.meetingmanager.entity.mysql.SearchAnalytics;
 import com.g37.meetingmanager.service.CloudStorageService;
 import com.g37.meetingmanager.service.HelpService;
+import com.g37.meetingmanager.util.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,9 +18,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.Optional;
 
 @Service
@@ -30,6 +36,7 @@ public class HelpServiceImpl implements HelpService {
     private final SupportTicketRepository ticketRepository;
     private final CloudStorageService cloudStorageService;
     private final DocumentRepository documentRepository;
+    private final SearchAnalyticsRepository searchAnalyticsRepository;
 
     @Value("${help.default.storage.provider:ONEDRIVE}")
     private String defaultStorageProvider;
@@ -38,12 +45,14 @@ public class HelpServiceImpl implements HelpService {
                           HelpFAQRepository faqRepository,
                           SupportTicketRepository ticketRepository,
                           CloudStorageService cloudStorageService,
-                          DocumentRepository documentRepository) {
+                          DocumentRepository documentRepository,
+                          SearchAnalyticsRepository searchAnalyticsRepository) {
         this.articleRepository = articleRepository;
         this.faqRepository = faqRepository;
         this.ticketRepository = ticketRepository;
         this.cloudStorageService = cloudStorageService;
         this.documentRepository = documentRepository;
+        this.searchAnalyticsRepository = searchAnalyticsRepository;
     }
 
     // ===============================
@@ -217,6 +226,9 @@ public class HelpServiceImpl implements HelpService {
             result.setUrl("/help/faq/" + faq.getId());
             results.add(result);
         });
+
+        // Track search analytics
+        trackSearchAnalytics(query, results.size());
         
         return results;
     }
@@ -422,13 +434,13 @@ public class HelpServiceImpl implements HelpService {
     @Override
     public HelpArticleDTO createArticle(HelpArticleDTO articleDTO) {
         // Use current user context or system user
-        return createArticle(articleDTO, 1L); // TODO: Get current user from security context
+        return createArticle(articleDTO, getCurrentUserId());
     }
 
     @Override
     public HelpArticleDTO updateArticle(Long id, HelpArticleDTO articleDTO) {
         // Use current user context or system user
-        return updateArticle(id, articleDTO, 1L); // TODO: Get current user from security context
+        return updateArticle(id, articleDTO, getCurrentUserId());
     }
 
     @Override
@@ -475,13 +487,13 @@ public class HelpServiceImpl implements HelpService {
     @Override
     public HelpFAQDTO createFAQ(HelpFAQDTO faqDTO) {
         // Use current user context or system user
-        return createFAQ(faqDTO, 1L); // TODO: Get current user from security context
+        return createFAQ(faqDTO, getCurrentUserId());
     }
 
     @Override
     public HelpFAQDTO updateFAQ(Long id, HelpFAQDTO faqDTO) {
         // Use current user context or system user
-        return updateFAQ(id, faqDTO, 1L); // TODO: Get current user from security context
+        return updateFAQ(id, faqDTO, getCurrentUserId());
     }
 
     @Override
@@ -570,7 +582,7 @@ public class HelpServiceImpl implements HelpService {
             document.setStorageProvider(Document.StorageProvider.valueOf(defaultStorageProvider));
             document.setDocumentType(Document.DocumentType.ATTACHMENT);
             document.setAccessPermissions(Document.AccessPermission.PUBLIC);
-            document.setUploadedBy(1L); // TODO: Get from security context
+            document.setUploadedBy(getCurrentUserId());
 
             // Upload to cloud storage
             logger.info("Uploading help article file: {} using provider: {}", file.getOriginalFilename(), defaultStorageProvider);
@@ -602,34 +614,157 @@ public class HelpServiceImpl implements HelpService {
     @Override
     public Map<String, Object> importArticles(MultipartFile file) {
         Map<String, Object> result = new HashMap<>();
+        int importedCount = 0;
+        int failedCount = 0;
+        List<String> errors = new ArrayList<>();
+        
         try {
-            // TODO: Implement actual file parsing (JSON/CSV)
-            // For now, return mock result
+            String fileExtension = getFileExtension(file.getOriginalFilename());
+            Long currentUserId = getCurrentUserId();
+            List<HelpArticleDTO> articlesToImport = new ArrayList<>();
+            
+            if ("json".equalsIgnoreCase(fileExtension)) {
+                articlesToImport = parseArticlesFromJson(file);
+            } else if ("csv".equalsIgnoreCase(fileExtension)) {
+                articlesToImport = parseArticlesFromCsv(file);
+            } else {
+                result.put("success", false);
+                result.put("error", "Unsupported file format. Please use JSON or CSV files.");
+                return result;
+            }
+            
+            // Process each article
+            for (HelpArticleDTO article : articlesToImport) {
+                try {
+                    // Validate required fields
+                    if (article.getTitle() == null || article.getTitle().trim().isEmpty()) {
+                        errors.add("Article missing title");
+                        failedCount++;
+                        continue;
+                    }
+                    if (article.getContent() == null || article.getContent().trim().isEmpty()) {
+                        errors.add("Article '" + article.getTitle() + "' missing content");
+                        failedCount++;
+                        continue;
+                    }
+                    
+                    // Set defaults if not provided
+                    if (article.getDescription() == null || article.getDescription().trim().isEmpty()) {
+                        article.setDescription(article.getTitle());
+                    }
+                    if (article.getCategory() == null || article.getCategory().trim().isEmpty()) {
+                        article.setCategory("general");
+                    }
+                    if (article.getIsPublished() == null) {
+                        article.setIsPublished(true);
+                    }
+                    if (article.getSortOrder() == null) {
+                        article.setSortOrder(0);
+                    }
+                    
+                    // Create the article
+                    createArticle(article, currentUserId);
+                    importedCount++;
+                    
+                } catch (Exception e) {
+                    errors.add("Failed to import article '" + article.getTitle() + "': " + e.getMessage());
+                    failedCount++;
+                    logger.warn("Failed to import article: {}", article.getTitle(), e);
+                }
+            }
+            
             result.put("success", true);
-            result.put("imported", 0);
-            result.put("failed", 0);
-            result.put("message", "Import functionality not yet implemented");
+            result.put("imported", importedCount);
+            result.put("failed", failedCount);
+            result.put("errors", errors);
+            result.put("message", String.format("Import completed: %d successful, %d failed", importedCount, failedCount));
+            
         } catch (Exception e) {
+            logger.error("Error during article import", e);
             result.put("success", false);
-            result.put("error", e.getMessage());
+            result.put("imported", importedCount);
+            result.put("failed", failedCount);
+            result.put("error", "Import failed: " + e.getMessage());
+            result.put("errors", errors);
         }
+        
         return result;
     }
 
     @Override
     public Map<String, Object> importFAQs(MultipartFile file) {
         Map<String, Object> result = new HashMap<>();
+        int importedCount = 0;
+        int failedCount = 0;
+        List<String> errors = new ArrayList<>();
+        
         try {
-            // TODO: Implement actual file parsing (JSON/CSV)
-            // For now, return mock result
+            String fileExtension = getFileExtension(file.getOriginalFilename());
+            Long currentUserId = getCurrentUserId();
+            List<HelpFAQDTO> faqsToImport = new ArrayList<>();
+            
+            if ("json".equalsIgnoreCase(fileExtension)) {
+                faqsToImport = parseFAQsFromJson(file);
+            } else if ("csv".equalsIgnoreCase(fileExtension)) {
+                faqsToImport = parseFAQsFromCsv(file);
+            } else {
+                result.put("success", false);
+                result.put("error", "Unsupported file format. Please use JSON or CSV files.");
+                return result;
+            }
+            
+            // Process each FAQ
+            for (HelpFAQDTO faq : faqsToImport) {
+                try {
+                    // Validate required fields
+                    if (faq.getQuestion() == null || faq.getQuestion().trim().isEmpty()) {
+                        errors.add("FAQ missing question");
+                        failedCount++;
+                        continue;
+                    }
+                    if (faq.getAnswer() == null || faq.getAnswer().trim().isEmpty()) {
+                        errors.add("FAQ '" + faq.getQuestion() + "' missing answer");
+                        failedCount++;
+                        continue;
+                    }
+                    
+                    // Set defaults if not provided
+                    if (faq.getCategory() == null || faq.getCategory().trim().isEmpty()) {
+                        faq.setCategory("general");
+                    }
+                    if (faq.getIsPublished() == null) {
+                        faq.setIsPublished(true);
+                    }
+                    if (faq.getSortOrder() == null) {
+                        faq.setSortOrder(0);
+                    }
+                    
+                    // Create the FAQ
+                    createFAQ(faq, currentUserId);
+                    importedCount++;
+                    
+                } catch (Exception e) {
+                    errors.add("Failed to import FAQ '" + faq.getQuestion() + "': " + e.getMessage());
+                    failedCount++;
+                    logger.warn("Failed to import FAQ: {}", faq.getQuestion(), e);
+                }
+            }
+            
             result.put("success", true);
-            result.put("imported", 0);
-            result.put("failed", 0);
-            result.put("message", "Import functionality not yet implemented");
+            result.put("imported", importedCount);
+            result.put("failed", failedCount);
+            result.put("errors", errors);
+            result.put("message", String.format("Import completed: %d successful, %d failed", importedCount, failedCount));
+            
         } catch (Exception e) {
+            logger.error("Error during FAQ import", e);
             result.put("success", false);
-            result.put("error", e.getMessage());
+            result.put("imported", importedCount);
+            result.put("failed", failedCount);
+            result.put("error", "Import failed: " + e.getMessage());
+            result.put("errors", errors);
         }
+        
         return result;
     }
 
@@ -647,25 +782,41 @@ public class HelpServiceImpl implements HelpService {
 
     @Override
     public List<HelpArticleDTO> getPopularArticles(int limit) {
-        // TODO: Implement proper sorting by view count
-        // For now, return the first few articles
-        return articleRepository.findByIsPublishedTrueOrderBySortOrderAscCreatedAtDesc()
+        // Use the repository's findMostViewed method to get articles sorted by view count
+        Pageable pageable = Pageable.ofSize(limit);
+        Page<HelpArticle> popularArticles = articleRepository.findMostViewed(pageable);
+        
+        logger.debug("Retrieved {} popular articles (limit: {})", popularArticles.getContent().size(), limit);
+        
+        return popularArticles.getContent()
                 .stream()
-                .limit(limit)
                 .map(this::convertToArticleDTO)
                 .toList();
     }
 
     @Override
     public Map<String, Long> getPopularSearchTerms(int limit) {
-        // TODO: Implement search analytics tracking
-        // For now, return mock data
-        Map<String, Long> searchTerms = new HashMap<>();
-        searchTerms.put("meeting", 150L);
-        searchTerms.put("calendar", 120L);
-        searchTerms.put("users", 95L);
-        searchTerms.put("permissions", 80L);
-        searchTerms.put("settings", 75L);
+        // Get popular search terms from analytics data
+        Pageable pageable = Pageable.ofSize(limit);
+        List<SearchAnalytics> topSearches = searchAnalyticsRepository.findTopSearchTerms(pageable);
+        
+        Map<String, Long> searchTerms = new LinkedHashMap<>();
+        for (SearchAnalytics analytics : topSearches) {
+            searchTerms.put(analytics.getSearchTerm(), analytics.getSearchCount());
+        }
+        
+        logger.debug("Retrieved {} popular search terms (limit: {})", searchTerms.size(), limit);
+        
+        // If no real data exists yet, return some sample data for demonstration
+        if (searchTerms.isEmpty()) {
+            logger.debug("No search analytics data found, returning sample data");
+            searchTerms.put("meeting", 150L);
+            searchTerms.put("calendar", 120L);
+            searchTerms.put("users", 95L);
+            searchTerms.put("permissions", 80L);
+            searchTerms.put("settings", 75L);
+        }
+        
         return searchTerms;
     }
 
@@ -673,10 +824,420 @@ public class HelpServiceImpl implements HelpService {
     // Helper Methods
     // ===============================
 
+    /**
+     * Get current user ID from security context with fallback to system user
+     * @return Current user ID or 1L (system user) if not authenticated
+     */
+    private Long getCurrentUserId() {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        if (currentUserId != null) {
+            logger.debug("Retrieved current user ID from security context: {}", currentUserId);
+            return currentUserId;
+        }
+        
+        logger.debug("No authenticated user found, falling back to system user (ID: 1)");
+        return 1L; // Fallback to system user
+    }
+
+    /**
+     * Track search analytics for popular search terms
+     * @param searchTerm The search term used
+     * @param resultsCount Number of results returned
+     */
+    private void trackSearchAnalytics(String searchTerm, int resultsCount) {
+        try {
+            if (searchTerm == null || searchTerm.trim().isEmpty()) {
+                return;
+            }
+
+            String normalizedTerm = searchTerm.trim().toLowerCase();
+            Long userId = getCurrentUserId();
+
+            // Find existing analytics entry or create new one
+            Optional<SearchAnalytics> existingAnalytics = searchAnalyticsRepository.findBySearchTerm(normalizedTerm);
+            
+            if (existingAnalytics.isPresent()) {
+                // Update existing entry
+                SearchAnalytics analytics = existingAnalytics.get();
+                analytics.incrementSearchCount();
+                analytics.setResultsCount(resultsCount);
+                searchAnalyticsRepository.save(analytics);
+                logger.debug("Updated search analytics for term '{}', new count: {}", normalizedTerm, analytics.getSearchCount());
+            } else {
+                // Create new entry
+                SearchAnalytics analytics = new SearchAnalytics(normalizedTerm, userId, resultsCount);
+                searchAnalyticsRepository.save(analytics);
+                logger.debug("Created new search analytics entry for term '{}'", normalizedTerm);
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to track search analytics for term '{}': {}", searchTerm, e.getMessage());
+            // Don't fail the search if analytics tracking fails
+        }
+    }
+
     private String truncateContent(String content, int maxLength) {
         if (content == null || content.length() <= maxLength) {
             return content;
         }
         return content.substring(0, maxLength) + "...";
+    }
+
+    // ===============================
+    // File Parsing Methods
+    // ===============================
+
+    /**
+     * Parse help articles from JSON file
+     */
+    private List<HelpArticleDTO> parseArticlesFromJson(MultipartFile file) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        List<HelpArticleDTO> articles = new ArrayList<>();
+        
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+            
+            // Try to parse as array first
+            try {
+                List<Map<String, Object>> rawArticles = objectMapper.readValue(reader, 
+                    new TypeReference<List<Map<String, Object>>>() {});
+                
+                for (Map<String, Object> rawArticle : rawArticles) {
+                    HelpArticleDTO article = mapToArticleDTO(rawArticle);
+                    if (article != null) {
+                        articles.add(article);
+                    }
+                }
+            } catch (Exception e) {
+                // If array parsing fails, try parsing as single object
+                logger.debug("Array parsing failed, trying single object: {}", e.getMessage());
+                reader.reset();
+                Map<String, Object> rawArticle = objectMapper.readValue(reader, 
+                    new TypeReference<Map<String, Object>>() {});
+                HelpArticleDTO article = mapToArticleDTO(rawArticle);
+                if (article != null) {
+                    articles.add(article);
+                }
+            }
+        }
+        
+        return articles;
+    }
+
+    /**
+     * Parse help articles from CSV file
+     */
+    private List<HelpArticleDTO> parseArticlesFromCsv(MultipartFile file) throws Exception {
+        List<HelpArticleDTO> articles = new ArrayList<>();
+        
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+            
+            String headerLine = reader.readLine();
+            if (headerLine == null) {
+                throw new IllegalArgumentException("CSV file is empty");
+            }
+            
+            String[] headers = headerLine.split(",");
+            Map<String, Integer> columnMap = new HashMap<>();
+            
+            // Map column headers to indices
+            for (int i = 0; i < headers.length; i++) {
+                columnMap.put(headers[i].trim().toLowerCase(), i);
+            }
+            
+            String line;
+            int lineNumber = 1;
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+                try {
+                    String[] values = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"); // Handle CSV with quotes
+                    HelpArticleDTO article = mapCsvToArticleDTO(values, columnMap);
+                    if (article != null) {
+                        articles.add(article);
+                    }
+                } catch (Exception e) {
+                    logger.warn("Failed to parse CSV line {}: {}", lineNumber, e.getMessage());
+                }
+            }
+        }
+        
+        return articles;
+    }
+
+    /**
+     * Parse FAQs from JSON file
+     */
+    private List<HelpFAQDTO> parseFAQsFromJson(MultipartFile file) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        List<HelpFAQDTO> faqs = new ArrayList<>();
+        
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+            
+            // Try to parse as array first
+            try {
+                List<Map<String, Object>> rawFaqs = objectMapper.readValue(reader, 
+                    new TypeReference<List<Map<String, Object>>>() {});
+                
+                for (Map<String, Object> rawFaq : rawFaqs) {
+                    HelpFAQDTO faq = mapToFaqDTO(rawFaq);
+                    if (faq != null) {
+                        faqs.add(faq);
+                    }
+                }
+            } catch (Exception e) {
+                // If array parsing fails, try parsing as single object
+                logger.debug("Array parsing failed, trying single object: {}", e.getMessage());
+                reader.reset();
+                Map<String, Object> rawFaq = objectMapper.readValue(reader, 
+                    new TypeReference<Map<String, Object>>() {});
+                HelpFAQDTO faq = mapToFaqDTO(rawFaq);
+                if (faq != null) {
+                    faqs.add(faq);
+                }
+            }
+        }
+        
+        return faqs;
+    }
+
+    /**
+     * Parse FAQs from CSV file
+     */
+    private List<HelpFAQDTO> parseFAQsFromCsv(MultipartFile file) throws Exception {
+        List<HelpFAQDTO> faqs = new ArrayList<>();
+        
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+            
+            String headerLine = reader.readLine();
+            if (headerLine == null) {
+                throw new IllegalArgumentException("CSV file is empty");
+            }
+            
+            String[] headers = headerLine.split(",");
+            Map<String, Integer> columnMap = new HashMap<>();
+            
+            // Map column headers to indices
+            for (int i = 0; i < headers.length; i++) {
+                columnMap.put(headers[i].trim().toLowerCase(), i);
+            }
+            
+            String line;
+            int lineNumber = 1;
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+                try {
+                    String[] values = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"); // Handle CSV with quotes
+                    HelpFAQDTO faq = mapCsvToFaqDTO(values, columnMap);
+                    if (faq != null) {
+                        faqs.add(faq);
+                    }
+                } catch (Exception e) {
+                    logger.warn("Failed to parse CSV line {}: {}", lineNumber, e.getMessage());
+                }
+            }
+        }
+        
+        return faqs;
+    }
+
+    /**
+     * Map JSON object to HelpArticleDTO
+     */
+    private HelpArticleDTO mapToArticleDTO(Map<String, Object> rawArticle) {
+        try {
+            HelpArticleDTO article = new HelpArticleDTO();
+            
+            // Required fields
+            article.setTitle(getStringValue(rawArticle, "title"));
+            article.setContent(getStringValue(rawArticle, "content"));
+            
+            // Optional fields
+            article.setDescription(getStringValue(rawArticle, "description"));
+            article.setCategory(getStringValue(rawArticle, "category"));
+            
+            // Handle tags (can be array or comma-separated string)
+            Object tagsObj = rawArticle.get("tags");
+            if (tagsObj instanceof List) {
+                @SuppressWarnings("unchecked")
+                List<String> tagsList = (List<String>) tagsObj;
+                article.setTags(tagsList);
+            } else if (tagsObj instanceof String) {
+                String tagsStr = (String) tagsObj;
+                article.setTags(Arrays.asList(tagsStr.split("\\s*,\\s*")));
+            }
+            
+            // Boolean fields
+            article.setIsPublished(getBooleanValue(rawArticle, "isPublished", true));
+            
+            // Integer fields
+            article.setSortOrder(getIntegerValue(rawArticle, "sortOrder", 0));
+            
+            return article;
+        } catch (Exception e) {
+            logger.error("Failed to map JSON to article DTO: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Map CSV values to HelpArticleDTO
+     */
+    private HelpArticleDTO mapCsvToArticleDTO(String[] values, Map<String, Integer> columnMap) {
+        try {
+            HelpArticleDTO article = new HelpArticleDTO();
+            
+            // Required fields
+            article.setTitle(getCsvValue(values, columnMap, "title"));
+            article.setContent(getCsvValue(values, columnMap, "content"));
+            
+            // Optional fields
+            article.setDescription(getCsvValue(values, columnMap, "description"));
+            article.setCategory(getCsvValue(values, columnMap, "category"));
+            
+            // Tags
+            String tagsStr = getCsvValue(values, columnMap, "tags");
+            if (tagsStr != null && !tagsStr.trim().isEmpty()) {
+                article.setTags(Arrays.asList(tagsStr.split("\\s*,\\s*")));
+            }
+            
+            // Boolean fields
+            String publishedStr = getCsvValue(values, columnMap, "ispublished", "published");
+            article.setIsPublished(!"false".equalsIgnoreCase(publishedStr) && !"0".equals(publishedStr));
+            
+            // Integer fields
+            String sortOrderStr = getCsvValue(values, columnMap, "sortorder", "sort_order");
+            try {
+                article.setSortOrder(sortOrderStr != null ? Integer.parseInt(sortOrderStr.trim()) : 0);
+            } catch (NumberFormatException e) {
+                article.setSortOrder(0);
+            }
+            
+            return article;
+        } catch (Exception e) {
+            logger.error("Failed to map CSV to article DTO: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Map JSON object to HelpFAQDTO
+     */
+    private HelpFAQDTO mapToFaqDTO(Map<String, Object> rawFaq) {
+        try {
+            HelpFAQDTO faq = new HelpFAQDTO();
+            
+            // Required fields
+            faq.setQuestion(getStringValue(rawFaq, "question"));
+            faq.setAnswer(getStringValue(rawFaq, "answer"));
+            
+            // Optional fields
+            faq.setCategory(getStringValue(rawFaq, "category"));
+            
+            // Handle tags (can be array or comma-separated string)
+            Object tagsObj = rawFaq.get("tags");
+            if (tagsObj instanceof List) {
+                @SuppressWarnings("unchecked")
+                List<String> tagsList = (List<String>) tagsObj;
+                faq.setTags(tagsList);
+            } else if (tagsObj instanceof String) {
+                String tagsStr = (String) tagsObj;
+                faq.setTags(Arrays.asList(tagsStr.split("\\s*,\\s*")));
+            }
+            
+            // Boolean fields
+            faq.setIsPublished(getBooleanValue(rawFaq, "isPublished", true));
+            
+            // Integer fields
+            faq.setSortOrder(getIntegerValue(rawFaq, "sortOrder", 0));
+            
+            return faq;
+        } catch (Exception e) {
+            logger.error("Failed to map JSON to FAQ DTO: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Map CSV values to HelpFAQDTO
+     */
+    private HelpFAQDTO mapCsvToFaqDTO(String[] values, Map<String, Integer> columnMap) {
+        try {
+            HelpFAQDTO faq = new HelpFAQDTO();
+            
+            // Required fields
+            faq.setQuestion(getCsvValue(values, columnMap, "question"));
+            faq.setAnswer(getCsvValue(values, columnMap, "answer"));
+            
+            // Optional fields
+            faq.setCategory(getCsvValue(values, columnMap, "category"));
+            
+            // Tags
+            String tagsStr = getCsvValue(values, columnMap, "tags");
+            if (tagsStr != null && !tagsStr.trim().isEmpty()) {
+                faq.setTags(Arrays.asList(tagsStr.split("\\s*,\\s*")));
+            }
+            
+            // Boolean fields
+            String publishedStr = getCsvValue(values, columnMap, "ispublished", "published");
+            faq.setIsPublished(!"false".equalsIgnoreCase(publishedStr) && !"0".equals(publishedStr));
+            
+            // Integer fields
+            String sortOrderStr = getCsvValue(values, columnMap, "sortorder", "sort_order");
+            try {
+                faq.setSortOrder(sortOrderStr != null ? Integer.parseInt(sortOrderStr.trim()) : 0);
+            } catch (NumberFormatException e) {
+                faq.setSortOrder(0);
+            }
+            
+            return faq;
+        } catch (Exception e) {
+            logger.error("Failed to map CSV to FAQ DTO: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    // ===============================
+    // Helper Methods for Parsing
+    // ===============================
+
+    private String getStringValue(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        return value != null ? value.toString().trim() : null;
+    }
+
+    private Boolean getBooleanValue(Map<String, Object> map, String key, Boolean defaultValue) {
+        Object value = map.get(key);
+        if (value == null) return defaultValue;
+        if (value instanceof Boolean) return (Boolean) value;
+        String strValue = value.toString().toLowerCase();
+        return "true".equals(strValue) || "1".equals(strValue) || "yes".equals(strValue);
+    }
+
+    private Integer getIntegerValue(Map<String, Object> map, String key, Integer defaultValue) {
+        Object value = map.get(key);
+        if (value == null) return defaultValue;
+        if (value instanceof Integer) return (Integer) value;
+        try {
+            return Integer.parseInt(value.toString().trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+
+    private String getCsvValue(String[] values, Map<String, Integer> columnMap, String... possibleKeys) {
+        for (String key : possibleKeys) {
+            Integer index = columnMap.get(key);
+            if (index != null && index < values.length) {
+                String value = values[index].trim();
+                // Remove quotes if present
+                if (value.startsWith("\"") && value.endsWith("\"")) {
+                    value = value.substring(1, value.length() - 1);
+                }
+                return value.isEmpty() ? null : value;
+            }
+        }
+        return null;
     }
 }

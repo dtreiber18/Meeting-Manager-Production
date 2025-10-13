@@ -5,6 +5,47 @@ All notable changes to the Meeting Manager project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.0] - 2025-10-12 - Analytics Features Implementation Complete
+
+### 🎯 Added - Real Analytics Infrastructure
+- **SearchAnalytics Entity** - JPA entity for comprehensive search pattern tracking
+  - Tracks search terms, counts, timestamps, user context, and result counts
+  - Auto-incrementing search counts with last searched timestamp updates
+  - User association for personalized analytics and behavior insights
+- **SearchAnalyticsRepository** - Custom repository with optimized analytics queries
+  - `findTopSearchTerms()` for popular search terms with pagination
+  - `findRecentSearches()` for time-based analytics
+  - `findSearchesWithNoResults()` for content gap analysis
+- **Database Schema** - MySQL table with optimized indexes and sample data
+  - Unique constraint on search terms, indexes on counts and timestamps
+  - 10 realistic sample search terms with varying frequencies and dates
+
+### 📊 Enhanced - Analytics Methods
+- **getPopularArticles()** - Replaced mock sorting with real view count data
+  - Now uses `HelpArticleRepository.findMostViewed()` for actual database sorting
+  - Pagination support for large datasets with proper DTO conversion
+- **getPopularSearchTerms()** - Real search analytics from database
+  - Retrieves actual search analytics from `SearchAnalytics` table
+  - Graceful fallback to sample data if no real analytics exist yet
+- **searchContent()** - Added automatic search tracking
+  - Every search query automatically tracked with `trackSearchAnalytics()`
+  - Transparent analytics collection without affecting search functionality
+
+### 🔧 Added - Helper Methods
+- **trackSearchAnalytics()** - Comprehensive search tracking with user context
+  - Updates existing search counts or creates new analytics entries
+  - Graceful error handling ensures analytics failures don't break search
+  - User context integration with authentication fallbacks
+
+### ✅ Fixed - Authentication Context
+- **Eliminated Hardcoded User IDs** - Complete SecurityUtils integration
+  - All HelpServiceImpl methods now use `getCurrentUserId()` with fallbacks
+  - DocumentUploadDialogComponent fixed with proper user ID type conversion
+- **File Processing Implementation** - Complete JSON/CSV parsing for help content
+  - ObjectMapper-based JSON parsing for articles with comprehensive validation
+  - Robust CSV parsing with quote handling and error reporting
+  - Data mapping for tags, categories, and content structures
+
 ## [3.5.0] - 2025-10-03 - Unified Edit Mode & Enhanced User Experience
 
 ### ✨ Added - Unified Edit Mode

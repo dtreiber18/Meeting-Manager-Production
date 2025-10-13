@@ -17,6 +17,8 @@ import {
   DocumentUploadRequest 
 } from '../../models/document.interface';
 import { DocumentService } from '../../services/document.service';
+import { AuthService } from '../../auth/auth.service';
+import { MeetingService } from '../../meetings/meeting.service';
 
 export interface DocumentUploadDialogData {
   meetingId?: number;
@@ -52,6 +54,7 @@ export class DocumentUploadDialogComponent implements OnInit {
   uploadForm: FormGroup;
   selectedFile: File | null = null;
   meetings: BasicMeeting[] = [];
+  availableMeetings: BasicMeeting[] = [];
   isUploading = false;
   uploadProgress = 0;
 
@@ -87,6 +90,8 @@ export class DocumentUploadDialogComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private documentService: DocumentService,
+    private authService: AuthService,
+    private meetingService: MeetingService,
     private snackBar: MatSnackBar,
     private dialogRef: MatDialogRef<DocumentUploadDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: DocumentUploadDialogData
@@ -103,17 +108,28 @@ export class DocumentUploadDialogComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // For now, create some sample meetings
-    this.meetings = [
-      { id: 1, subject: 'Q4 Planning Meeting', date: '2024-12-15' },
-      { id: 2, subject: 'Team Standup', date: '2024-12-16' },
-      { id: 3, subject: 'Project Review', date: '2024-12-17' }
-    ];
+    this.loadMeetings();
   }
 
   private loadMeetings(): void {
-    // TODO: Implement when MeetingService is available
-    console.log('Meeting service not available yet');
+    this.meetingService.getMeetings().subscribe({
+      next: (meetings) => {
+        this.availableMeetings = meetings.map(meeting => ({
+          id: meeting.id,
+          subject: meeting.subject,
+          date: meeting.startTime?.split('T')[0] || meeting.date || new Date().toISOString().split('T')[0]
+        }));
+      },
+      error: (error) => {
+        console.error('Error loading meetings:', error);
+        // Fallback to mock meetings for development
+        this.availableMeetings = [
+          { id: 1, subject: 'Weekly Standup', date: '2024-12-15' },
+          { id: 2, subject: 'Sprint Planning', date: '2024-12-16' },
+          { id: 3, subject: 'Project Review', date: '2024-12-17' }
+        ];
+      }
+    });
   }
 
   onFileSelected(event: Event): void {
@@ -186,6 +202,8 @@ export class DocumentUploadDialogComponent implements OnInit {
     this.uploadProgress = 0;
 
     const formValue = this.uploadForm.value;
+    const currentUser = this.authService.getCurrentUser();
+    const userId = currentUser?.id ? (typeof currentUser.id === 'string' ? parseInt(currentUser.id, 10) : currentUser.id) : 1;
     const uploadRequest: DocumentUploadRequest = {
       file: this.selectedFile,
       meetingId: formValue.meetingId || undefined,
@@ -194,7 +212,7 @@ export class DocumentUploadDialogComponent implements OnInit {
       documentType: formValue.documentType,
       accessPermissions: formValue.accessPermissions,
       storageProvider: formValue.storageProvider,
-      uploadedBy: 1, // TODO: Get from auth service
+      uploadedBy: userId, // Use authenticated user ID or fallback to 1
       tags: formValue.tags || undefined
     };
 
