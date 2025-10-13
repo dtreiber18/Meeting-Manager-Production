@@ -1,0 +1,20 @@
+# Azure OpenAI Configuration for Blueprint Hub
+# Add this to your application.yml file
+
+azure:
+  openai:
+    endpoint: ${AZURE_OPENAI_ENDPOINT:https://your-openai.openai.azure.com/}
+    api-key: ${AZURE_OPENAI_API_KEY:your-api-key}
+    deployment-name: ${AZURE_OPENAI_DEPLOYMENT_NAME:gpt-35-turbo}
+
+# Required Maven Dependencies (add to pom.xml):
+# <dependency>
+#   <groupId>com.azure</groupId>
+#   <artifactId>azure-ai-openai</artifactId>
+#   <version>1.0.0-beta.6</version>
+# </dependency>
+
+# Environment Variables to set:
+# AZURE_OPENAI_ENDPOINT=https://your-resource-name.openai.azure.com/
+# AZURE_OPENAI_API_KEY=your-api-key-here
+# AZURE_OPENAI_DEPLOYMENT_NAME=gpt-35-turbo
