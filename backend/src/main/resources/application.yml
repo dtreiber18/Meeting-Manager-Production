@@ -130,12 +130,18 @@ management:
         enabled: true
 
 # N8N Integration Configuration
+# To enable N8N integration:
+# 1. Set N8N_ENABLED=true environment variable OR change enabled: true below
+# 2. Operations webhook is pre-configured (handles events, operations, approve/reject)
+# 3. Notes webhook is used for processing meeting content
+# See N8N_SETUP_GUIDE.md for detailed setup instructions
 n8n:
-  enabled: ${N8N_ENABLED:false}
+  enabled: ${N8N_ENABLED:true}  # Set to 'true' to enable N8N integration
   webhook:
-    url: ${N8N_WEBHOOK_URL:}
+    operations-url: ${N8N_OPERATIONS_WEBHOOK_URL:https://g37-ventures1.app.n8n.cloud/webhook/operations}
+    notes-url: ${N8N_NOTES_WEBHOOK_URL:https://g37-ventures1.app.n8n.cloud/webhook/notes}
   api:
-    key: ${N8N_API_KEY:}
+    key: ${N8N_API_KEY:}  # Optional: Bearer token for N8N authentication
 
 # Cloud Storage Configuration
 help:

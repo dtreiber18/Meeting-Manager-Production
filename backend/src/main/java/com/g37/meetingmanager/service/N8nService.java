@@ -29,8 +29,11 @@ public class N8nService {
 
     private static final Logger logger = LoggerFactory.getLogger(N8nService.class);
 
-    @Value("${n8n.webhook.url:}")
-    private String n8nWebhookUrl;
+    @Value("${n8n.webhook.operations-url:}")
+    private String n8nOperationsWebhookUrl;
+
+    @Value("${n8n.webhook.notes-url:}")
+    private String n8nNotesWebhookUrl;
 
     @Value("${n8n.api.key:}")
     private String n8nApiKey;
@@ -51,10 +54,10 @@ public class N8nService {
      * Check if N8N integration is enabled and configured
      */
     public boolean isN8nAvailable() {
-        boolean available = n8nEnabled && n8nWebhookUrl != null && !n8nWebhookUrl.isEmpty();
+        boolean available = n8nEnabled && n8nOperationsWebhookUrl != null && !n8nOperationsWebhookUrl.isEmpty();
         if (!available) {
-            logger.warn("N8N not available - enabled: {}, webhookUrl configured: {}",
-                n8nEnabled, (n8nWebhookUrl != null && !n8nWebhookUrl.isEmpty()));
+            logger.warn("N8N not available - enabled: {}, operationsWebhookUrl configured: {}",
+                n8nEnabled, (n8nOperationsWebhookUrl != null && !n8nOperationsWebhookUrl.isEmpty()));
         }
         return available;
     }
@@ -88,9 +91,9 @@ public class N8nService {
 
             HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
 
-            // Make HTTP POST request
+            // Make HTTP POST request to operations webhook
             ResponseEntity<String> response = restTemplate.exchange(
-                n8nWebhookUrl,
+                n8nOperationsWebhookUrl,
                 HttpMethod.POST,
                 entity,
                 String.class
@@ -164,9 +167,9 @@ public class N8nService {
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
-            // Make HTTP POST request
+            // Make HTTP POST request to operations webhook
             ResponseEntity<String> response = restTemplate.exchange(
-                n8nWebhookUrl,
+                n8nOperationsWebhookUrl,
                 HttpMethod.POST,
                 entity,
                 String.class
@@ -309,6 +312,218 @@ public class N8nService {
         } catch (Exception e) {
             logger.warn("Failed to parse date time: {}", dateTimeStr);
             return LocalDateTime.now();
+        }
+    }
+
+    /**
+     * Get all events with pending items from N8N
+     *
+     * @return List of events with pending operations
+     */
+    public List<Map<String, Object>> getEvents() {
+        if (!isN8nAvailable()) {
+            logger.warn("N8N not available, returning empty list");
+            return Collections.emptyList();
+        }
+
+        try {
+            logger.info("Fetching events from N8N");
+
+            // Create request payload
+            Map<String, String> requestBody = new HashMap<>();
+            requestBody.put("action", "get_events");
+
+            // Create headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            if (n8nApiKey != null && !n8nApiKey.isEmpty()) {
+                headers.set("Authorization", "Bearer " + n8nApiKey);
+            }
+
+            HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
+
+            // Make HTTP POST request to operations webhook
+            ResponseEntity<String> response = restTemplate.exchange(
+                n8nOperationsWebhookUrl,
+                HttpMethod.POST,
+                entity,
+                String.class
+            );
+
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                // Parse response as array of events
+                List<Map<String, Object>> events = objectMapper.readValue(
+                    response.getBody(),
+                    new TypeReference<List<Map<String, Object>>>() {}
+                );
+
+                logger.info("Successfully fetched {} events from N8N", events.size());
+                return events;
+            } else {
+                logger.warn("N8N returned non-OK status: {}", response.getStatusCode());
+                return Collections.emptyList();
+            }
+
+        } catch (Exception e) {
+            logger.error("Error fetching events from N8N: {}", e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * Approve an operation in N8N
+     *
+     * @param operationId The operation ID to approve
+     * @return true if approved successfully
+     */
+    public boolean approveOperation(String operationId) {
+        if (!isN8nAvailable()) {
+            logger.warn("N8N not available, cannot approve operation");
+            return false;
+        }
+
+        try {
+            logger.info("Approving operation in N8N: {}", operationId);
+
+            // Create request payload
+            Map<String, String> requestBody = new HashMap<>();
+            requestBody.put("action", "approve_operation");
+            requestBody.put("operation_id", operationId);
+
+            // Create headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            if (n8nApiKey != null && !n8nApiKey.isEmpty()) {
+                headers.set("Authorization", "Bearer " + n8nApiKey);
+            }
+
+            HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
+
+            // Make HTTP POST request to operations webhook
+            ResponseEntity<String> response = restTemplate.exchange(
+                n8nOperationsWebhookUrl,
+                HttpMethod.POST,
+                entity,
+                String.class
+            );
+
+            if (response.getStatusCode() == HttpStatus.OK) {
+                logger.info("Successfully approved operation in N8N: {}", operationId);
+                return true;
+            } else {
+                logger.warn("N8N approve returned non-OK status: {}", response.getStatusCode());
+                return false;
+            }
+
+        } catch (Exception e) {
+            logger.error("Error approving operation in N8N: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Reject an operation in N8N
+     *
+     * @param operationId The operation ID to reject
+     * @return true if rejected successfully
+     */
+    public boolean rejectOperation(String operationId) {
+        if (!isN8nAvailable()) {
+            logger.warn("N8N not available, cannot reject operation");
+            return false;
+        }
+
+        try {
+            logger.info("Rejecting operation in N8N: {}", operationId);
+
+            // Create request payload
+            Map<String, String> requestBody = new HashMap<>();
+            requestBody.put("action", "reject_operation");
+            requestBody.put("operation_id", operationId);
+
+            // Create headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            if (n8nApiKey != null && !n8nApiKey.isEmpty()) {
+                headers.set("Authorization", "Bearer " + n8nApiKey);
+            }
+
+            HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
+
+            // Make HTTP POST request to operations webhook
+            ResponseEntity<String> response = restTemplate.exchange(
+                n8nOperationsWebhookUrl,
+                HttpMethod.POST,
+                entity,
+                String.class
+            );
+
+            if (response.getStatusCode() == HttpStatus.OK) {
+                logger.info("Successfully rejected operation in N8N: {}", operationId);
+                return true;
+            } else {
+                logger.warn("N8N reject returned non-OK status: {}", response.getStatusCode());
+                return false;
+            }
+
+        } catch (Exception e) {
+            logger.error("Error rejecting operation in N8N: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Update an operation in N8N
+     *
+     * @param operationId The operation ID to update
+     * @param operationData The updated operation data (JSON string)
+     * @param status The new status
+     * @return true if updated successfully
+     */
+    public boolean updateOperation(String operationId, String operationData, String status) {
+        if (!isN8nAvailable()) {
+            logger.warn("N8N not available, cannot update operation");
+            return false;
+        }
+
+        try {
+            logger.info("Updating operation in N8N: {}", operationId);
+
+            // Create request payload
+            Map<String, String> requestBody = new HashMap<>();
+            requestBody.put("action", "update_operation");
+            requestBody.put("operation_id", operationId);
+            requestBody.put("operation", operationData);
+            requestBody.put("status", status);
+
+            // Create headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            if (n8nApiKey != null && !n8nApiKey.isEmpty()) {
+                headers.set("Authorization", "Bearer " + n8nApiKey);
+            }
+
+            HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
+
+            // Make HTTP POST request to operations webhook
+            ResponseEntity<String> response = restTemplate.exchange(
+                n8nOperationsWebhookUrl,
+                HttpMethod.POST,
+                entity,
+                String.class
+            );
+
+            if (response.getStatusCode() == HttpStatus.OK) {
+                logger.info("Successfully updated operation in N8N: {}", operationId);
+                return true;
+            } else {
+                logger.warn("N8N update returned non-OK status: {}", response.getStatusCode());
+                return false;
+            }
+
+        } catch (Exception e) {
+            logger.error("Error updating operation in N8N: {}", e.getMessage(), e);
+            return false;
         }
     }
 }

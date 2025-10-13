@@ -1,5 +1,11 @@
 package com.g37.meetingmanager.controller;
 
+import com.g37.meetingmanager.dto.N8nOperationDTO;
+import com.g37.meetingmanager.model.PendingAction;
+import com.g37.meetingmanager.service.N8nService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -7,12 +13,18 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/pending-actions")
 @ConditionalOnProperty(name = "spring.data.mongodb.uri", havingValue = "false", matchIfMissing = true)
 @CrossOrigin(origins = {"http://localhost:4200", "https://dougtreiber.github.io"})
 public class FallbackPendingActionController {
+
+    private static final Logger logger = LoggerFactory.getLogger(FallbackPendingActionController.class);
+
+    @Autowired(required = false)
+    private N8nService n8nService;
 
     /**
      * Fallback endpoint for getting pending actions when MongoDB is not available
@@ -93,5 +105,74 @@ public class FallbackPendingActionController {
             "status", "mongo_disabled"
         );
         return ResponseEntity.accepted().body(response);
+    }
+
+    /**
+     * Fetch pending operations from N8N for a specific event/meeting
+     */
+    @GetMapping("/n8n/fetch/{eventId}")
+    public ResponseEntity<Map<String, Object>> fetchFromN8n(@PathVariable String eventId) {
+        logger.info("Fetching pending operations from N8N for event: {}", eventId);
+
+        if (n8nService == null || !n8nService.isN8nAvailable()) {
+            return ResponseEntity.ok(Map.of(
+                "status", "unavailable",
+                "message", "N8N service is not enabled or configured",
+                "operations", Collections.emptyList()
+            ));
+        }
+
+        try {
+            // Fetch operations from N8N
+            List<N8nOperationDTO> n8nOperations = n8nService.getPendingOperations(eventId);
+
+            // Convert to PendingAction models
+            List<PendingAction> pendingActions = n8nOperations.stream()
+                .map(n8nService::convertToPendingAction)
+                .collect(Collectors.toList());
+
+            logger.info("Successfully fetched {} operations from N8N", pendingActions.size());
+
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Fetched pending operations from N8N",
+                "count", pendingActions.size(),
+                "operations", pendingActions
+            ));
+
+        } catch (Exception e) {
+            logger.error("Error fetching operations from N8N: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(Map.of(
+                "status", "error",
+                "message", "Failed to fetch operations from N8N: " + e.getMessage(),
+                "operations", Collections.emptyList()
+            ));
+        }
+    }
+
+    /**
+     * Test N8N connectivity
+     */
+    @GetMapping("/n8n/test")
+    public ResponseEntity<Map<String, Object>> testN8nConnection() {
+        logger.info("Testing N8N connection");
+
+        if (n8nService == null) {
+            return ResponseEntity.ok(Map.of(
+                "status", "not_configured",
+                "message", "N8N service bean not found",
+                "available", false
+            ));
+        }
+
+        boolean available = n8nService.isN8nAvailable();
+
+        return ResponseEntity.ok(Map.of(
+            "status", available ? "available" : "unavailable",
+            "message", available
+                ? "N8N service is configured and ready"
+                : "N8N service is not properly configured",
+            "available", available
+        ));
     }
 }

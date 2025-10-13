@@ -117,6 +117,15 @@ public class PendingActionController {
 
         try {
             PendingAction approved = pendingActionService.approvePendingAction(id, approvedById, notes);
+
+            // Sync approval with N8N if available
+            if (n8nService != null && approved.getN8nExecutionId() != null) {
+                boolean n8nSynced = n8nService.approveOperation(approved.getN8nExecutionId());
+                if (!n8nSynced) {
+                    logger.warn("Failed to sync approval to N8N for operation: {}", approved.getN8nExecutionId());
+                }
+            }
+
             return ResponseEntity.ok(approved);
         } catch (Exception e) {
             logger.error("Error approving pending action", e);
@@ -137,6 +146,15 @@ public class PendingActionController {
 
         try {
             PendingAction rejected = pendingActionService.rejectPendingAction(id, rejectedById, notes);
+
+            // Sync rejection with N8N if available
+            if (n8nService != null && rejected.getN8nExecutionId() != null) {
+                boolean n8nSynced = n8nService.rejectOperation(rejected.getN8nExecutionId());
+                if (!n8nSynced) {
+                    logger.warn("Failed to sync rejection to N8N for operation: {}", rejected.getN8nExecutionId());
+                }
+            }
+
             return ResponseEntity.ok(rejected);
         } catch (Exception e) {
             logger.error("Error rejecting pending action", e);
