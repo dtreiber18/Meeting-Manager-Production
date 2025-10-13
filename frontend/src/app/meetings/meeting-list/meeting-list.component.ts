@@ -33,7 +33,7 @@ export class MeetingListComponent implements OnInit, OnDestroy {
 
   loading = false;
   error: string | null = null;
-  displayedColumns: string[] = ['title', 'date', 'type', 'participants', 'actions'];
+  displayedColumns: string[] = ['title', 'date', 'actions'];
 
   private readonly destroy$ = new Subject<void>();
 

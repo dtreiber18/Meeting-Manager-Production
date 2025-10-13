@@ -36,16 +36,24 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
             <mat-icon class="mr-2 text-blue-600">analytics</mat-icon>
             Meeting Intelligence
           </mat-card-title>
-          <button 
-            mat-icon-button 
-            (click)="refreshAnalysis()"
-            [disabled]="loadingAnalysis"
-            matTooltip="Refresh Analysis">
-            <mat-icon [class.spin]="loadingAnalysis">refresh</mat-icon>
-          </button>
+          <div class="flex items-center space-x-1">
+            <button
+              mat-icon-button
+              (click)="refreshAnalysis()"
+              [disabled]="loadingAnalysis"
+              matTooltip="Refresh Analysis">
+              <mat-icon [class.spin]="loadingAnalysis">refresh</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              (click)="toggleIntelligence()"
+              [matTooltip]="intelligenceExpanded ? 'Collapse' : 'Expand'">
+              <mat-icon>{{ intelligenceExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </button>
+          </div>
         </mat-card-header>
-        
-        <mat-card-content>
+
+        <mat-card-content *ngIf="intelligenceExpanded">
           <div *ngIf="loadingAnalysis" class="text-center py-4">
             <mat-spinner diameter="40"></mat-spinner>
             <p class="mt-2 text-gray-600">Analyzing meeting...</p>
@@ -147,25 +155,31 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
               {{ suggestions.length }} new
             </mat-chip>
           </mat-card-title>
-          <div class="flex items-center space-x-2">
-            <button 
-              mat-icon-button 
+          <div class="flex items-center space-x-1">
+            <button
+              mat-icon-button
               (click)="toggleAutoSuggestions()"
               [color]="autoSuggestionsEnabled ? 'primary' : ''"
               matTooltip="Auto-generate suggestions">
               <mat-icon>{{ autoSuggestionsEnabled ? 'auto_mode' : 'smart_toy' }}</mat-icon>
             </button>
-            <button 
-              mat-icon-button 
+            <button
+              mat-icon-button
               (click)="refreshSuggestions()"
               [disabled]="loadingSuggestions"
               matTooltip="Refresh Suggestions">
               <mat-icon [class.spin]="loadingSuggestions">refresh</mat-icon>
             </button>
+            <button
+              mat-icon-button
+              (click)="toggleSuggestions()"
+              [matTooltip]="suggestionsExpanded ? 'Collapse' : 'Expand'">
+              <mat-icon>{{ suggestionsExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </button>
           </div>
         </mat-card-header>
 
-        <mat-card-content>
+        <mat-card-content *ngIf="suggestionsExpanded">
           <div *ngIf="loadingSuggestions" class="text-center py-4">
             <mat-spinner diameter="40"></mat-spinner>
             <p class="mt-2 text-gray-600">Generating suggestions...</p>
@@ -236,9 +250,24 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
             <mat-icon class="mr-2 text-indigo-600">psychology</mat-icon>
             Smart Insights
           </mat-card-title>
+          <div class="flex items-center space-x-1">
+            <button
+              mat-icon-button
+              (click)="refreshInsights()"
+              [disabled]="loadingAnalysis"
+              matTooltip="Refresh Insights">
+              <mat-icon [class.spin]="loadingAnalysis">refresh</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              (click)="toggleInsights()"
+              [matTooltip]="insightsExpanded ? 'Collapse' : 'Expand'">
+              <mat-icon>{{ insightsExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </button>
+          </div>
         </mat-card-header>
 
-        <mat-card-content>
+        <mat-card-content *ngIf="insightsExpanded">
           <div *ngIf="analysis" class="space-y-3">
             
             <!-- Workflow Recommendations -->
@@ -326,8 +355,18 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
       top: 20px;
     }
 
-    .analysis-card, .suggestions-card, .followup-card, .quick-actions-card {
+    .analysis-card, .suggestions-card, .followup-card, .quick-actions-card, .smart-insights-card {
       margin-bottom: 16px;
+    }
+
+    mat-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    mat-card-title {
+      flex: 1;
     }
 
     .score-circle {
@@ -381,7 +420,12 @@ export class MeetingIntelligencePanelComponent implements OnInit {
   loadingAnalysis = false;
   loadingSuggestions = false;
   autoSuggestionsEnabled = false;
-  
+
+  // Collapse/Expand states
+  intelligenceExpanded = true;
+  suggestionsExpanded = true;
+  insightsExpanded = true;
+
   constructor(private readonly chatService: ChatService) {}
 
   ngOnInit(): void {
@@ -470,6 +514,26 @@ export class MeetingIntelligencePanelComponent implements OnInit {
       console.log('Auto-suggestions enabled - will generate suggestions automatically');
       // Could set up periodic refresh or real-time analysis
     }
+  }
+
+  // Toggle methods for collapse/expand
+  toggleIntelligence(): void {
+    this.intelligenceExpanded = !this.intelligenceExpanded;
+  }
+
+  toggleSuggestions(): void {
+    this.suggestionsExpanded = !this.suggestionsExpanded;
+  }
+
+  toggleInsights(): void {
+    this.insightsExpanded = !this.insightsExpanded;
+  }
+
+  // Refresh insights (recalculates predictions and recommendations)
+  refreshInsights(): void {
+    // Smart Insights are derived from the meeting analysis
+    // So refreshing the analysis will update the insights
+    this.refreshAnalysis();
   }
 
   // Smart Insights Methods
