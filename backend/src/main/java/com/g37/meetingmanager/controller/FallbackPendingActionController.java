@@ -10,9 +10,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -73,7 +71,7 @@ public class FallbackPendingActionController {
      * Fallback endpoint for creating pending actions
      */
     @PostMapping
-    public ResponseEntity<Map<String, Object>> createPendingAction(@RequestBody Object pendingAction) {
+    public ResponseEntity<Map<String, Object>> createPendingAction(@RequestBody Object actionDetails) {
         Map<String, Object> response = Map.of(
             "message", "Pending actions feature is temporarily unavailable",
             "status", "mongo_disabled"

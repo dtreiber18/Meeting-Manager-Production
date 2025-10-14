@@ -30,14 +30,12 @@ spring:
         use_sql_comments: true
         generate_statistics: false
   
-  # MongoDB Configuration (Disabled for now)
-  # data:
-  #   mongodb:
-  #     uri: ${MONGODB_URI:mongodb://localhost:27017/meeting_manager}
-  #     auto-index-creation: true
-  
-  # Redis Configuration  
+  # MongoDB Configuration
   data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/meeting_manager}
+      auto-index-creation: true
+    # Redis Configuration
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
@@ -148,6 +146,18 @@ help:
   default:
     storage:
       provider: ${HELP_STORAGE_PROVIDER:ONEDRIVE}
+
+# Fathom Integration Configuration
+# Fathom is a note-taking app that can send webhooks when meetings are transcribed
+# To enable Fathom integration:
+# 1. Set FATHOM_ENABLED=true environment variable OR change enabled: true below
+# 2. Set FATHOM_WEBHOOK_SECRET to the secret provided by Fathom in webhook settings
+# 3. Configure Fathom webhook URL to point to: https://your-domain.com/api/webhooks/fathom
+# 4. Enable "newMeeting" event in Fathom webhook settings
+fathom:
+  enabled: ${FATHOM_ENABLED:false}  # Set to 'true' to enable Fathom integration
+  webhook:
+    secret: ${FATHOM_WEBHOOK_SECRET:}  # Required: HMAC SHA-256 secret from Fathom
 
 # Logging Configuration
 logging:
