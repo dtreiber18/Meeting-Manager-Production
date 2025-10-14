@@ -95,7 +95,17 @@
             <!-- Read-only view -->
             <div *ngIf="!cardState.header.editing">
               <h1 class="text-xl font-semibold text-gray-900 mb-2">{{ editedMeeting.title }}</h1>
-              <div class="flex items-center space-x-4 text-sm text-gray-600">
+              <div class="flex items-center space-x-4 text-sm text-gray-600 flex-wrap">
+                <!-- Source Badge -->
+                <span *ngIf="meeting.source === 'fathom'"
+                      class="inline-flex items-center px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300 text-xs font-medium">
+                  🎤 Imported from Fathom
+                </span>
+                <span *ngIf="meeting.source === 'n8n'"
+                      class="inline-flex items-center px-3 py-1 rounded-full bg-purple-100 text-purple-800 border border-purple-300 text-xs font-medium">
+                  🔄 From N8N
+                </span>
+
                 <span class="flex items-center">
                   <mat-icon class="w-4 h-4 mr-1">event</mat-icon>
                   {{ editedMeeting.startTime | date:'M/d/yy, h:mm a' }}
@@ -587,8 +597,23 @@
                 </div>
                 <div class="ml-5 space-y-1">
                   <div *ngFor="let participant of getParticipantsByType(ParticipantType.CLIENT)" class="flex items-center justify-between py-1">
-                    <div class="flex items-center space-x-2">
+                    <div class="flex items-center space-x-2 flex-wrap">
                       <span class="text-sm text-gray-800">{{ participant.name }}</span>
+
+                      <!-- External Contact Badge -->
+                      <span *ngIf="participant.isExternal"
+                            class="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 border border-orange-300"
+                            title="External contact - potential CRM match">
+                        🌐 External
+                      </span>
+
+                      <!-- CRM Linked Badge -->
+                      <span *ngIf="participant.crmContactId"
+                            class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800 border border-green-300"
+                            [title]="'Linked to ' + (participant.crmSource || 'CRM')">
+                        🔗 {{ participant.crmSource || 'CRM' }}
+                      </span>
+
                       <span *ngIf="participant.role === ParticipantRole.ORGANIZER" class="text-xs text-orange-600 font-medium">ORGANIZER</span>
                       <span *ngIf="participant.role === ParticipantRole.ACTION_OWNER" class="text-xs text-purple-600 font-medium">ACTION OWNER</span>
                     </div>
@@ -611,8 +636,23 @@
                 </div>
                 <div class="ml-5 space-y-1">
                   <div *ngFor="let participant of getParticipantsByType(ParticipantType.G37)" class="flex items-center justify-between py-1">
-                    <div class="flex items-center space-x-2">
+                    <div class="flex items-center space-x-2 flex-wrap">
                       <span class="text-sm text-gray-800">{{ participant.name }}</span>
+
+                      <!-- External Contact Badge -->
+                      <span *ngIf="participant.isExternal"
+                            class="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 border border-orange-300"
+                            title="External contact - potential CRM match">
+                        🌐 External
+                      </span>
+
+                      <!-- CRM Linked Badge -->
+                      <span *ngIf="participant.crmContactId"
+                            class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800 border border-green-300"
+                            [title]="'Linked to ' + (participant.crmSource || 'CRM')">
+                        🔗 {{ participant.crmSource || 'CRM' }}
+                      </span>
+
                       <span *ngIf="participant.role === ParticipantRole.ORGANIZER" class="text-xs text-orange-600 font-medium">ORGANIZER</span>
                       <span *ngIf="participant.role === ParticipantRole.ACTION_OWNER" class="text-xs text-purple-600 font-medium">ACTION OWNER</span>
                     </div>
@@ -635,8 +675,23 @@
                 </div>
                 <div class="ml-5 space-y-1">
                   <div *ngFor="let participant of getParticipantsByType(ParticipantType.OTHER)" class="flex items-center justify-between py-1">
-                    <div class="flex items-center space-x-2">
+                    <div class="flex items-center space-x-2 flex-wrap">
                       <span class="text-sm text-gray-800">{{ participant.name }}</span>
+
+                      <!-- External Contact Badge -->
+                      <span *ngIf="participant.isExternal"
+                            class="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 border border-orange-300"
+                            title="External contact - potential CRM match">
+                        🌐 External
+                      </span>
+
+                      <!-- CRM Linked Badge -->
+                      <span *ngIf="participant.crmContactId"
+                            class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800 border border-green-300"
+                            [title]="'Linked to ' + (participant.crmSource || 'CRM')">
+                        🔗 {{ participant.crmSource || 'CRM' }}
+                      </span>
+
                       <span *ngIf="participant.role === ParticipantRole.ORGANIZER" class="text-xs text-orange-600 font-medium">ORGANIZER</span>
                       <span *ngIf="participant.role === ParticipantRole.ACTION_OWNER" class="text-xs text-purple-600 font-medium">ACTION OWNER</span>
                     </div>
@@ -755,6 +810,85 @@
                 rows="3"
                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               </textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fathom Recording & Transcript Card -->
+        <div *ngIf="isFathomMeeting()"
+             class="bg-white rounded-lg shadow-sm border border-gray-200">
+          <!-- Card Header -->
+          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+            <h3 class="text-base font-semibold text-gray-900 flex items-center">
+              <span class="mr-2">🎤</span>
+              Fathom Recording
+            </h3>
+            <div class="flex items-center space-x-2">
+              <button
+                type="button"
+                (click)="toggleCardCollapse('recording')"
+                class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+                <mat-icon class="w-4 h-4">{{ cardState.recording?.collapsed ? 'expand_more' : 'expand_less' }}</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <div class="p-4" [hidden]="cardState.recording?.collapsed">
+            <!-- Recording Link -->
+            <div *ngIf="getFathomRecordingUrl()" class="mb-4">
+              <a [href]="getFathomRecordingUrl()!"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
+                <mat-icon class="w-5 h-5 mr-2">play_circle</mat-icon>
+                Open Fathom Recording
+              </a>
+            </div>
+
+            <!-- Fathom Summary -->
+            <div *ngIf="meeting.fathomSummary" class="mb-4">
+              <h4 class="text-sm font-medium text-gray-900 mb-2 flex items-center">
+                <mat-icon class="w-4 h-4 mr-1">auto_awesome</mat-icon>
+                AI Summary from Fathom
+              </h4>
+              <p class="text-sm text-gray-700 bg-blue-50 border-l-4 border-blue-500 p-3 rounded">
+                {{ meeting.fathomSummary }}
+              </p>
+            </div>
+
+            <!-- Transcript Preview -->
+            <div *ngIf="meeting.transcript || meeting.transcriptEntries" class="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+              <h4 class="text-sm font-medium text-gray-900 mb-3 flex items-center">
+                <mat-icon class="w-4 h-4 mr-1">transcribe</mat-icon>
+                Transcript
+              </h4>
+
+              <!-- Structured transcript entries -->
+              <div *ngIf="meeting.transcriptEntries && meeting.transcriptEntries.length > 0" class="space-y-2 text-sm">
+                <div *ngFor="let entry of meeting.transcriptEntries"
+                     class="border-l-2 border-gray-300 pl-3 py-1 hover:bg-gray-100 rounded transition-colors">
+                  <div class="flex items-center space-x-2 mb-1">
+                    <span class="font-medium text-gray-700">{{ entry.speaker }}</span>
+                    <span class="text-xs text-gray-500">{{ formatTranscriptTimestamp(entry.timestamp) }}</span>
+                  </div>
+                  <p class="text-gray-600">{{ entry.text }}</p>
+                </div>
+              </div>
+
+              <!-- Plain text transcript fallback -->
+              <div *ngIf="meeting.transcript && (!meeting.transcriptEntries || meeting.transcriptEntries.length === 0)" class="text-sm text-gray-700 whitespace-pre-wrap">
+                {{ meeting.transcript }}
+              </div>
+
+              <div *ngIf="!meeting.transcript && (!meeting.transcriptEntries || meeting.transcriptEntries.length === 0)" class="text-sm text-gray-500 italic text-center py-4">
+                No transcript available for this recording
+              </div>
+            </div>
+
+            <!-- No recording available message -->
+            <div *ngIf="!getFathomRecordingUrl() && !meeting.fathomSummary && !meeting.transcript" class="text-center py-6">
+              <mat-icon class="w-8 h-8 text-gray-400 mx-auto mb-2">mic_off</mat-icon>
+              <p class="text-sm text-gray-500">Recording data not available</p>
             </div>
           </div>
         </div>
@@ -952,10 +1086,34 @@
 
                       <!-- Action Info -->
                       <div class="flex-1 min-w-0">
-                        <div class="flex items-center space-x-2">
+                        <div class="flex items-center space-x-2 flex-wrap">
                           <h4 class="text-sm font-medium text-gray-900">{{ action.title }}</h4>
-                          <!-- N8N Badge -->
-                          <span *ngIf="action.n8nExecutionId"
+
+                          <!-- Fathom Source Badge -->
+                          <span *ngIf="isFathomAction(action)"
+                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-300"
+                                title="Imported from Fathom Note-taking App">
+                            🎤 Fathom
+                          </span>
+
+                          <!-- Recording Link Button -->
+                          <button *ngIf="getFathomRecordingLink(action)"
+                                  type="button"
+                                  (click)="playFathomRecording(action); $event.stopPropagation()"
+                                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors border border-purple-300"
+                                  title="Play Fathom recording at this timestamp">
+                            🎥 Play Recording
+                          </button>
+
+                          <!-- Timestamp Badge -->
+                          <span *ngIf="getFathomTimestamp(action)"
+                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 border border-gray-300"
+                                title="Timestamp in recording">
+                            ⏱️ {{ getFathomTimestamp(action) }}
+                          </span>
+
+                          <!-- N8N Badge (non-Fathom) -->
+                          <span *ngIf="action.n8nExecutionId && !isFathomAction(action)"
                                 class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800"
                                 title="From N8N Operations Manager">
                             🔄 N8N

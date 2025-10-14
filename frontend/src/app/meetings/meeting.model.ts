@@ -252,6 +252,12 @@ export interface Meeting {
   isJustCompleted?: boolean;
 }
 
+export interface TranscriptEntry {
+  speaker: string;
+  timestamp: number;
+  text: string;
+}
+
 export interface Meeting {
   id: number;
   title: string;
@@ -297,4 +303,11 @@ export interface Meeting {
   date?: string;
   time?: string;
   isJustCompleted?: boolean;
+  // Fathom integration fields
+  source?: 'mm' | 'n8n' | 'fathom';
+  fathomRecordingId?: string;
+  fathomRecordingUrl?: string;
+  fathomSummary?: string;
+  transcript?: string;
+  transcriptEntries?: TranscriptEntry[];
 }

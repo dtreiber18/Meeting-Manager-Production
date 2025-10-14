@@ -56,7 +56,7 @@ export class MeetingDetailsScreenComponent implements OnInit {
   InvitationStatus = InvitationStatus;
   AttendanceStatus = AttendanceStatus;
 
-  meeting?: Meeting & { source?: 'mm' | 'n8n' };
+  meeting?: Meeting & { source?: 'mm' | 'n8n' | 'fathom' };
   loading = true;
   error: string | null = null;
   meetingId: string | null = null;
@@ -72,6 +72,7 @@ export class MeetingDetailsScreenComponent implements OnInit {
     header: { collapsed: true, editing: false },
     participants: { collapsed: true, editing: false },
     overview: { collapsed: true, editing: false },
+    recording: { collapsed: true, editing: false },
     pendingActions: { collapsed: true, editing: false },
     actionItems: { collapsed: true, editing: false }
   };
@@ -1504,11 +1505,112 @@ export class MeetingDetailsScreenComponent implements OnInit {
       item.assignedTo = original.assignedTo;
       item.dueDate = original.dueDate;
       item.priority = original.priority;
-      
+
       // Clean up
       delete this.originalActionItems[item.id];
     }
     // Disable editing mode
     item.editing = false;
+  }
+
+  /**
+   * Fathom Integration Helper Methods
+   */
+
+  /**
+   * Extract Fathom recording link from pending action notes
+   */
+  getFathomRecordingLink(action: PendingAction): string | null {
+    if (!action.notes) return null;
+    const match = action.notes.match(/Recording: (https:\/\/app\.fathom\.video\/[^\s\n]+)/);
+    return match ? match[1] : null;
+  }
+
+  /**
+   * Extract timestamp from pending action notes
+   */
+  getFathomTimestamp(action: PendingAction): string | null {
+    if (!action.notes) return null;
+    const match = action.notes.match(/Timestamp: (\d{2}:\d{2}:\d{2})/);
+    return match ? match[1] : null;
+  }
+
+  /**
+   * Check if pending action is from Fathom
+   */
+  isFathomAction(action: PendingAction): boolean {
+    return !!action.n8nExecutionId && action.n8nExecutionId.startsWith('fathom_');
+  }
+
+  /**
+   * Open Fathom recording at specific timestamp
+   */
+  playFathomRecording(action: PendingAction): void {
+    const recordingLink = this.getFathomRecordingLink(action);
+    if (recordingLink) {
+      window.open(recordingLink, '_blank');
+    }
+  }
+
+  /**
+   * Format timestamp for transcript display
+   */
+  formatTranscriptTimestamp(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  /**
+   * Check if meeting is from Fathom
+   * Checks multiple indicators: source field, recordingUrl pattern, or fathomRecordingId
+   */
+  isFathomMeeting(): boolean {
+    if (!this.meeting) return false;
+
+    // Check if explicitly marked as fathom
+    if (this.meeting.source === 'fathom') return true;
+
+    // Check if has fathomRecordingId
+    if (this.meeting.fathomRecordingId) return true;
+
+    // Check if has fathomRecordingUrl
+    if (this.meeting.fathomRecordingUrl) return true;
+
+    // Check if regular recordingUrl is from Fathom
+    if (this.meeting.recordingUrl && this.meeting.recordingUrl.includes('fathom.video')) {
+      return true;
+    }
+
+    // Check if any pending actions are from Fathom
+    const hasFathomActions = this.pendingActions.some(action => this.isFathomAction(action));
+    if (hasFathomActions) return true;
+
+    return false;
+  }
+
+  /**
+   * Get Fathom recording URL for the meeting
+   * Checks multiple possible locations for the recording URL
+   */
+  getFathomRecordingUrl(): string | null {
+    if (!this.meeting) return null;
+
+    // Check explicit fathomRecordingUrl first
+    if (this.meeting.fathomRecordingUrl) {
+      return this.meeting.fathomRecordingUrl;
+    }
+
+    // Check regular recordingUrl if it's from Fathom
+    if (this.meeting.recordingUrl && this.meeting.recordingUrl.includes('fathom.video')) {
+      return this.meeting.recordingUrl;
+    }
+
+    return null;
   }
 }
