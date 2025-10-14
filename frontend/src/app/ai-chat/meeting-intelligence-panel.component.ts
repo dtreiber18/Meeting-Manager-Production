@@ -476,6 +476,126 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
               </div>
             </div>
 
+            <!-- PHASE 2: Participant Engagement Analytics -->
+            <div *ngIf="participantEngagement && participantEngagement.participants.length > 0" class="engagement-section border-t pt-4 mt-4">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700 flex items-center">
+                <mat-icon class="w-4 h-4 mr-1 text-indigo-600">people</mat-icon>
+                Participant Engagement (Phase 2)
+                <span class="ml-2 text-xs px-2 py-0.5 rounded-full"
+                      [ngClass]="{
+                        'bg-green-100 text-green-800': participantEngagement.overallEngagement === 'high',
+                        'bg-yellow-100 text-yellow-800': participantEngagement.overallEngagement === 'medium',
+                        'bg-red-100 text-red-800': participantEngagement.overallEngagement === 'low'
+                      }">
+                  {{ participantEngagement.overallEngagement }} engagement
+                </span>
+              </h4>
+
+              <div class="space-y-2 mb-3">
+                <div *ngFor="let participant of participantEngagement.participants.slice(0, 5)"
+                     class="flex items-center justify-between text-xs p-2 bg-gray-50 rounded">
+                  <div class="flex items-center">
+                    <span class="font-medium">{{ participant.participant }}</span>
+                    <span class="ml-2 text-gray-500">
+                      ({{ participant.contributionCount }} contributions, {{ participant.questionCount }} questions)
+                    </span>
+                  </div>
+                  <div class="flex items-center">
+                    <span class="mr-2 font-semibold"
+                          [ngClass]="{
+                            'text-green-600': participant.engagementScore >= 7,
+                            'text-yellow-600': participant.engagementScore >= 5 && participant.engagementScore < 7,
+                            'text-red-600': participant.engagementScore < 5
+                          }">
+                      Score: {{ participant.engagementScore.toFixed(1) }}/10
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Engagement Recommendations -->
+              <div *ngIf="participantEngagement.recommendations.length > 0" class="mt-2">
+                <h5 class="text-xs font-medium text-indigo-700 mb-1">💡 Recommendations</h5>
+                <div class="space-y-1">
+                  <div *ngFor="let rec of participantEngagement.recommendations"
+                       class="text-xs bg-indigo-50 text-indigo-800 px-2 py-1 rounded">
+                    {{ rec }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- PHASE 2: Transcript Keywords -->
+            <div *ngIf="transcriptKeywords.length > 0" class="keywords-section border-t pt-4 mt-4">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700 flex items-center">
+                <mat-icon class="w-4 h-4 mr-1 text-teal-600">tag</mat-icon>
+                Most Relevant Keywords (Phase 2)
+              </h4>
+              <div class="flex flex-wrap gap-2">
+                <div *ngFor="let keyword of transcriptKeywords.slice(0, 15)"
+                     class="text-xs bg-teal-50 text-teal-800 px-2 py-1 rounded border border-teal-200"
+                     [title]="'Mentioned ' + keyword.count + ' times'">
+                  {{ keyword.word }} <span class="text-teal-600">({{ keyword.count }})</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- PHASE 2: Extracted Action Items from Transcript -->
+            <div *ngIf="extractedActionItems.length > 0" class="extracted-actions-section border-t pt-4 mt-4">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700 flex items-center">
+                <mat-icon class="w-4 h-4 mr-1 text-orange-600">auto_awesome</mat-icon>
+                AI-Detected Action Items (Phase 2)
+                <span class="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+                  {{ extractedActionItems.length }} found
+                </span>
+              </h4>
+              <div class="space-y-2">
+                <div *ngFor="let item of extractedActionItems.slice(0, 5)"
+                     class="text-xs p-2 rounded border-l-3"
+                     [ngClass]="{
+                       'bg-green-50 border-green-500': item.confidence === 'high',
+                       'bg-yellow-50 border-yellow-500': item.confidence === 'medium',
+                       'bg-gray-50 border-gray-400': item.confidence === 'low'
+                     }">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="font-medium">{{ item.speaker }}</span>
+                    <span class="px-2 py-0.5 rounded text-xs"
+                          [ngClass]="{
+                            'bg-green-200 text-green-800': item.confidence === 'high',
+                            'bg-yellow-200 text-yellow-800': item.confidence === 'medium',
+                            'bg-gray-200 text-gray-800': item.confidence === 'low'
+                          }">
+                      {{ item.confidence }}
+                    </span>
+                  </div>
+                  <div class="text-gray-700">{{ item.description }}</div>
+                  <div class="text-gray-500 text-xs mt-1">&#64; {{ formatTimestamp(item.timestamp) }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- PHASE 2: Topic Evolution -->
+            <div *ngIf="topicEvolution.length > 0" class="topic-evolution-section border-t pt-4 mt-4">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700 flex items-center">
+                <mat-icon class="w-4 h-4 mr-1 text-pink-600">timeline</mat-icon>
+                Topic Evolution (Phase 2)
+              </h4>
+              <div class="space-y-3">
+                <div *ngFor="let segment of topicEvolution; let i = index"
+                     class="text-xs p-2 bg-pink-50 rounded border-l-3 border-pink-400">
+                  <div class="font-medium text-pink-800 mb-1">
+                    Segment {{ i + 1 }}: {{ segment.timeSegment }}
+                  </div>
+                  <div class="flex flex-wrap gap-1">
+                    <span *ngFor="let topic of segment.topics"
+                          class="bg-pink-100 text-pink-800 px-2 py-0.5 rounded">
+                      {{ topic }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- No Fathom data message -->
             <div *ngIf="!fathomDecisions.length && !fathomTopics.length && !speakerBalance"
                  class="text-center py-4 text-gray-500">
@@ -562,13 +682,19 @@ export class MeetingIntelligencePanelComponent implements OnInit {
   loadingSuggestions = false;
   autoSuggestionsEnabled = false;
 
-  // Fathom Intelligence
+  // Fathom Intelligence - Phase 1
   fathomDecisions: string[] = [];
   fathomTopics: string[] = [];
   fathomKeyPoints: string[] = [];
   speakerBalance: any = null;
   fathomEffectiveness: any = null;
   hasFathomData = false;
+
+  // PHASE 2: Advanced Analytics
+  participantEngagement: any = null;
+  transcriptKeywords: any[] = [];
+  extractedActionItems: any[] = [];
+  topicEvolution: any[] = [];
 
   // Collapse/Expand states
   intelligenceExpanded = true;
@@ -593,6 +719,7 @@ export class MeetingIntelligencePanelComponent implements OnInit {
 
   /**
    * Analyze Fathom data if available
+   * PHASE 2: Enhanced with advanced analytics
    */
   private analyzeFathomData(): void {
     // Check if meeting has Fathom data
@@ -600,21 +727,30 @@ export class MeetingIntelligencePanelComponent implements OnInit {
 
     if (!this.hasFathomData) return;
 
-    // Extract decisions from Fathom summary
+    // PHASE 1: Basic extraction
     this.fathomDecisions = this.fathomService.extractDecisions(this.meeting.fathomSummary);
-
-    // Extract topics
     this.fathomTopics = this.fathomService.extractTopics(this.meeting.fathomSummary, this.meeting.title);
-
-    // Extract key discussion points
     this.fathomKeyPoints = this.fathomService.extractKeyPoints(this.meeting.fathomSummary);
 
-    // Analyze speaker balance from transcript
+    // Analyze transcript if available
     if (this.meeting.transcriptEntries && this.meeting.transcriptEntries.length > 0) {
+      // PHASE 1: Speaker balance
       this.speakerBalance = this.fathomService.analyzeSpeakerBalance(this.meeting.transcriptEntries);
+
+      // PHASE 2: Participant engagement analysis
+      this.participantEngagement = this.fathomService.analyzeParticipantEngagement(this.meeting);
+
+      // PHASE 2: Extract keywords from transcript
+      this.transcriptKeywords = this.fathomService.extractKeywords(this.meeting.transcriptEntries);
+
+      // PHASE 2: Extract action items from transcript
+      this.extractedActionItems = this.fathomService.extractActionItemsFromTranscript(this.meeting.transcriptEntries);
+
+      // PHASE 2: Analyze topic evolution
+      this.topicEvolution = this.fathomService.analyzeTopicEvolution(this.meeting.transcriptEntries);
     }
 
-    // Calculate Fathom-enhanced effectiveness
+    // Calculate Fathom-enhanced effectiveness (now includes PHASE 2 enhancements)
     this.fathomEffectiveness = this.fathomService.analyzeMeetingEffectiveness(this.meeting);
   }
 
@@ -853,6 +989,15 @@ export class MeetingIntelligencePanelComponent implements OnInit {
    */
   refreshFathomAnalysis(): void {
     this.analyzeFathomData();
+  }
+
+  /**
+   * PHASE 2: Format timestamp for display
+   */
+  formatTimestamp(seconds: number): string {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
 }

@@ -2,8 +2,23 @@ import { Injectable } from '@angular/core';
 import { Meeting, TranscriptEntry } from '../meetings/meeting.model';
 
 /**
+ * PHASE 2: Participant engagement interface
+ */
+export interface ParticipantEngagement {
+  participant: string;
+  speakingTime: number;
+  speakingPercentage: number;
+  contributionCount: number;
+  averageContributionLength: number;
+  questionCount: number;
+  keyTopics: string[];
+  engagementScore: number;
+}
+
+/**
  * Service for analyzing Fathom meeting data and extracting intelligence
  * Focuses on insights that complement (not duplicate) Fathom's built-in AI
+ * PHASE 2: Enhanced with participant engagement and advanced analytics
  */
 @Injectable({
   providedIn: 'root'
@@ -256,7 +271,7 @@ export class FathomIntelligenceService {
 
   /**
    * Analyze meeting effectiveness using Fathom data
-   * Complements Fathom's summary with quantitative metrics
+   * PHASE 2: Enhanced with sophisticated talk time analysis
    */
   analyzeMeetingEffectiveness(meeting: Meeting): {
     score: number;
@@ -307,8 +322,10 @@ export class FathomIntelligenceService {
       insights.push('No action items - may indicate discussion-only meeting');
     }
 
+    // PHASE 2: Enhanced talk time analysis
     if (hasTranscript) {
       const speakerAnalysis = this.analyzeSpeakerBalance(meeting.transcriptEntries);
+      const engagement = this.analyzeParticipantEngagement(meeting);
 
       if (speakerAnalysis.balanced) {
         strengths.push('Balanced participation across speakers');
@@ -318,10 +335,39 @@ export class FathomIntelligenceService {
         score -= 0.5;
       }
 
+      // PHASE 2: Check for silent participants
+      if (engagement.silentParticipants.length > 0) {
+        improvements.push(`${engagement.silentParticipants.length} participant(s) didn't contribute`);
+        score -= 0.5;
+      }
+
+      // PHASE 2: Evaluate question-asking (indicates engagement)
+      const totalQuestions = engagement.participants.reduce((sum, p) => sum + p.questionCount, 0);
+      if (totalQuestions >= 5) {
+        strengths.push('High engagement with questions and discussion');
+        score += 0.5;
+      } else if (totalQuestions === 0) {
+        improvements.push('No questions asked - may indicate low engagement');
+        score -= 0.5;
+      }
+
       // Check meeting length vs content
       if (meeting.durationInMinutes > 60 && meeting.actionItems.length < 3) {
         improvements.push('Long meeting with few actionable outcomes');
         score -= 1;
+      }
+
+      // PHASE 2: Analyze talk time efficiency
+      const avgContributionLength = engagement.participants.reduce(
+        (sum, p) => sum + p.averageContributionLength, 0
+      ) / engagement.participants.length;
+
+      if (avgContributionLength < 10) {
+        strengths.push('Concise, focused contributions');
+        score += 0.5;
+      } else if (avgContributionLength > 30) {
+        improvements.push('Some contributions were lengthy - could be more concise');
+        score -= 0.5;
       }
     }
 
@@ -334,5 +380,350 @@ export class FathomIntelligenceService {
       strengths,
       improvements
     };
+  }
+
+  /**
+   * PHASE 2: Detailed participant engagement analysis
+   * Analyzes speaking patterns, question-asking, and contribution quality
+   */
+  analyzeParticipantEngagement(meeting: Meeting): {
+    participants: ParticipantEngagement[];
+    overallEngagement: 'high' | 'medium' | 'low';
+    silentParticipants: string[];
+    dominantSpeakers: string[];
+    recommendations: string[];
+  } {
+    const transcript = meeting.transcriptEntries || [];
+    const participantStats = new Map<string, {
+      contributionCount: number;
+      speakingTime: number;
+      wordCount: number;
+      questionCount: number;
+      keyTopics: string[];
+    }>();
+
+    // Analyze each transcript entry
+    transcript.forEach(entry => {
+      const speaker = entry.speaker;
+      const stats = participantStats.get(speaker) || {
+        contributionCount: 0,
+        speakingTime: 0,
+        wordCount: 0,
+        questionCount: 0,
+        keyTopics: []
+      };
+
+      stats.contributionCount++;
+      stats.wordCount += entry.text.split(/\s+/).length;
+      stats.speakingTime += this.estimateSpeakingTime(entry.text);
+
+      // Count questions (indicates engagement)
+      if (entry.text.includes('?')) {
+        stats.questionCount++;
+      }
+
+      participantStats.set(speaker, stats);
+    });
+
+    // Calculate total speaking time
+    const totalSpeakingTime = Array.from(participantStats.values())
+      .reduce((sum, stats) => sum + stats.speakingTime, 0);
+
+    // Build participant engagement objects
+    const participants: ParticipantEngagement[] = Array.from(participantStats.entries()).map(([speaker, stats]) => {
+      const speakingPercentage = totalSpeakingTime > 0 ? (stats.speakingTime / totalSpeakingTime) * 100 : 0;
+      const avgContributionLength = stats.contributionCount > 0 ? stats.speakingTime / stats.contributionCount : 0;
+
+      return {
+        participant: speaker,
+        speakingTime: stats.speakingTime,
+        speakingPercentage,
+        contributionCount: stats.contributionCount,
+        averageContributionLength: avgContributionLength,
+        questionCount: stats.questionCount,
+        keyTopics: [],
+        engagementScore: this.calculateEngagementScore(speakingPercentage, stats.questionCount, stats.contributionCount)
+      };
+    }).sort((a, b) => b.engagementScore - a.engagementScore);
+
+    // Identify silent participants (TODO: need full participant list from meeting)
+    const silentParticipants: string[] = [];
+
+    // Identify dominant speakers (>40% talk time)
+    const dominantSpeakers = participants
+      .filter(p => p.speakingPercentage > 40)
+      .map(p => p.participant);
+
+    // Calculate overall engagement
+    const avgEngagement = participants.reduce((sum, p) => sum + p.engagementScore, 0) / participants.length;
+    let overallEngagement: 'high' | 'medium' | 'low';
+    if (avgEngagement >= 7) {
+      overallEngagement = 'high';
+    } else if (avgEngagement >= 5) {
+      overallEngagement = 'medium';
+    } else {
+      overallEngagement = 'low';
+    }
+
+    // Generate recommendations
+    const recommendations = this.generateEngagementRecommendations(participants, dominantSpeakers, silentParticipants);
+
+    return {
+      participants,
+      overallEngagement,
+      silentParticipants,
+      dominantSpeakers,
+      recommendations
+    };
+  }
+
+  /**
+   * PHASE 2: Calculate engagement score for a participant
+   */
+  private calculateEngagementScore(
+    speakingPercentage: number,
+    questionCount: number,
+    contributionCount: number
+  ): number {
+    let score = 5; // Baseline
+
+    // Ideal speaking percentage: 15-35% (balanced participation)
+    if (speakingPercentage >= 15 && speakingPercentage <= 35) {
+      score += 2;
+    } else if (speakingPercentage > 35) {
+      score += 1; // Still engaged, but dominating
+    } else if (speakingPercentage < 10) {
+      score -= 2; // Under-participating
+    }
+
+    // Bonus for asking questions (shows engagement)
+    score += Math.min(questionCount * 0.5, 2);
+
+    // Bonus for multiple contributions (shows active participation)
+    if (contributionCount >= 10) {
+      score += 1;
+    }
+
+    return Math.max(1, Math.min(10, score));
+  }
+
+  /**
+   * PHASE 2: Generate recommendations for improving engagement
+   */
+  private generateEngagementRecommendations(
+    participants: ParticipantEngagement[],
+    dominantSpeakers: string[],
+    silentParticipants: string[]
+  ): string[] {
+    const recommendations: string[] = [];
+
+    if (dominantSpeakers.length > 0) {
+      recommendations.push(`Encourage ${dominantSpeakers.join(', ')} to give others more time to speak`);
+    }
+
+    if (silentParticipants.length > 0) {
+      recommendations.push(`Directly invite ${silentParticipants.join(', ')} to share their thoughts`);
+    }
+
+    const lowEngagement = participants.filter(p => p.engagementScore < 5);
+    if (lowEngagement.length > participants.length / 2) {
+      recommendations.push('Consider using round-robin format to ensure everyone contributes');
+    }
+
+    const noQuestions = participants.every(p => p.questionCount === 0);
+    if (noQuestions) {
+      recommendations.push('Encourage more questions and discussion to increase engagement');
+    }
+
+    return recommendations;
+  }
+
+  /**
+   * PHASE 2: Advanced keyword extraction using TF-IDF-like algorithm
+   * Extract the most relevant keywords from transcript
+   */
+  extractKeywords(transcript: TranscriptEntry[] | undefined): {
+    word: string;
+    count: number;
+    relevance: number;
+  }[] {
+    if (!transcript || transcript.length === 0) return [];
+
+    const text = transcript.map(e => e.text).join(' ');
+
+    // Stop words to exclude
+    const stopWords = new Set([
+      'the', 'is', 'at', 'which', 'on', 'a', 'an', 'and', 'or', 'but', 'in', 'with',
+      'to', 'of', 'for', 'as', 'by', 'this', 'that', 'it', 'from', 'be', 'was', 'were',
+      'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should',
+      'may', 'might', 'can', 'are', 'am', 'so', 'we', 'i', 'you', 'he', 'she', 'they', 'what',
+      'when', 'where', 'who', 'why', 'how', 'just', 'now', 'then', 'there', 'here', 'all',
+      'some', 'any', 'each', 'every', 'both', 'few', 'more', 'most', 'other', 'into', 'through'
+    ]);
+
+    // Extract words
+    const words = text.toLowerCase()
+      .split(/\W+/)
+      .filter(word => word.length > 3 && !stopWords.has(word) && !/^\d+$/.test(word));
+
+    // Count frequency
+    const frequency = new Map<string, number>();
+    words.forEach(word => {
+      frequency.set(word, (frequency.get(word) || 0) + 1);
+    });
+
+    // Calculate relevance (simplified TF-IDF)
+    const totalWords = words.length;
+    const keywords = Array.from(frequency.entries())
+      .map(([word, count]) => ({
+        word,
+        count,
+        relevance: (count / totalWords) * Math.log(totalWords / count)
+      }))
+      .sort((a, b) => b.relevance - a.relevance)
+      .slice(0, 20);
+
+    return keywords;
+  }
+
+  /**
+   * PHASE 2: Find related meetings based on topic similarity
+   * This would query the backend for meetings with similar topics/keywords
+   */
+  async findRelatedMeetings(topics: string[], currentMeeting: Meeting): Promise<Meeting[]> {
+    // TODO: Implement backend API call to find related meetings
+    // For now, return empty array
+    // In full implementation, this would:
+    // 1. Send topics/keywords to backend
+    // 2. Backend searches meetings using vector similarity or keyword matching
+    // 3. Returns meetings with similar content
+    return [];
+  }
+
+  /**
+   * PHASE 2: Extract potential action items from transcript
+   * Identifies commitments, tasks, and next steps mentioned in conversation
+   */
+  extractActionItemsFromTranscript(transcript: TranscriptEntry[] | undefined): {
+    description: string;
+    speaker: string;
+    timestamp: number;
+    confidence: 'high' | 'medium' | 'low';
+  }[] {
+    if (!transcript || transcript.length === 0) return [];
+
+    const actionItems: {
+      description: string;
+      speaker: string;
+      timestamp: number;
+      confidence: 'high' | 'medium' | 'low';
+    }[] = [];
+
+    // Action item indicators
+    const highConfidencePatterns = [
+      /i will/i,
+      /i'll/i,
+      /we will/i,
+      /we'll/i,
+      /let me/i,
+      /i can/i,
+      /i'm going to/i,
+      /i am going to/i
+    ];
+
+    const mediumConfidencePatterns = [
+      /we should/i,
+      /we need to/i,
+      /we have to/i,
+      /someone should/i,
+      /todo/i,
+      /action item/i,
+      /next step/i,
+      /follow up/i,
+      /by \w+ (morning|afternoon|evening|today|tomorrow|monday|tuesday|wednesday|thursday|friday)/i
+    ];
+
+    transcript.forEach(entry => {
+      // Check for high confidence patterns
+      for (const pattern of highConfidencePatterns) {
+        if (pattern.test(entry.text)) {
+          actionItems.push({
+            description: entry.text.trim(),
+            speaker: entry.speaker,
+            timestamp: entry.timestamp,
+            confidence: 'high'
+          });
+          return; // Only add once per entry
+        }
+      }
+
+      // Check for medium confidence patterns
+      for (const pattern of mediumConfidencePatterns) {
+        if (pattern.test(entry.text)) {
+          actionItems.push({
+            description: entry.text.trim(),
+            speaker: entry.speaker,
+            timestamp: entry.timestamp,
+            confidence: 'medium'
+          });
+          return; // Only add once per entry
+        }
+      }
+    });
+
+    return actionItems;
+  }
+
+  /**
+   * PHASE 2: Analyze topic evolution throughout the meeting
+   * Shows how topics changed over time
+   */
+  analyzeTopicEvolution(transcript: TranscriptEntry[] | undefined): {
+    timeSegment: string;
+    topics: string[];
+    keywords: string[];
+  }[] {
+    if (!transcript || transcript.length === 0) return [];
+
+    // Divide transcript into time segments (e.g., every 10 minutes)
+    const segmentSize = Math.ceil(transcript.length / 4); // 4 segments
+    const segments: {
+      timeSegment: string;
+      topics: string[];
+      keywords: string[];
+    }[] = [];
+
+    for (let i = 0; i < 4; i++) {
+      const start = i * segmentSize;
+      const end = Math.min((i + 1) * segmentSize, transcript.length);
+      const segmentTranscript = transcript.slice(start, end);
+
+      if (segmentTranscript.length === 0) continue;
+
+      // Extract keywords from this segment
+      const keywords = this.extractKeywords(segmentTranscript);
+      const topKeywords = keywords.slice(0, 5).map(k => k.word);
+
+      // Get time range
+      const startTime = segmentTranscript[0].timestamp;
+      const endTime = segmentTranscript[segmentTranscript.length - 1].timestamp;
+
+      segments.push({
+        timeSegment: `${this.formatTimestamp(startTime)} - ${this.formatTimestamp(endTime)}`,
+        topics: topKeywords,
+        keywords: topKeywords
+      });
+    }
+
+    return segments;
+  }
+
+  /**
+   * Format timestamp (seconds) to MM:SS
+   */
+  private formatTimestamp(seconds: number): string {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 }
