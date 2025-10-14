@@ -182,7 +182,7 @@ public class FathomWebhookService {
 
         // Fathom-specific fields
         meeting.setRecordingUrl(payload.getUrl());
-        meeting.setSource(Meeting.MeetingSource.WEBHOOK);
+        meeting.setSource(Meeting.MeetingSource.FATHOM);
         meeting.setSourceType(Meeting.SourceType.EXTERNAL_SYSTEM);
         meeting.setStatus(Meeting.MeetingStatus.COMPLETED); // Fathom only sends completed meetings
 

@@ -227,7 +227,8 @@ public class Meeting {
         WEBHOOK,
         N8N_WORKFLOW,
         MICROSOFT_GRAPH,
-        GOOGLE_CALENDAR
+        GOOGLE_CALENDAR,
+        FATHOM
     }
 
     public enum SourceType {
