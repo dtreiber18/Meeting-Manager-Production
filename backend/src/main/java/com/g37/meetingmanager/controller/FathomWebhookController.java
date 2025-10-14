@@ -1,6 +1,7 @@
 package com.g37.meetingmanager.controller;
 
 import com.g37.meetingmanager.service.FathomWebhookService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,8 +10,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * REST controller for receiving Fathom webhooks
@@ -42,15 +46,30 @@ public class FathomWebhookController {
      * @param rawPayload Raw JSON payload from Fathom
      * @return 200 OK immediately (processing happens async)
      */
-    @PostMapping("/fathom")
+    @PostMapping(value = "/fathom", consumes = "application/json", produces = "application/json")
     public ResponseEntity<Map<String, Object>> receiveFathomWebhook(
             @RequestHeader(value = "webhook-signature", required = false) String signature,
-            @RequestBody String rawPayload) {
+            HttpServletRequest request) {
 
         // Generate unique webhook ID for tracking
         String webhookId = UUID.randomUUID().toString();
 
         logger.info("Received Fathom webhook ID: {}", webhookId);
+
+        // Read raw body manually to avoid Jackson deserialization
+        String rawPayload;
+        try {
+            BufferedReader reader = request.getReader();
+            rawPayload = reader.lines().collect(Collectors.joining(System.lineSeparator()));
+        } catch (IOException e) {
+            logger.error("Failed to read request body for webhook ID {}: {}", webhookId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of(
+                            "error", "invalid_request",
+                            "message", "Failed to read request body"
+                    ));
+        }
+
         logger.debug("Signature: {}, Payload length: {} bytes", signature, rawPayload.length());
 
         // 1. Verify webhook signature (HMAC SHA-256)
