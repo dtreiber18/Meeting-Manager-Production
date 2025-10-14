@@ -222,14 +222,17 @@ public class FathomWebhookService {
             setDefaultOrganizerAndOrganization(meeting);
         }
 
+        // Save meeting first to get ID (needed for participant foreign key)
+        Meeting savedMeeting = meetingRepository.save(meeting);
+
         // Create MeetingParticipant records from Fathom calendar invitees
         if (payload.getCalendarInvitees() != null && !payload.getCalendarInvitees().isEmpty()) {
-            createMeetingParticipants(meeting, payload.getCalendarInvitees());
+            createMeetingParticipants(savedMeeting, payload.getCalendarInvitees());
         }
 
         // TODO: Store full transcript in MongoDB for searchability
 
-        return meetingRepository.save(meeting);
+        return savedMeeting;
     }
 
     /**
