@@ -9,6 +9,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ChatService } from '../services/chat.service';
+import { FathomIntelligenceService } from '../services/fathom-intelligence.service';
 import { Meeting } from '../meetings/meeting.model';
 import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-assistant.service';
 
@@ -346,6 +347,146 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
         </mat-card-content>
       </mat-card>
 
+      <!-- Fathom Intelligence Card (only shows for Fathom meetings) -->
+      <mat-card class="fathom-insights-card" *ngIf="hasFathomData">
+        <mat-card-header>
+          <mat-card-title class="flex items-center">
+            <mat-icon class="mr-2 text-purple-600">mic</mat-icon>
+            Fathom AI Insights
+            <span class="ml-2 text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+              Powered by Fathom
+            </span>
+          </mat-card-title>
+          <div class="flex items-center space-x-1">
+            <button
+              mat-icon-button
+              (click)="refreshFathomAnalysis()"
+              matTooltip="Refresh Fathom Analysis">
+              <mat-icon>refresh</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              (click)="toggleFathomInsights()"
+              [matTooltip]="fathomInsightsExpanded ? 'Collapse' : 'Expand'">
+              <mat-icon>{{ fathomInsightsExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </button>
+          </div>
+        </mat-card-header>
+
+        <mat-card-content *ngIf="fathomInsightsExpanded">
+          <div class="space-y-4">
+
+            <!-- Fathom Effectiveness Score -->
+            <div *ngIf="fathomEffectiveness" class="effectiveness-section">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-semibold text-sm">Fathom-Enhanced Effectiveness</span>
+                <div class="score-circle" [ngClass]="getScoreClass(fathomEffectiveness.score)">
+                  {{ fathomEffectiveness.score }}/10
+                </div>
+              </div>
+
+              <!-- Strengths from Fathom analysis -->
+              <div *ngIf="fathomEffectiveness.strengths.length > 0" class="mb-2">
+                <h4 class="text-xs font-medium text-green-700 mb-1">✅ Strengths</h4>
+                <div class="space-y-1">
+                  <div *ngFor="let strength of fathomEffectiveness.strengths"
+                       class="text-xs bg-green-50 text-green-800 px-2 py-1 rounded">
+                    {{ strength }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Improvements from Fathom analysis -->
+              <div *ngIf="fathomEffectiveness.improvements.length > 0">
+                <h4 class="text-xs font-medium text-amber-700 mb-1">💡 Improvements</h4>
+                <div class="space-y-1">
+                  <div *ngFor="let improvement of fathomEffectiveness.improvements"
+                       class="text-xs bg-amber-50 text-amber-800 px-2 py-1 rounded">
+                    {{ improvement }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Decisions from Fathom -->
+            <div *ngIf="fathomDecisions.length > 0" class="decisions-section">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700 flex items-center">
+                <mat-icon class="w-4 h-4 mr-1 text-green-600">check_circle</mat-icon>
+                Decisions Made ({{ fathomDecisions.length }})
+              </h4>
+              <div class="space-y-2">
+                <div *ngFor="let decision of fathomDecisions"
+                     class="text-xs bg-green-50 text-green-900 px-3 py-2 rounded border-l-4 border-green-500">
+                  {{ decision }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Topics from Fathom -->
+            <div *ngIf="fathomTopics.length > 0" class="topics-section">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700">🏷️ Key Topics</h4>
+              <div class="flex flex-wrap gap-2">
+                <mat-chip *ngFor="let topic of fathomTopics"
+                         class="text-xs bg-blue-100 text-blue-800">
+                  {{ topic }}
+                </mat-chip>
+              </div>
+            </div>
+
+            <!-- Speaker Balance Analysis -->
+            <div *ngIf="speakerBalance && speakerBalance.speakers.length > 0" class="speaker-section">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700">👥 Speaker Balance</h4>
+
+              <div class="mb-2">
+                <span class="text-xs"
+                      [ngClass]="speakerBalance.balanced ? 'text-green-600' : 'text-amber-600'">
+                  {{ speakerBalance.balanced ? '✅ Well-balanced discussion' : '⚠️ Unbalanced participation' }}
+                </span>
+              </div>
+
+              <div class="space-y-2">
+                <div *ngFor="let speaker of speakerBalance.speakers"
+                     class="flex items-center justify-between text-xs">
+                  <div class="flex items-center flex-1">
+                    <span class="font-medium mr-2">{{ speaker.speaker }}</span>
+                    <div class="flex-1 bg-gray-200 rounded-full h-2 mr-2 max-w-[200px]">
+                      <div class="bg-blue-600 h-2 rounded-full transition-all"
+                           [style.width.%]="speaker.percentage"></div>
+                    </div>
+                  </div>
+                  <span class="text-gray-600">
+                    {{ speaker.percentage.toFixed(1) }}% ({{ speaker.contributionCount }} times)
+                  </span>
+                </div>
+              </div>
+
+              <div *ngIf="speakerBalance.dominantSpeaker" class="mt-2 text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded">
+                ⚠️ {{ speakerBalance.dominantSpeaker.speaker }} dominated the conversation ({{ speakerBalance.dominantSpeaker.percentage.toFixed(1) }}%)
+              </div>
+            </div>
+
+            <!-- Key Discussion Points -->
+            <div *ngIf="fathomKeyPoints.length > 0" class="key-points-section">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700">📝 Key Discussion Points</h4>
+              <div class="space-y-1">
+                <div *ngFor="let point of fathomKeyPoints"
+                     class="text-xs bg-gray-50 text-gray-800 px-3 py-2 rounded border-l-2 border-gray-300">
+                  • {{ point }}
+                </div>
+              </div>
+            </div>
+
+            <!-- No Fathom data message -->
+            <div *ngIf="!fathomDecisions.length && !fathomTopics.length && !speakerBalance"
+                 class="text-center py-4 text-gray-500">
+              <mat-icon class="text-3xl mb-2 opacity-50">pending</mat-icon>
+              <p class="text-sm">Processing Fathom AI analysis...</p>
+            </div>
+
+          </div>
+        </mat-card-content>
+      </mat-card>
+
     </div>
   `,
   styles: [`
@@ -421,12 +562,24 @@ export class MeetingIntelligencePanelComponent implements OnInit {
   loadingSuggestions = false;
   autoSuggestionsEnabled = false;
 
+  // Fathom Intelligence
+  fathomDecisions: string[] = [];
+  fathomTopics: string[] = [];
+  fathomKeyPoints: string[] = [];
+  speakerBalance: any = null;
+  fathomEffectiveness: any = null;
+  hasFathomData = false;
+
   // Collapse/Expand states
   intelligenceExpanded = true;
   suggestionsExpanded = true;
   insightsExpanded = true;
+  fathomInsightsExpanded = true;
 
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly fathomService: FathomIntelligenceService
+  ) {}
 
   ngOnInit(): void {
     this.loadMeetingIntelligence();
@@ -435,6 +588,44 @@ export class MeetingIntelligencePanelComponent implements OnInit {
   private loadMeetingIntelligence(): void {
     this.refreshAnalysis();
     this.refreshSuggestions();
+    this.analyzeFathomData();
+  }
+
+  /**
+   * Analyze Fathom data if available
+   */
+  private analyzeFathomData(): void {
+    // Check if meeting has Fathom data
+    this.hasFathomData = this.isFathomMeeting();
+
+    if (!this.hasFathomData) return;
+
+    // Extract decisions from Fathom summary
+    this.fathomDecisions = this.fathomService.extractDecisions(this.meeting.fathomSummary);
+
+    // Extract topics
+    this.fathomTopics = this.fathomService.extractTopics(this.meeting.fathomSummary, this.meeting.title);
+
+    // Extract key discussion points
+    this.fathomKeyPoints = this.fathomService.extractKeyPoints(this.meeting.fathomSummary);
+
+    // Analyze speaker balance from transcript
+    if (this.meeting.transcriptEntries && this.meeting.transcriptEntries.length > 0) {
+      this.speakerBalance = this.fathomService.analyzeSpeakerBalance(this.meeting.transcriptEntries);
+    }
+
+    // Calculate Fathom-enhanced effectiveness
+    this.fathomEffectiveness = this.fathomService.analyzeMeetingEffectiveness(this.meeting);
+  }
+
+  /**
+   * Check if meeting is from Fathom
+   */
+  private isFathomMeeting(): boolean {
+    return !!(this.meeting.source === 'fathom' ||
+              this.meeting.fathomSummary ||
+              this.meeting.fathomRecordingUrl ||
+              (this.meeting.recordingUrl && this.meeting.recordingUrl.includes('fathom.video')));
   }
 
   refreshAnalysis(): void {
@@ -642,12 +833,26 @@ export class MeetingIntelligencePanelComponent implements OnInit {
   }
 
   escalateRiskyItems(): void {
-    const riskyItems = this.meeting.actionItems?.filter(item => 
+    const riskyItems = this.meeting.actionItems?.filter(item =>
       item.priority === 'URGENT' || !item.assignee
     ) || [];
-    
+
     console.log('Escalating risky items:', riskyItems);
     alert(`Escalating ${riskyItems.length} high-risk action items to management`);
+  }
+
+  /**
+   * Toggle Fathom insights panel
+   */
+  toggleFathomInsights(): void {
+    this.fathomInsightsExpanded = !this.fathomInsightsExpanded;
+  }
+
+  /**
+   * Refresh Fathom analysis
+   */
+  refreshFathomAnalysis(): void {
+    this.analyzeFathomData();
   }
 
 }

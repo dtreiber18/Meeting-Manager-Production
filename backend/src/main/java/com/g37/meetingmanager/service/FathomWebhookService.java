@@ -3,12 +3,14 @@ package com.g37.meetingmanager.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.g37.meetingmanager.dto.FathomWebhookPayload;
 import com.g37.meetingmanager.model.Meeting;
+import com.g37.meetingmanager.model.MeetingParticipant;
 import com.g37.meetingmanager.model.PendingAction;
 import com.g37.meetingmanager.model.User;
 import com.g37.meetingmanager.model.Organization;
 import com.g37.meetingmanager.repository.mysql.UserRepository;
 import com.g37.meetingmanager.repository.mysql.OrganizationRepository;
 import com.g37.meetingmanager.repository.mysql.MeetingRepository;
+import com.g37.meetingmanager.repository.mysql.MeetingParticipantRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +52,9 @@ public class FathomWebhookService {
 
     @Autowired
     private OrganizationRepository organizationRepository;
+
+    @Autowired
+    private MeetingParticipantRepository meetingParticipantRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -217,8 +222,12 @@ public class FathomWebhookService {
             setDefaultOrganizerAndOrganization(meeting);
         }
 
+        // Create MeetingParticipant records from Fathom calendar invitees
+        if (payload.getCalendarInvitees() != null && !payload.getCalendarInvitees().isEmpty()) {
+            createMeetingParticipants(meeting, payload.getCalendarInvitees());
+        }
+
         // TODO: Store full transcript in MongoDB for searchability
-        // TODO: Create MeetingParticipant records from calendarInvitees
 
         return meetingRepository.save(meeting);
     }
@@ -265,6 +274,53 @@ public class FathomWebhookService {
         }
 
         meeting.setOrganizer(user);
+    }
+
+    /**
+     * Create MeetingParticipant records from Fathom calendar invitees
+     * Marks external participants appropriately (user == null)
+     *
+     * @param meeting The meeting to add participants to
+     * @param calendarInvitees List of Fathom calendar invitees
+     */
+    private void createMeetingParticipants(Meeting meeting, List<FathomWebhookPayload.CalendarInvitee> calendarInvitees) {
+        logger.info("Creating {} participants for meeting {}", calendarInvitees.size(), meeting.getId());
+
+        for (FathomWebhookPayload.CalendarInvitee invitee : calendarInvitees) {
+            MeetingParticipant participant = new MeetingParticipant();
+            participant.setMeeting(meeting);
+            participant.setEmail(invitee.getEmail());
+            participant.setName(invitee.getName());
+
+            // Try to find existing user by email
+            Optional<User> existingUser = userRepository.findByEmail(invitee.getEmail());
+
+            if (existingUser.isPresent()) {
+                // Internal participant - link to user
+                participant.setUser(existingUser.get());
+                participant.setParticipantRole(MeetingParticipant.ParticipantRole.ATTENDEE);
+                logger.debug("Linked participant {} to existing user", invitee.getEmail());
+            } else {
+                // External participant - user remains null (this makes isExternal() return true)
+                participant.setUser(null);
+                participant.setParticipantRole(MeetingParticipant.ParticipantRole.ATTENDEE);
+                logger.debug("Created external participant: {}", invitee.getEmail());
+            }
+
+            // Set attendance based on speaker match (if they spoke, they attended)
+            if (invitee.getMatchedSpeakerDisplayName() != null) {
+                participant.setAttendanceStatus(MeetingParticipant.AttendanceStatus.PRESENT);
+                participant.setInvitationStatus(MeetingParticipant.InvitationStatus.ACCEPTED);
+            } else {
+                participant.setAttendanceStatus(MeetingParticipant.AttendanceStatus.UNKNOWN);
+                participant.setInvitationStatus(MeetingParticipant.InvitationStatus.NO_RESPONSE);
+            }
+
+            // Save participant
+            meetingParticipantRepository.save(participant);
+        }
+
+        logger.info("Created {} participants for Fathom meeting", calendarInvitees.size());
     }
 
     /**
