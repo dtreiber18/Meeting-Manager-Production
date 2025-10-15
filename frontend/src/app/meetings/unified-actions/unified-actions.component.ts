@@ -281,7 +281,7 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
 
               <!-- NORMAL VIEW MODE -->
               <div *ngIf="!isEditing(action)">
-                <!-- Action Header -->
+                <!-- Action Header with Title and Edit/Delete Icons -->
                 <div class="flex items-start justify-between mb-4">
                   <div class="flex-1 min-w-0">
                     <!-- Title Row with Badges -->
@@ -335,56 +335,64 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
                   </div>
                 </div>
 
-                <!-- Status Badge -->
-                <div class="ml-4 flex-shrink-0">
-                  <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide"
-                        [ngClass]="{
-                          'bg-yellow-100 text-yellow-800 border border-yellow-300': action.status === 'NEW',
-                          'bg-blue-100 text-blue-800 border border-blue-300': action.status === 'ACTIVE',
-                          'bg-green-100 text-green-800 border border-green-300': action.status === 'COMPLETE',
-                          'bg-gray-100 text-gray-800 border border-gray-300': action.status === 'REJECTED'
-                        }">
-                    {{ action.status }}
-                  </span>
+                  <!-- Status Badge and Edit/Delete Icons -->
+                  <div class="ml-4 flex-shrink-0 flex items-center gap-1">
+                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide"
+                          [ngClass]="{
+                            'bg-yellow-100 text-yellow-800 border border-yellow-300': action.status === 'NEW',
+                            'bg-blue-100 text-blue-800 border border-blue-300': action.status === 'ACTIVE',
+                            'bg-green-100 text-green-800 border border-green-300': action.status === 'COMPLETE',
+                            'bg-gray-100 text-gray-800 border border-gray-300': action.status === 'REJECTED'
+                          }">
+                      {{ action.status }}
+                    </span>
+
+                    <!-- Edit & Delete Icons -->
+                    <button mat-icon-button (click)="editAction(action)" class="!text-gray-600 hover:!text-gray-900 !w-8 !h-8" title="Edit action">
+                      <mat-icon class="w-4 h-4">edit</mat-icon>
+                    </button>
+                    <button mat-icon-button (click)="deleteAction(action)" class="!text-red-600 hover:!text-red-700 !w-8 !h-8" title="Delete action">
+                      <mat-icon class="w-4 h-4">delete</mat-icon>
+                    </button>
+                  </div>
                 </div>
-              </div>
 
               <!-- Action Buttons -->
               <div class="flex items-center gap-2 mt-4 pt-4 border-t border-gray-200">
                 <!-- Pending Approval Actions -->
                 <ng-container *ngIf="action.status === 'NEW'">
-                  <button mat-raised-button color="primary" (click)="approveAction(action)" class="!text-sm">
-                    <mat-icon class="w-4 h-4 mr-1">check</mat-icon>
+                  <button type="button"
+                          (click)="approveAction(action)"
+                          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 transition-colors">
+                    <mat-icon class="w-3.5 h-3.5">check</mat-icon>
                     Approve & Execute
                   </button>
-                  <button mat-stroked-button color="warn" (click)="rejectAction(action)" class="!text-sm">
-                    <mat-icon class="w-4 h-4 mr-1">close</mat-icon>
+                  <button type="button"
+                          (click)="rejectAction(action)"
+                          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 transition-colors">
+                    <mat-icon class="w-3.5 h-3.5">close</mat-icon>
                     Reject
                   </button>
                 </ng-container>
 
                 <!-- Active Actions -->
                 <ng-container *ngIf="action.status === 'ACTIVE'">
-                  <button mat-raised-button color="primary" (click)="completeAction(action)" class="!text-sm">
-                    <mat-icon class="w-4 h-4 mr-1">check_circle</mat-icon>
+                  <button type="button"
+                          (click)="completeAction(action)"
+                          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors">
+                    <mat-icon class="w-3.5 h-3.5">check_circle</mat-icon>
                     Mark Complete
                   </button>
 
                   <!-- Schedule Meeting Button -->
                   <button *ngIf="action.actionType === 'SCHEDULE_MEETING'"
-                          mat-stroked-button color="accent" (click)="scheduleMeeting(action)" class="!text-sm">
-                    <mat-icon class="w-4 h-4 mr-1">event</mat-icon>
+                          type="button"
+                          (click)="scheduleMeeting(action)"
+                          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 transition-colors">
+                    <mat-icon class="w-3.5 h-3.5">event</mat-icon>
                     Schedule Now
                   </button>
                 </ng-container>
-
-                <!-- Edit & Delete -->
-                <button mat-icon-button (click)="editAction(action)" class="ml-auto !text-gray-600 hover:!text-gray-900">
-                  <mat-icon class="w-5 h-5">edit</mat-icon>
-                </button>
-                <button mat-icon-button (click)="deleteAction(action)" class="!text-red-600 hover:!text-red-700">
-                  <mat-icon class="w-5 h-5">delete</mat-icon>
-                </button>
               </div>
 
               <!-- Send to External System Dropdown -->
