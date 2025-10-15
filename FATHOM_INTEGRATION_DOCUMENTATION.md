@@ -2,9 +2,9 @@
 
 **Meeting Manager + Fathom Note-Taking App Integration**
 
-Version: 1.0
+Version: 2.0 (Phase 2 Complete)
 Last Updated: October 14, 2025
-Status: ✅ Production Ready
+Status: ✅ Production Ready (Phase 2: Advanced Analytics)
 
 ---
 
@@ -234,6 +234,128 @@ Fathom-Enhanced Effectiveness: 8.5/10
 💡 Improvements:
 - Consider shorter meeting duration
 ```
+
+### 3.1 Phase 2: Advanced Analytics 🆕
+
+**NEW in Version 2.0** - Sophisticated analytics that complement Fathom's AI:
+
+#### Participant Engagement Analytics
+
+Detailed engagement analysis for each participant:
+
+**Metrics Tracked:**
+- Individual engagement score (1-10 scale)
+- Speaking time percentage
+- Contribution count (number of times they spoke)
+- Questions asked (indicates active listening)
+- Average contribution length (concise vs verbose)
+
+**Engagement Scoring Algorithm:**
+- Baseline: 5 points
+- Ideal speaking range (15-35%): +2 points
+- Questions asked: +0.5 per question (max +2)
+- Multiple contributions (10+): +1 point
+- Under-participating (<10%): -2 points
+
+**Example Output:**
+```
+👥 Participant Engagement (high engagement)
+
+John Smith       Score: 8.5/10
+  (15 contributions, 3 questions)
+
+Sarah Johnson    Score: 7.2/10
+  (12 contributions, 2 questions)
+
+Mike Chen        Score: 4.8/10
+  (4 contributions, 0 questions)
+
+💡 Recommendations:
+- Directly invite Mike Chen to share their thoughts
+- Encourage more questions and discussion
+```
+
+#### Advanced Keyword Extraction
+
+Uses TF-IDF-like algorithm to extract most relevant keywords:
+
+**Algorithm:**
+1. Tokenize transcript text
+2. Remove stop words (60+ common words)
+3. Calculate term frequency
+4. Compute relevance score: `(count / totalWords) * log(totalWords / count)`
+5. Sort by relevance and return top 20
+
+**Example Output:**
+```
+🏷️ Most Relevant Keywords (Phase 2)
+budget (15)    product (12)    launch (10)
+pricing (8)    timeline (7)    customers (6)
+strategy (5)   revenue (5)     competition (4)
+```
+
+#### AI-Detected Action Items from Transcript
+
+Pattern-based action item detection:
+
+**High Confidence Patterns:**
+- "I will...", "I'll...", "Let me..."
+- "I can...", "I'm going to..."
+
+**Medium Confidence Patterns:**
+- "We should...", "We need to..."
+- "TODO", "Action item", "Next step"
+- "Follow up", "By [date]..."
+
+**Example Output:**
+```
+🎯 AI-Detected Action Items (5 found)
+
+[HIGH] John Smith @ 15:30
+"I'll send the pricing proposal by Friday"
+
+[HIGH] Sarah Johnson @ 22:45
+"Let me schedule the demo with the client"
+
+[MEDIUM] Mike Chen @ 35:20
+"We should review the budget before next quarter"
+```
+
+#### Topic Evolution Analysis
+
+Shows how conversation topics changed over time:
+
+**Algorithm:**
+1. Divide transcript into 4 time segments
+2. Extract keywords from each segment
+3. Track topic progression
+4. Identify when key discussions occurred
+
+**Example Output:**
+```
+📊 Topic Evolution (Phase 2)
+
+Segment 1 (0:00 - 12:30)
+budget, planning, timeline, resources
+
+Segment 2 (12:30 - 25:00)
+product, launch, marketing, pricing
+
+Segment 3 (25:00 - 37:30)
+customers, feedback, competition, strategy
+
+Segment 4 (37:30 - 50:00)
+action, items, next, steps, deadlines
+```
+
+**Philosophy: "Augment, Don't Duplicate"**
+- Phase 2 analytics complement Fathom's AI (not replace it)
+- All processing done client-side (no external API calls)
+- Focuses on insights Fathom doesn't provide:
+  - Engagement scoring
+  - Keyword relevance (vs just frequency)
+  - Topic flow over time
+  - Pattern-based action detection
 
 ### 4. External Contact Detection
 
@@ -608,6 +730,132 @@ analyzeMeetingEffectiveness(meeting: Meeting): EffectivenessAnalysis
 - Duration vs outcomes (-1 if >60min with <3 actions)
 
 **Score Range:** 1-10
+
+#### Phase 2: Advanced Analytics Methods 🆕
+
+**NEW in Version 2.0** - Additional service methods for sophisticated analysis:
+
+##### analyzeParticipantEngagement()
+
+```typescript
+analyzeParticipantEngagement(meeting: Meeting): {
+  participants: ParticipantEngagement[];
+  overallEngagement: 'high' | 'medium' | 'low';
+  silentParticipants: string[];
+  dominantSpeakers: string[];
+  recommendations: string[];
+}
+```
+
+**Algorithm:**
+1. Analyze each transcript entry
+2. Count contributions, questions, word count per speaker
+3. Calculate speaking time using 150 words/min estimate
+4. Compute engagement scores (1-10)
+5. Generate recommendations
+
+**Engagement Score Formula:**
+```
+Base score: 5
++ Speaking in ideal range (15-35%): +2
++ Questions asked: +0.5 per question (max +2)
++ High contribution count (10+): +1
+- Under-participating (<10%): -2
+- Over-dominating (>40%): penalty applied
+```
+
+##### extractKeywords()
+
+```typescript
+extractKeywords(transcript: TranscriptEntry[]): {
+  word: string;
+  count: number;
+  relevance: number;
+}[]
+```
+
+**TF-IDF Algorithm:**
+1. Combine all transcript text
+2. Tokenize and filter stop words (60+ common words)
+3. Calculate term frequency (TF)
+4. Calculate inverse document frequency (IDF)
+5. Compute relevance: `(TF) * log(totalWords / count)`
+6. Return top 20 keywords sorted by relevance
+
+**Stop Words Excluded:**
+- Common: the, is, at, and, or, but, in, with, to, of, for
+- Pronouns: I, you, he, she, they, we
+- Verbs: be, was, were, have, has, had, do, does
+- And 40+ more...
+
+##### extractActionItemsFromTranscript()
+
+```typescript
+extractActionItemsFromTranscript(transcript: TranscriptEntry[]): {
+  description: string;
+  speaker: string;
+  timestamp: number;
+  confidence: 'high' | 'medium' | 'low';
+}[]
+```
+
+**Pattern Detection:**
+
+**High Confidence Patterns:**
+- `/i will/i` → "I will send the proposal"
+- `/i'll/i` → "I'll follow up tomorrow"
+- `/let me/i` → "Let me schedule that meeting"
+- `/i can/i` → "I can review the doc"
+- `/i'm going to/i` → "I'm going to call them"
+
+**Medium Confidence Patterns:**
+- `/we should/i` → "We should discuss this further"
+- `/we need to/i` → "We need to finalize pricing"
+- `/todo/i` → "TODO: Send the contract"
+- `/action item/i` → "Action item: Review budget"
+- `/follow up/i` → "Follow up with Sarah next week"
+- `/by [date]/i` → "Submit proposal by Friday"
+
+**Returns:** Array of detected action items with speaker attribution and timestamp
+
+##### analyzeTopicEvolution()
+
+```typescript
+analyzeTopicEvolution(transcript: TranscriptEntry[]): {
+  timeSegment: string;
+  topics: string[];
+  keywords: string[];
+}[]
+```
+
+**Algorithm:**
+1. Divide transcript into 4 equal time segments
+2. For each segment:
+   - Extract keywords using TF-IDF
+   - Identify top 5 keywords
+   - Format timestamp range (MM:SS format)
+3. Return chronological topic progression
+
+**Use Case:** Understand meeting flow, identify when key topics were discussed, detect topic drift
+
+**Example:**
+```typescript
+const evolution = service.analyzeTopicEvolution(meeting.transcriptEntries);
+// Returns:
+[
+  {
+    timeSegment: "0:00 - 12:30",
+    topics: ["budget", "planning", "timeline"],
+    keywords: ["budget", "planning", "timeline", "resources", "Q4"]
+  },
+  {
+    timeSegment: "12:30 - 25:00",
+    topics: ["product", "launch", "marketing"],
+    keywords: ["product", "launch", "marketing", "pricing", "customers"]
+  },
+  // ... 2 more segments
+]
+```
 
 ---
 
