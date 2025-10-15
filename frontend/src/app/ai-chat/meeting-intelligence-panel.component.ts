@@ -58,11 +58,24 @@ import { ScheduleFollowupDialogComponent } from '../shared/schedule-followup-dia
           </div>
 
           <div *ngIf="!loadingSuggestions && suggestions.length > 0" class="space-y-3">
-            <div *ngFor="let suggestion of suggestions"
+            <div *ngFor="let suggestion of suggestions; let i = index"
                  class="suggestion-item p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
 
-              <!-- Description -->
-              <p class="text-sm text-gray-700 mb-3">{{ suggestion.description }}</p>
+              <!-- Header with Description and Edit/Delete Icons -->
+              <div class="flex items-start justify-between gap-3 mb-3">
+                <!-- Description -->
+                <p class="text-sm text-gray-700 flex-1">{{ suggestion.description }}</p>
+
+                <!-- Edit & Delete Icons -->
+                <div class="flex-shrink-0 flex items-center gap-1">
+                  <button mat-icon-button (click)="editSuggestion(suggestion, i)" class="!text-gray-600 hover:!text-gray-900 !w-8 !h-8" title="Edit suggestion">
+                    <mat-icon class="w-4 h-4">edit</mat-icon>
+                  </button>
+                  <button mat-icon-button (click)="deleteSuggestion(suggestion, i)" class="!text-red-600 hover:!text-red-700 !w-8 !h-8" title="Delete suggestion">
+                    <mat-icon class="w-4 h-4">delete</mat-icon>
+                  </button>
+                </div>
+              </div>
 
               <!-- Metadata Row -->
               <div class="flex items-center gap-3 text-xs text-gray-600 mb-3">
@@ -769,6 +782,27 @@ export class MeetingIntelligencePanelComponent implements OnInit {
 
   dismissSuggestion(suggestion: ActionItemSuggestion): void {
     this.suggestions = this.suggestions.filter(s => s !== suggestion);
+  }
+
+  /**
+   * Edit a suggestion - prompts user to edit the description
+   */
+  editSuggestion(suggestion: ActionItemSuggestion, index: number): void {
+    const newDescription = prompt('Edit description:', suggestion.description);
+    if (newDescription !== null && newDescription.trim()) {
+      suggestion.description = newDescription.trim();
+      // Trigger change detection by reassigning the array
+      this.suggestions = [...this.suggestions];
+    }
+  }
+
+  /**
+   * Delete a suggestion - removes it from the list after confirmation
+   */
+  deleteSuggestion(suggestion: ActionItemSuggestion, index: number): void {
+    if (confirm(`Delete this suggestion?\n\n"${suggestion.description}"`)) {
+      this.suggestions = this.suggestions.filter((s, i) => i !== index);
+    }
   }
 
   /**
