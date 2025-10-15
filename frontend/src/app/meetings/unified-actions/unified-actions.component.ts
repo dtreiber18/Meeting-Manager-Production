@@ -198,12 +198,95 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
                }">
 
             <div class="p-5">
-              <!-- Action Header -->
-              <div class="flex items-start justify-between mb-4">
-                <div class="flex-1 min-w-0">
-                  <!-- Title Row with Badges -->
-                  <div class="flex items-center gap-2 mb-3 flex-wrap">
-                    <h4 class="text-base font-semibold text-gray-900 leading-tight">{{ action.title }}</h4>
+
+              <!-- EDIT MODE -->
+              <div *ngIf="isEditing(action)" class="space-y-3">
+                <h4 class="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                  <mat-icon class="w-5 h-5">edit</mat-icon>
+                  Edit Action
+                </h4>
+
+                <!-- Title -->
+                <mat-form-field class="w-full" appearance="outline">
+                  <mat-label>Title</mat-label>
+                  <input matInput [(ngModel)]="editingAction.title" placeholder="Action title" required>
+                </mat-form-field>
+
+                <!-- Description -->
+                <mat-form-field class="w-full" appearance="outline">
+                  <mat-label>Description</mat-label>
+                  <textarea matInput [(ngModel)]="editingAction.description" rows="2" placeholder="Description"></textarea>
+                </mat-form-field>
+
+                <!-- Action Type & Priority -->
+                <div class="grid grid-cols-2 gap-3">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Action Type</mat-label>
+                    <mat-select [(ngModel)]="editingAction.actionType">
+                      <mat-option value="TASK">Task</mat-option>
+                      <mat-option value="FOLLOW_UP">Follow-up</mat-option>
+                      <mat-option value="DECISION">Decision</mat-option>
+                      <mat-option value="RESEARCH">Research</mat-option>
+                      <mat-option value="APPROVAL">Approval</mat-option>
+                      <mat-option value="DOCUMENTATION">Documentation</mat-option>
+                      <mat-option value="MEETING">Meeting</mat-option>
+                      <mat-option value="SCHEDULE_MEETING">Schedule Meeting</mat-option>
+                      <mat-option value="UPDATE_CRM">Update CRM</mat-option>
+                      <mat-option value="SEND_EMAIL">Send Email</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>Priority</mat-label>
+                    <mat-select [(ngModel)]="editingAction.priority">
+                      <mat-option value="LOW">Low</mat-option>
+                      <mat-option value="MEDIUM">Medium</mat-option>
+                      <mat-option value="HIGH">High</mat-option>
+                      <mat-option value="URGENT">Urgent</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+
+                <!-- Assignee -->
+                <div class="grid grid-cols-2 gap-3">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Assignee Name</mat-label>
+                    <input matInput [(ngModel)]="editingAction.assigneeName" placeholder="Name">
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>Assignee Email</mat-label>
+                    <input matInput [(ngModel)]="editingAction.assigneeEmail" type="email" placeholder="email@example.com">
+                  </mat-form-field>
+                </div>
+
+                <!-- Due Date -->
+                <mat-form-field class="w-full" appearance="outline">
+                  <mat-label>Due Date</mat-label>
+                  <input matInput [(ngModel)]="editingAction.dueDate" type="datetime-local">
+                </mat-form-field>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center gap-2 pt-3">
+                  <button mat-raised-button color="primary" (click)="saveEdit()" class="!text-sm">
+                    <mat-icon class="w-4 h-4 mr-1">save</mat-icon>
+                    Save Changes
+                  </button>
+                  <button mat-stroked-button (click)="cancelEdit()" class="!text-sm">
+                    <mat-icon class="w-4 h-4 mr-1">close</mat-icon>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+
+              <!-- NORMAL VIEW MODE -->
+              <div *ngIf="!isEditing(action)">
+                <!-- Action Header -->
+                <div class="flex items-start justify-between mb-4">
+                  <div class="flex-1 min-w-0">
+                    <!-- Title Row with Badges -->
+                    <div class="flex items-center gap-2 mb-3 flex-wrap">
+                      <h4 class="text-base font-semibold text-gray-900 leading-tight">{{ action.title }}</h4>
 
                     <!-- Fathom Recording Link Button -->
                     <button *ngIf="getFathomRecordingLink(action)"
@@ -329,6 +412,9 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
                 <mat-icon class="w-3.5 h-3.5">analytics</mat-icon>
                 Fathom Confidence: {{ action.fathomConfidenceScore | number:'1.0-2' }}%
               </div>
+              </div>
+              <!-- End NORMAL VIEW MODE -->
+
             </div>
           </div>
         </div>
@@ -359,6 +445,10 @@ export class UnifiedActionsComponent implements OnInit {
 
   filterSource = 'ALL';
   filterStatus = 'ALL';
+
+  // Track which action is being edited
+  editingActionId: string | null = null;
+  editingAction: Partial<UnifiedAction> = {};
 
   newAction: Partial<UnifiedAction> = {
     title: '',
@@ -513,10 +603,61 @@ export class UnifiedActionsComponent implements OnInit {
     this.showInfo('Schedule meeting feature coming soon');
   }
 
+  /**
+   * Start editing an action
+   */
   editAction(action: UnifiedAction): void {
-    // TODO: Implement edit functionality with inline form or dialog
-    console.log('Editing action:', action);
-    this.showInfo('Edit feature coming soon');
+    this.editingActionId = action.id;
+    this.editingAction = {
+      title: action.title,
+      description: action.description,
+      priority: action.priority,
+      actionType: action.actionType,
+      assigneeEmail: action.assigneeEmail,
+      assigneeName: action.assigneeName,
+      dueDate: action.dueDate
+    };
+  }
+
+  /**
+   * Cancel editing
+   */
+  cancelEdit(): void {
+    this.editingActionId = null;
+    this.editingAction = {};
+  }
+
+  /**
+   * Save edited action
+   */
+  saveEdit(): void {
+    if (!this.editingActionId) return;
+
+    if (!this.editingAction.title?.trim()) {
+      this.showError('Title is required');
+      return;
+    }
+
+    this.actionsService.updateAction(this.editingActionId, this.editingAction).subscribe({
+      next: (updated) => {
+        this.showSuccess('Action updated successfully');
+        this.editingActionId = null;
+        this.editingAction = {};
+        this.loadActions();
+        this.actionChanged.emit();
+      },
+      error: (error) => {
+        console.error('Error updating action:', error);
+        this.showError('Failed to update action: ' + error.message);
+      }
+    });
+  }
+
+  /**
+   * Check if an action is currently being edited
+   */
+  isEditing(action: UnifiedAction): boolean {
+    return this.editingActionId === action.id;
   }
 
   deleteAction(action: UnifiedAction): void {
