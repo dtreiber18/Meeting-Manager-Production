@@ -61,13 +61,23 @@ import { ScheduleFollowupDialogComponent } from '../shared/schedule-followup-dia
             <div *ngFor="let suggestion of suggestions; let i = index"
                  class="suggestion-item p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
 
-              <!-- Header with Description and Edit/Delete Icons -->
+              <!-- Header with Description, Priority Badge, and Edit/Delete Icons -->
               <div class="flex items-start justify-between gap-3 mb-3">
                 <!-- Description -->
                 <p class="text-sm text-gray-700 flex-1">{{ suggestion.description }}</p>
 
-                <!-- Edit & Delete Icons -->
+                <!-- Priority Badge and Edit/Delete Icons (Horizontal) -->
                 <div class="flex-shrink-0 flex items-center gap-1">
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold"
+                        [ngClass]="{
+                          'bg-red-100 text-red-700 border border-red-200': suggestion.priority === 'URGENT',
+                          'bg-orange-100 text-orange-700 border border-orange-200': suggestion.priority === 'HIGH',
+                          'bg-yellow-100 text-yellow-700 border border-yellow-200': suggestion.priority === 'MEDIUM',
+                          'bg-gray-100 text-gray-700 border border-gray-200': suggestion.priority === 'LOW'
+                        }">
+                    {{ suggestion.priority }}
+                  </span>
+
                   <button mat-icon-button (click)="editSuggestion(suggestion, i)" class="!text-gray-600 hover:!text-gray-900 !w-8 !h-8" title="Edit suggestion">
                     <mat-icon class="w-4 h-4">edit</mat-icon>
                   </button>
@@ -86,15 +96,6 @@ import { ScheduleFollowupDialogComponent } from '../shared/schedule-followup-dia
                 <span *ngIf="suggestion.suggestedAssignee" class="inline-flex items-center gap-1">
                   <mat-icon class="w-3.5 h-3.5 text-gray-400">person</mat-icon>
                   {{ suggestion.suggestedAssignee }}
-                </span>
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ml-auto"
-                      [ngClass]="{
-                        'bg-red-100 text-red-700': suggestion.priority === 'URGENT',
-                        'bg-orange-100 text-orange-700': suggestion.priority === 'HIGH',
-                        'bg-yellow-100 text-yellow-700': suggestion.priority === 'MEDIUM',
-                        'bg-gray-100 text-gray-700': suggestion.priority === 'LOW'
-                      }">
-                  {{ suggestion.priority }}
                 </span>
               </div>
 
