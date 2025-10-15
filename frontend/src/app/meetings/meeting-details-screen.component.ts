@@ -18,6 +18,7 @@ import { environment } from '../../environments/environment';
 import { ModalService } from '../shared/modal/modal.service';
 import { ModalContainerComponent } from '../shared/modal/modal-container/modal-container.component';
 import { ToastService } from '../shared/services/toast.service';
+import { UnifiedActionsComponent } from './unified-actions/unified-actions.component';
 
 
 interface N8nEventData {
@@ -45,7 +46,17 @@ interface EditableMeeting extends Meeting {
 @Component({
   selector: 'app-meeting-details-screen',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatButtonModule, DragDropModule, MeetingIntelligencePanelComponent, HttpClientModule, ModalContainerComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatButtonModule,
+    DragDropModule,
+    MeetingIntelligencePanelComponent,
+    HttpClientModule,
+    ModalContainerComponent,
+    UnifiedActionsComponent
+  ],
   templateUrl: './meeting-details-screen.component.html',
   styleUrls: ['./meeting-details-screen.component.scss']
 })

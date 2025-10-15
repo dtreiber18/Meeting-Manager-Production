@@ -9,35 +9,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Meeting } from '../meeting.model';
-
-export interface UnifiedAction {
-  id: string;
-  title: string;
-  description?: string;
-  status: 'NEW' | 'ACTIVE' | 'COMPLETE' | 'REJECTED';
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-  source: 'MANUAL' | 'FATHOM' | 'AI_SUGGESTION' | 'N8N';
-  actionType: 'TASK' | 'SCHEDULE_MEETING' | 'UPDATE_CRM' | 'FOLLOW_UP';
-  targetSystem?: 'MEETING_MANAGER' | 'ZOHO_CRM' | 'CLICKUP' | 'N8N_AGENT';
-  assigneeEmail?: string;
-  dueDate?: string;
-  estimatedHours?: number;
-
-  // Source-specific fields
-  fathomActionId?: string;
-  fathomConfidenceScore?: number;
-  aiSuggestionId?: number;
-
-  // External system IDs
-  zohoTaskId?: string;
-  clickUpTaskId?: string;
-
-  // Timestamps
-  createdAt?: string;
-  approvedAt?: string;
-  sentToSystemAt?: string;
-}
+import { ActionsService, UnifiedAction } from '../../services/actions.service';
 
 @Component({
   selector: 'app-unified-actions',
@@ -52,7 +26,8 @@ export interface UnifiedAction {
     MatFormFieldModule,
     MatInputModule,
     MatCheckboxModule,
-    MatChipsModule
+    MatChipsModule,
+    MatSnackBarModule
   ],
   template: `
     <div class="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -342,6 +317,7 @@ export class UnifiedActionsComponent implements OnInit {
   collapsed = false;
   isAddingAction = false;
   isSyncing = false;
+  isLoading = false;
 
   filterSource = 'ALL';
   filterStatus = 'ALL';
@@ -356,15 +332,34 @@ export class UnifiedActionsComponent implements OnInit {
     source: 'MANUAL'
   };
 
+  constructor(
+    private actionsService: ActionsService,
+    private snackBar: MatSnackBar
+  ) {}
+
   ngOnInit(): void {
     this.loadActions();
   }
 
   loadActions(): void {
-    // TODO: Load from API - /api/meetings/{id}/actions
-    // For now, using mock data
-    this.actions = [];
-    this.applyFilters();
+    if (!this.meeting?.id) {
+      console.warn('No meeting ID provided to load actions');
+      return;
+    }
+
+    this.isLoading = true;
+    this.actionsService.getActionsForMeeting(this.meeting.id).subscribe({
+      next: (actions) => {
+        this.actions = actions;
+        this.applyFilters();
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading actions:', error);
+        this.showError('Failed to load actions: ' + error.message);
+        this.isLoading = false;
+      }
+    });
   }
 
   applyFilters(): void {
@@ -405,54 +400,120 @@ export class UnifiedActionsComponent implements OnInit {
   }
 
   saveNewAction(): void {
-    // TODO: Call API to create action
-    console.log('Creating action:', this.newAction);
-    this.cancelAddingAction();
-    this.actionChanged.emit();
+    if (!this.meeting?.id || !this.newAction.title) {
+      return;
+    }
+
+    this.actionsService.createAction(this.meeting.id, this.newAction).subscribe({
+      next: (created) => {
+        this.showSuccess('Action created successfully');
+        this.cancelAddingAction();
+        this.loadActions();
+        this.actionChanged.emit();
+      },
+      error: (error) => {
+        console.error('Error creating action:', error);
+        this.showError('Failed to create action: ' + error.message);
+      }
+    });
   }
 
   approveAction(action: UnifiedAction): void {
-    // TODO: Call API to approve and execute
-    console.log('Approving action:', action);
-    this.actionChanged.emit();
+    const notes = prompt('Approval notes (optional):');
+
+    this.actionsService.approveAction(action.id, notes || undefined).subscribe({
+      next: (result) => {
+        this.showSuccess('Action approved and executed');
+        this.loadActions();
+        this.actionChanged.emit();
+      },
+      error: (error) => {
+        console.error('Error approving action:', error);
+        this.showError('Failed to approve action: ' + error.message);
+      }
+    });
   }
 
   rejectAction(action: UnifiedAction): void {
-    // TODO: Call API to reject
-    console.log('Rejecting action:', action);
-    this.actionChanged.emit();
+    const notes = prompt('Rejection reason (optional):');
+
+    this.actionsService.rejectAction(action.id, notes || undefined).subscribe({
+      next: (result) => {
+        this.showSuccess('Action rejected');
+        this.loadActions();
+        this.actionChanged.emit();
+      },
+      error: (error) => {
+        console.error('Error rejecting action:', error);
+        this.showError('Failed to reject action: ' + error.message);
+      }
+    });
   }
 
   completeAction(action: UnifiedAction): void {
-    // TODO: Call API to complete
-    console.log('Completing action:', action);
-    this.actionChanged.emit();
+    const completionNotes = prompt('Completion notes (optional):');
+
+    this.actionsService.completeAction(action.id, completionNotes || undefined).subscribe({
+      next: (result) => {
+        this.showSuccess('Action marked as complete');
+        this.loadActions();
+        this.actionChanged.emit();
+      },
+      error: (error) => {
+        console.error('Error completing action:', error);
+        this.showError('Failed to complete action: ' + error.message);
+      }
+    });
   }
 
   scheduleMeeting(action: UnifiedAction): void {
     // TODO: Open schedule meeting dialog (reuse from smart insights)
     console.log('Scheduling meeting for action:', action);
+    this.showInfo('Schedule meeting feature coming soon');
   }
 
   editAction(action: UnifiedAction): void {
-    // TODO: Implement edit functionality
+    // TODO: Implement edit functionality with inline form or dialog
     console.log('Editing action:', action);
+    this.showInfo('Edit feature coming soon');
   }
 
   deleteAction(action: UnifiedAction): void {
-    // TODO: Call API to delete
-    console.log('Deleting action:', action);
-    this.actionChanged.emit();
+    if (!confirm(`Are you sure you want to delete "${action.title}"?`)) {
+      return;
+    }
+
+    this.actionsService.deleteAction(action.id).subscribe({
+      next: () => {
+        this.showSuccess('Action deleted');
+        this.loadActions();
+        this.actionChanged.emit();
+      },
+      error: (error) => {
+        console.error('Error deleting action:', error);
+        this.showError('Failed to delete action: ' + error.message);
+      }
+    });
   }
 
   syncFromN8n(): void {
+    if (!this.meeting?.id) {
+      return;
+    }
+
     this.isSyncing = true;
-    // TODO: Call API to sync from n8n
-    console.log('Syncing from n8n...');
-    setTimeout(() => {
-      this.isSyncing = false;
-      this.loadActions();
-    }, 2000);
+    this.actionsService.syncFromN8n(this.meeting.id).subscribe({
+      next: (result) => {
+        this.showSuccess(`Synced ${result.syncedCount} actions from n8n`);
+        this.loadActions();
+        this.isSyncing = false;
+      },
+      error: (error) => {
+        console.error('Error syncing from n8n:', error);
+        this.showError('Failed to sync from n8n: ' + error.message);
+        this.isSyncing = false;
+      }
+    });
   }
 
   getSourceLabel(source: string): string {
@@ -473,5 +534,32 @@ export class UnifiedActionsComponent implements OnInit {
       'N8N_AGENT': 'n8n Agent'
     };
     return labels[system] || system;
+  }
+
+  private showSuccess(message: string): void {
+    this.snackBar.open(message, 'Close', {
+      duration: 3000,
+      horizontalPosition: 'end',
+      verticalPosition: 'top',
+      panelClass: ['success-snackbar']
+    });
+  }
+
+  private showError(message: string): void {
+    this.snackBar.open(message, 'Close', {
+      duration: 5000,
+      horizontalPosition: 'end',
+      verticalPosition: 'top',
+      panelClass: ['error-snackbar']
+    });
+  }
+
+  private showInfo(message: string): void {
+    this.snackBar.open(message, 'Close', {
+      duration: 3000,
+      horizontalPosition: 'end',
+      verticalPosition: 'top',
+      panelClass: ['info-snackbar']
+    });
   }
 }
