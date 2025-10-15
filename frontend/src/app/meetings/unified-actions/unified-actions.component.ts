@@ -198,9 +198,10 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
                }">
 
             <!-- Action Header -->
-            <div class="flex items-start justify-between mb-2">
+            <div class="flex items-start justify-between mb-3">
               <div class="flex-1">
-                <div class="flex items-center space-x-2 mb-1 flex-wrap">
+                <!-- Title Row with Badges -->
+                <div class="flex items-center space-x-2 mb-2 flex-wrap">
                   <h4 class="text-sm font-semibold text-gray-900">{{ action.title }}</h4>
 
                   <!-- Fathom Recording Link Button -->
@@ -227,11 +228,12 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
                   </span>
                 </div>
 
-                <!-- Metadata (assignee, due date, priority) -->
-                <div class="flex items-center flex-wrap gap-2 mt-1 text-xs text-gray-500">
-                  <span>Assigned to: {{ action.assigneeName || action.assigneeEmail || 'Unassigned' }}</span>
-                  <span *ngIf="action.dueDate">Due: {{ action.dueDate | date:'M/d/yy, h:mm a' }}</span>
-                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                <!-- Metadata Row (consistent labels and values) -->
+                <div class="flex items-center space-x-4 text-sm text-gray-700">
+                  <span class="font-medium">
+                    Assigned to: <span class="font-normal">{{ action.assigneeName || action.assigneeEmail || 'Unassigned' }}</span>
+                  </span>
+                  <span class="font-medium inline-flex items-center px-2 py-0.5 rounded-full text-xs"
                         [ngClass]="{
                           'bg-red-100 text-red-800': action.priority === 'URGENT',
                           'bg-orange-100 text-orange-800': action.priority === 'HIGH',
@@ -244,8 +246,8 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
               </div>
 
               <!-- Status Badge -->
-              <div class="ml-4">
-                <span class="px-3 py-1 text-xs font-medium rounded-full uppercase"
+              <div class="ml-4 flex-shrink-0">
+                <span class="px-3 py-1 text-xs font-semibold rounded-full uppercase"
                       [ngClass]="{
                         'bg-yellow-200 text-yellow-900': action.status === 'NEW',
                         'bg-blue-200 text-blue-900': action.status === 'ACTIVE',
@@ -261,11 +263,11 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
             <div class="flex items-center space-x-2 mt-3 pt-3 border-t border-gray-200">
               <!-- Pending Approval Actions -->
               <ng-container *ngIf="action.status === 'NEW'">
-                <button mat-raised-button color="primary" (click)="approveAction(action)" class="text-xs">
+                <button mat-raised-button color="primary" (click)="approveAction(action)" class="text-sm">
                   <mat-icon class="w-4 h-4">check</mat-icon>
                   Approve & Execute
                 </button>
-                <button mat-button color="warn" (click)="rejectAction(action)" class="text-xs">
+                <button mat-button color="warn" (click)="rejectAction(action)" class="text-sm">
                   <mat-icon class="w-4 h-4">close</mat-icon>
                   Reject
                 </button>
@@ -273,14 +275,14 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
 
               <!-- Active Actions -->
               <ng-container *ngIf="action.status === 'ACTIVE'">
-                <button mat-raised-button color="primary" (click)="completeAction(action)" class="text-xs">
+                <button mat-raised-button color="primary" (click)="completeAction(action)" class="text-sm">
                   <mat-icon class="w-4 h-4">check_circle</mat-icon>
                   Mark Complete
                 </button>
 
                 <!-- Schedule Meeting Button -->
                 <button *ngIf="action.actionType === 'SCHEDULE_MEETING'"
-                        mat-stroked-button color="accent" (click)="scheduleMeeting(action)" class="text-xs">
+                        mat-stroked-button color="accent" (click)="scheduleMeeting(action)" class="text-sm">
                   <mat-icon class="w-4 h-4">event</mat-icon>
                   Schedule Now
                 </button>
@@ -288,19 +290,19 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
 
               <!-- Edit & Delete -->
               <button mat-icon-button (click)="editAction(action)" class="ml-auto">
-                <mat-icon class="w-4 h-4">edit</mat-icon>
+                <mat-icon class="w-5 h-5">edit</mat-icon>
               </button>
               <button mat-icon-button color="warn" (click)="deleteAction(action)">
-                <mat-icon class="w-4 h-4">delete</mat-icon>
+                <mat-icon class="w-5 h-5">delete</mat-icon>
               </button>
             </div>
 
             <!-- Send to External System Dropdown (shown on all actions) -->
             <div class="mt-2 pt-2 border-t border-gray-200">
-              <p class="text-xs font-medium text-red-600 mb-2">Manage Task in External System</p>
+              <p class="text-sm font-medium text-gray-900 mb-2">Manage Task in External System</p>
               <mat-form-field class="w-full" appearance="outline">
                 <mat-label>Send to System</mat-label>
-                <mat-select (selectionChange)="sendToExternalSystem(action, $event.value)" class="text-xs">
+                <mat-select (selectionChange)="sendToExternalSystem(action, $event.value)" class="text-sm">
                   <mat-option value="">Select a system...</mat-option>
                   <mat-option value="ZOHO_CRM">Zoho CRM</mat-option>
                   <mat-option value="CLICKUP">ClickUp</mat-option>
