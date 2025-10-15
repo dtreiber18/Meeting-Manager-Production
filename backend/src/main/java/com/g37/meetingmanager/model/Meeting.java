@@ -84,6 +84,10 @@ public class Meeting {
     @Size(max = 500)
     private String transcriptUrl;
 
+    // Microsoft Outlook Integration
+    @Size(max = 255)
+    private String outlookEventId; // Microsoft Graph Event ID
+
     // Fathom Integration Fields
     @Size(max = 100)
     private String fathomRecordingId;
@@ -312,6 +316,10 @@ public class Meeting {
 
     public String getTranscriptUrl() { return transcriptUrl; }
     public void setTranscriptUrl(String transcriptUrl) { this.transcriptUrl = transcriptUrl; }
+
+    // Microsoft Outlook Integration Getters/Setters
+    public String getOutlookEventId() { return outlookEventId; }
+    public void setOutlookEventId(String outlookEventId) { this.outlookEventId = outlookEventId; }
 
     // Fathom Integration Getters/Setters
     public String getFathomRecordingId() { return fathomRecordingId; }

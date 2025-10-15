@@ -113,4 +113,11 @@ export class MeetingService {
   notifyMeetingsUpdated(): void {
     this._meetingsUpdated.next(true);
   }
+
+  /**
+   * Create an Outlook calendar event via Microsoft Graph API
+   */
+  createOutlookEvent(meeting: Meeting): Observable<any> {
+    return this.http.post(`${this.apiConfig.endpoints.meetings()}/create-outlook-event`, meeting);
+  }
 }

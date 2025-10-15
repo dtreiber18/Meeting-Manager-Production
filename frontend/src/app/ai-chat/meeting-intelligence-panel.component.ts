@@ -10,10 +10,12 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatDialog } from '@angular/material/dialog';
 import { ChatService } from '../services/chat.service';
 import { FathomIntelligenceService } from '../services/fathom-intelligence.service';
 import { Meeting } from '../meetings/meeting.model';
 import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-assistant.service';
+import { ScheduleFollowupDialogComponent } from '../shared/schedule-followup-dialog/schedule-followup-dialog.component';
 
 @Component({
   selector: 'app-meeting-intelligence-panel',
@@ -657,7 +659,8 @@ export class MeetingIntelligencePanelComponent implements OnInit {
 
   constructor(
     private readonly chatService: ChatService,
-    private readonly fathomService: FathomIntelligenceService
+    private readonly fathomService: FathomIntelligenceService,
+    private readonly dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -963,18 +966,33 @@ export class MeetingIntelligencePanelComponent implements OnInit {
 
   /**
    * Schedule a follow-up meeting using Microsoft Graph
-   * TODO: Implement full integration with Microsoft Graph Calendar API
+   * Opens a dialog to create a follow-up meeting with pre-filled data
    */
   scheduleFollowUp(): void {
-    console.log('Initiating follow-up meeting scheduling for:', this.meeting.title);
+    console.log('Opening follow-up meeting dialog for:', this.meeting.title);
 
-    // Emit event to parent component to handle scheduling
-    // The parent component should open a meeting creation dialog
-    // with pre-filled data from the current meeting
-    this.followUpScheduled.emit();
+    const dialogRef = this.dialog.open(ScheduleFollowupDialogComponent, {
+      width: '600px',
+      data: { meeting: this.meeting }
+    });
 
-    // Temporary alert - will be replaced with actual dialog
-    alert(`Schedule Follow-up for: ${this.meeting.title}\n\nThis will open a meeting creation dialog using Microsoft Graph API to create a follow-up meeting in Outlook.`);
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.success) {
+        console.log('Follow-up meeting created:', result.meeting);
+
+        // Emit event to parent component
+        this.followUpScheduled.emit();
+
+        // Show success message
+        if (result.outlookEvent) {
+          alert(`✅ Follow-up meeting created successfully!\n\nMeeting: ${result.meeting.title}\n\nThe meeting has been added to your Outlook calendar.`);
+        } else if (result.outlookError) {
+          alert(`✅ Follow-up meeting created in database.\n\n⚠️ Note: Could not sync to Outlook calendar. Please check your calendar connection.`);
+        } else {
+          alert(`✅ Follow-up meeting created successfully!\n\nMeeting: ${result.meeting.title}`);
+        }
+      }
+    });
   }
 
   escalateRiskyItems(): void {

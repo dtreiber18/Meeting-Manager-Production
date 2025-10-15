@@ -283,7 +283,7 @@ public class MeetingController {
     @GetMapping("/notifications/test")
     public ResponseEntity<java.util.Map<String, Object>> testNotificationEndpoint() {
         logger.info("Notification test endpoint called via MeetingController");
-        
+
         return ResponseEntity.ok(java.util.Map.of(
             "status", "ok",
             "message", "NotificationController is working properly (via MeetingController)",
@@ -292,5 +292,72 @@ public class MeetingController {
             "version", "production-integrated",
             "note", "Notifications integrated into MeetingController while debugging standalone controller registration"
         ));
+    }
+
+    /**
+     * Create an Outlook calendar event for a meeting via Microsoft Graph API
+     * This endpoint creates the meeting in Outlook for the authenticated user
+     */
+    @PostMapping("/create-outlook-event")
+    public ResponseEntity<?> createOutlookEvent(@RequestBody Meeting meeting) {
+        try {
+            logger.info("Creating Outlook event for meeting: {}", meeting.getTitle());
+
+            // Get the user who will create the event (organizer)
+            User organizer = userRepository.findById(meeting.getOrganizerId())
+                .orElseThrow(() -> new RuntimeException("Organizer not found"));
+
+            // Check if user has Microsoft Graph token
+            if (organizer.getGraphAccessToken() == null || organizer.getGraphAccessToken().isEmpty()) {
+                logger.warn("User {} does not have Microsoft Graph access token", organizer.getEmail());
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(java.util.Map.of(
+                        "error", "Calendar not connected",
+                        "message", "Please connect your Outlook calendar before creating events"
+                    ));
+            }
+
+            // Check if token is expired
+            if (organizer.getGraphTokenExpiresAt() != null &&
+                organizer.getGraphTokenExpiresAt().isBefore(LocalDateTime.now())) {
+                logger.warn("Microsoft Graph token expired for user {}", organizer.getEmail());
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(java.util.Map.of(
+                        "error", "Calendar token expired",
+                        "message", "Please reconnect your Outlook calendar"
+                    ));
+            }
+
+            // Create the calendar event using CalendarIntegrationService
+            java.util.Map<String, Object> eventResponse = calendarIntegrationService.createCalendarEvent(
+                meeting,
+                organizer.getGraphAccessToken()
+            );
+
+            if (eventResponse != null && eventResponse.containsKey("id")) {
+                logger.info("Successfully created Outlook event with ID: {}", eventResponse.get("id"));
+
+                // Optionally update the meeting record with the Outlook event ID
+                meeting.setOutlookEventId((String) eventResponse.get("id"));
+                meetingRepository.save(meeting);
+
+                return ResponseEntity.ok(eventResponse);
+            } else {
+                logger.error("Failed to create Outlook event - no event ID returned");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Map.of(
+                        "error", "Failed to create event",
+                        "message", "Could not create calendar event in Outlook"
+                    ));
+            }
+
+        } catch (RuntimeException e) {
+            logger.error("Error creating Outlook event", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(java.util.Map.of(
+                    "error", "Internal server error",
+                    "message", e.getMessage()
+                ));
+        }
     }
 }
