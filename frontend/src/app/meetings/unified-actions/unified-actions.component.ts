@@ -304,6 +304,21 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
               </button>
             </div>
 
+            <!-- Send to External System Dropdown (shown on all actions) -->
+            <div class="mt-3 pt-3 border-t border-gray-200">
+              <mat-form-field class="w-full" appearance="outline">
+                <mat-label>Send to System</mat-label>
+                <mat-select (selectionChange)="sendToExternalSystem(action, $event.value)" class="text-xs">
+                  <mat-option value="">Select a system...</mat-option>
+                  <mat-option value="ZOHO_CRM">Zoho CRM</mat-option>
+                  <mat-option value="CLICKUP">ClickUp</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <p class="text-xs text-gray-500 mt-1">
+                *Selecting a system will immediately send this action
+              </p>
+            </div>
+
             <!-- Confidence Score (for Fathom actions) -->
             <div *ngIf="action.fathomConfidenceScore" class="mt-2 text-xs text-purple-600">
               Fathom Confidence: {{ action.fathomConfidenceScore | number:'1.0-2' }}%
@@ -626,5 +641,39 @@ export class UnifiedActionsComponent implements OnInit {
     } else {
       this.showError('Fathom recording link not available');
     }
+  }
+
+  /**
+   * Send action to external system (Zoho CRM or ClickUp)
+   * Triggered when user selects a system from the dropdown
+   */
+  sendToExternalSystem(action: UnifiedAction, targetSystem: string): void {
+    if (!targetSystem) {
+      return; // User selected "Select a system..." placeholder
+    }
+
+    if (!confirm(`Send "${action.title}" to ${this.getSystemLabel(targetSystem)}?`)) {
+      return;
+    }
+
+    console.log(`Sending action ${action.id} to ${targetSystem}`);
+
+    this.actionsService.sendToExternalSystem(action.id, targetSystem as any).subscribe({
+      next: (result) => {
+        if (result.success) {
+          this.showSuccess(`Action sent to ${this.getSystemLabel(targetSystem)} successfully!`);
+          if (result.externalId) {
+            console.log(`External task ID: ${result.externalId}`);
+          }
+          this.loadActions(); // Reload to get updated action with external ID
+        } else {
+          this.showError(result.message || 'Failed to send action to external system');
+        }
+      },
+      error: (error) => {
+        console.error('Error sending to external system:', error);
+        this.showError(`Failed to send to ${this.getSystemLabel(targetSystem)}: ${error.message}`);
+      }
+    });
   }
 }

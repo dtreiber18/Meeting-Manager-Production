@@ -98,25 +98,13 @@ import { ScheduleFollowupDialogComponent } from '../shared/schedule-followup-dia
                 💡 {{ suggestion.reasoning }}
               </div>
 
-              <!-- System Selection Dropdown -->
-              <div class="mt-3">
-                <mat-form-field class="w-full" appearance="outline">
-                  <mat-label>Send to System</mat-label>
-                  <mat-select [(value)]="suggestionSystemMap[getSuggestionId(suggestion)]" class="text-xs">
-                    <mat-option value="zoho">Zoho CRM</mat-option>
-                    <mat-option value="clickup">ClickUp</mat-option>
-                  </mat-select>
-                </mat-form-field>
-              </div>
-
               <div class="flex gap-2 mt-2">
                 <button
                   mat-raised-button
                   color="primary"
-                  (click)="sendToSystem(suggestion)"
-                  [disabled]="!suggestionSystemMap[getSuggestionId(suggestion)]"
+                  (click)="scheduleMeetingFromSuggestion(suggestion)"
                   class="text-xs">
-                  Send to {{ getSystemDisplayName(suggestionSystemMap[getSuggestionId(suggestion)]) }}
+                  Schedule Meeting
                 </button>
                 <button
                   mat-button
@@ -987,6 +975,43 @@ export class MeetingIntelligencePanelComponent implements OnInit {
           alert(`✅ Follow-up meeting created in database.\n\n⚠️ Note: Could not sync to Outlook calendar. Please check your calendar connection.`);
         } else {
           alert(`✅ Follow-up meeting created successfully!\n\nMeeting: ${result.meeting.title}`);
+        }
+      }
+    });
+  }
+
+  /**
+   * Schedule a meeting from an AI suggestion
+   * Opens the same follow-up meeting dialog with suggestion pre-filled
+   */
+  scheduleMeetingFromSuggestion(suggestion: ActionItemSuggestion): void {
+    console.log('Scheduling meeting from suggestion:', suggestion);
+
+    const dialogRef = this.dialog.open(ScheduleFollowupDialogComponent, {
+      width: '600px',
+      data: {
+        meeting: this.meeting,
+        suggestion: suggestion  // Pass the suggestion to pre-fill dialog
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.success) {
+        console.log('Meeting scheduled from suggestion:', result.meeting);
+
+        // Dismiss the suggestion after successful scheduling
+        this.dismissSuggestion(suggestion);
+
+        // Emit event to parent component
+        this.followUpScheduled.emit();
+
+        // Show success message
+        if (result.outlookEvent) {
+          alert(`✅ Meeting scheduled successfully!\n\nMeeting: ${result.meeting.title}\n\nThe meeting has been added to your Outlook calendar.`);
+        } else if (result.outlookError) {
+          alert(`✅ Meeting created in database.\n\n⚠️ Note: Could not sync to Outlook calendar. Please check your calendar connection.`);
+        } else {
+          alert(`✅ Meeting scheduled successfully!\n\nMeeting: ${result.meeting.title}`);
         }
       }
     });
