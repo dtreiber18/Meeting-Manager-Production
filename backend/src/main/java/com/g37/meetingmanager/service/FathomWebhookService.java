@@ -199,6 +199,34 @@ public class FathomWebhookService {
         // Store transcript URL for linking
         meeting.setTranscriptUrl(payload.getShareUrl());
 
+        // Store Fathom-specific fields for Phase 2 analytics
+        meeting.setFathomRecordingId(payload.getRecordingId() != null ? payload.getRecordingId().toString() : null);
+        meeting.setFathomRecordingUrl(payload.getUrl());
+        if (payload.getDefaultSummary() != null) {
+            meeting.setFathomSummary(payload.getDefaultSummary().getMarkdownFormatted());
+        }
+
+        // Store transcript data for Phase 2 analytics
+        if (payload.getTranscript() != null && !payload.getTranscript().isEmpty()) {
+            // Store full transcript as text
+            StringBuilder transcriptText = new StringBuilder();
+            for (FathomWebhookPayload.TranscriptEntry entry : payload.getTranscript()) {
+                transcriptText.append(entry.getSpeaker().getDisplayName())
+                    .append(" (").append(entry.getTimestamp()).append("): ")
+                    .append(entry.getText())
+                    .append("\n");
+            }
+            meeting.setTranscript(transcriptText.toString());
+
+            // Store transcript entries as JSON for Phase 2 analytics
+            try {
+                ObjectMapper objectMapper = new ObjectMapper();
+                meeting.setTranscriptEntriesJson(objectMapper.writeValueAsString(payload.getTranscript()));
+            } catch (Exception e) {
+                logger.warn("Failed to serialize transcript entries to JSON: {}", e.getMessage());
+            }
+        }
+
         // Determine meeting type based on invitees
         if ("only_internal".equals(payload.getCalendarInviteeDomainsType())) {
             meeting.setMeetingType(Meeting.MeetingType.TEAM_MEETING);

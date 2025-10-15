@@ -84,6 +84,22 @@ public class Meeting {
     @Size(max = 500)
     private String transcriptUrl;
 
+    // Fathom Integration Fields
+    @Size(max = 100)
+    private String fathomRecordingId;
+
+    @Size(max = 500)
+    private String fathomRecordingUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String fathomSummary;
+
+    @Column(columnDefinition = "LONGTEXT")
+    private String transcript; // Full transcript text
+
+    @Column(columnDefinition = "LONGTEXT")
+    private String transcriptEntriesJson; // JSON array of transcript entries
+
     @Column(nullable = false)
     private Boolean isPublic = false;
 
@@ -296,6 +312,22 @@ public class Meeting {
 
     public String getTranscriptUrl() { return transcriptUrl; }
     public void setTranscriptUrl(String transcriptUrl) { this.transcriptUrl = transcriptUrl; }
+
+    // Fathom Integration Getters/Setters
+    public String getFathomRecordingId() { return fathomRecordingId; }
+    public void setFathomRecordingId(String fathomRecordingId) { this.fathomRecordingId = fathomRecordingId; }
+
+    public String getFathomRecordingUrl() { return fathomRecordingUrl; }
+    public void setFathomRecordingUrl(String fathomRecordingUrl) { this.fathomRecordingUrl = fathomRecordingUrl; }
+
+    public String getFathomSummary() { return fathomSummary; }
+    public void setFathomSummary(String fathomSummary) { this.fathomSummary = fathomSummary; }
+
+    public String getTranscript() { return transcript; }
+    public void setTranscript(String transcript) { this.transcript = transcript; }
+
+    public String getTranscriptEntriesJson() { return transcriptEntriesJson; }
+    public void setTranscriptEntriesJson(String transcriptEntriesJson) { this.transcriptEntriesJson = transcriptEntriesJson; }
 
     public Boolean getIsPublic() { return isPublic; }
     public void setIsPublic(Boolean isPublic) { this.isPublic = isPublic; }
