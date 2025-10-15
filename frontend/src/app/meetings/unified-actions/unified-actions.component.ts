@@ -187,135 +187,148 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
           </button>
         </div>
 
-        <div class="space-y-3">
+        <div class="space-y-4">
           <div *ngFor="let action of filteredActions"
-               class="p-4 rounded-lg border-2 transition-all"
+               class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200"
                [ngClass]="{
-                 'border-yellow-200 bg-yellow-50': action.status === 'NEW',
-                 'border-blue-200 bg-blue-50': action.status === 'ACTIVE',
-                 'border-green-200 bg-green-50': action.status === 'COMPLETE',
-                 'border-gray-200 bg-gray-50': action.status === 'REJECTED'
+                 'border-l-4 border-l-yellow-400': action.status === 'NEW',
+                 'border-l-4 border-l-blue-400': action.status === 'ACTIVE',
+                 'border-l-4 border-l-green-400': action.status === 'COMPLETE',
+                 'border-l-4 border-l-gray-400': action.status === 'REJECTED'
                }">
 
-            <!-- Action Header -->
-            <div class="flex items-start justify-between mb-3">
-              <div class="flex-1">
-                <!-- Title Row with Badges -->
-                <div class="flex items-center space-x-2 mb-2 flex-wrap">
-                  <h4 class="text-sm font-semibold text-gray-900">{{ action.title }}</h4>
+            <div class="p-5">
+              <!-- Action Header -->
+              <div class="flex items-start justify-between mb-4">
+                <div class="flex-1 min-w-0">
+                  <!-- Title Row with Badges -->
+                  <div class="flex items-center gap-2 mb-3 flex-wrap">
+                    <h4 class="text-base font-semibold text-gray-900 leading-tight">{{ action.title }}</h4>
 
-                  <!-- Fathom Recording Link Button -->
-                  <button *ngIf="getFathomRecordingLink(action)"
-                          type="button"
-                          (click)="playFathomRecording(action); $event.stopPropagation()"
-                          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors border border-purple-300"
-                          title="Play Fathom recording at this timestamp">
-                    🎥 Play Recording
+                    <!-- Fathom Recording Link Button -->
+                    <button *ngIf="getFathomRecordingLink(action)"
+                            type="button"
+                            (click)="playFathomRecording(action); $event.stopPropagation()"
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 transition-colors"
+                            title="Play Fathom recording at this timestamp">
+                      <mat-icon class="w-3.5 h-3.5">play_circle</mat-icon>
+                      Play Recording
+                    </button>
+
+                    <!-- Fathom Timestamp Badge -->
+                    <span *ngIf="getFathomTimestamp(action)"
+                          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200"
+                          title="Timestamp in recording">
+                      <mat-icon class="w-3.5 h-3.5">schedule</mat-icon>
+                      {{ getFathomTimestamp(action) }}
+                    </span>
+
+                    <!-- Source Badge (for Fathom) -->
+                    <span *ngIf="isFathomAction(action)"
+                          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200"
+                          title="Source: Fathom">
+                      <mat-icon class="w-3.5 h-3.5">source</mat-icon>
+                      Fathom
+                    </span>
+                  </div>
+
+                  <!-- Metadata Row -->
+                  <div class="flex items-center gap-4 text-sm text-gray-600">
+                    <span class="flex items-center gap-1.5">
+                      <mat-icon class="w-4 h-4 text-gray-400">person</mat-icon>
+                      <span class="font-medium text-gray-900">Assigned to:</span>
+                      <span>{{ action.assigneeName || action.assigneeEmail || 'Unassigned' }}</span>
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
+                          [ngClass]="{
+                            'bg-red-100 text-red-700 border border-red-200': action.priority === 'URGENT',
+                            'bg-orange-100 text-orange-700 border border-orange-200': action.priority === 'HIGH',
+                            'bg-yellow-100 text-yellow-700 border border-yellow-200': action.priority === 'MEDIUM',
+                            'bg-gray-100 text-gray-700 border border-gray-200': action.priority === 'LOW'
+                          }">
+                      <mat-icon class="w-3.5 h-3.5">flag</mat-icon>
+                      Priority: {{ action.priority || 'MEDIUM' }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Status Badge -->
+                <div class="ml-4 flex-shrink-0">
+                  <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide"
+                        [ngClass]="{
+                          'bg-yellow-100 text-yellow-800 border border-yellow-300': action.status === 'NEW',
+                          'bg-blue-100 text-blue-800 border border-blue-300': action.status === 'ACTIVE',
+                          'bg-green-100 text-green-800 border border-green-300': action.status === 'COMPLETE',
+                          'bg-gray-100 text-gray-800 border border-gray-300': action.status === 'REJECTED'
+                        }">
+                    {{ action.status }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex items-center gap-2 mt-4 pt-4 border-t border-gray-200">
+                <!-- Pending Approval Actions -->
+                <ng-container *ngIf="action.status === 'NEW'">
+                  <button mat-raised-button color="primary" (click)="approveAction(action)" class="!text-sm">
+                    <mat-icon class="w-4 h-4 mr-1">check</mat-icon>
+                    Approve & Execute
+                  </button>
+                  <button mat-stroked-button color="warn" (click)="rejectAction(action)" class="!text-sm">
+                    <mat-icon class="w-4 h-4 mr-1">close</mat-icon>
+                    Reject
+                  </button>
+                </ng-container>
+
+                <!-- Active Actions -->
+                <ng-container *ngIf="action.status === 'ACTIVE'">
+                  <button mat-raised-button color="primary" (click)="completeAction(action)" class="!text-sm">
+                    <mat-icon class="w-4 h-4 mr-1">check_circle</mat-icon>
+                    Mark Complete
                   </button>
 
-                  <!-- Fathom Timestamp Badge -->
-                  <span *ngIf="getFathomTimestamp(action)"
-                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 border border-gray-300"
-                        title="Timestamp in recording">
-                    ⏱️ {{ getFathomTimestamp(action) }}
-                  </span>
+                  <!-- Schedule Meeting Button -->
+                  <button *ngIf="action.actionType === 'SCHEDULE_MEETING'"
+                          mat-stroked-button color="accent" (click)="scheduleMeeting(action)" class="!text-sm">
+                    <mat-icon class="w-4 h-4 mr-1">event</mat-icon>
+                    Schedule Now
+                  </button>
+                </ng-container>
 
-                  <!-- Source Badge (for Fathom) -->
-                  <span *ngIf="isFathomAction(action)"
-                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
-                        title="Source: Fathom">
-                    Source: Fathom
-                  </span>
-                </div>
-
-                <!-- Metadata Row (consistent labels and values) -->
-                <div class="flex items-center space-x-4 text-sm text-gray-700">
-                  <span>
-                    <span class="font-medium">Assigned to:</span> {{ action.assigneeName || action.assigneeEmail || 'Unassigned' }}
-                  </span>
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                        [ngClass]="{
-                          'bg-red-100 text-red-800': action.priority === 'URGENT',
-                          'bg-orange-100 text-orange-800': action.priority === 'HIGH',
-                          'bg-yellow-100 text-yellow-800': action.priority === 'MEDIUM',
-                          'bg-gray-100 text-gray-800': action.priority === 'LOW'
-                        }">
-                    Priority: {{ action.priority || 'MEDIUM' }}
-                  </span>
-                </div>
+                <!-- Edit & Delete -->
+                <button mat-icon-button (click)="editAction(action)" class="ml-auto !text-gray-600 hover:!text-gray-900">
+                  <mat-icon class="w-5 h-5">edit</mat-icon>
+                </button>
+                <button mat-icon-button (click)="deleteAction(action)" class="!text-red-600 hover:!text-red-700">
+                  <mat-icon class="w-5 h-5">delete</mat-icon>
+                </button>
               </div>
 
-              <!-- Status Badge -->
-              <div class="ml-4 flex-shrink-0">
-                <span class="px-3 py-1 text-xs font-semibold rounded-full uppercase"
-                      [ngClass]="{
-                        'bg-yellow-200 text-yellow-900': action.status === 'NEW',
-                        'bg-blue-200 text-blue-900': action.status === 'ACTIVE',
-                        'bg-green-200 text-green-900': action.status === 'COMPLETE',
-                        'bg-gray-200 text-gray-900': action.status === 'REJECTED'
-                      }">
-                  {{ action.status }}
-                </span>
+              <!-- Send to External System Dropdown -->
+              <div class="mt-4 pt-4 border-t border-gray-200 bg-gray-50 -mx-5 -mb-5 px-5 py-4 rounded-b-lg">
+                <div class="flex items-center gap-2 mb-3">
+                  <mat-icon class="w-5 h-5 text-gray-600">send</mat-icon>
+                  <p class="text-sm font-semibold text-gray-900">Manage Task in External System</p>
+                </div>
+                <mat-form-field class="w-full" appearance="outline">
+                  <mat-label>Send to System</mat-label>
+                  <mat-select (selectionChange)="sendToExternalSystem(action, $event.value)" class="!text-sm">
+                    <mat-option value="">Select a system...</mat-option>
+                    <mat-option value="ZOHO_CRM">Zoho CRM</mat-option>
+                    <mat-option value="CLICKUP">ClickUp</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <p class="text-xs text-gray-600 italic mt-2">
+                  <mat-icon class="w-3 h-3 inline align-text-bottom">info</mat-icon>
+                  Selecting a system will immediately send this action
+                </p>
               </div>
-            </div>
 
-            <!-- Action Buttons -->
-            <div class="flex items-center space-x-2 mt-3 pt-3 border-t border-gray-200">
-              <!-- Pending Approval Actions -->
-              <ng-container *ngIf="action.status === 'NEW'">
-                <button mat-raised-button color="primary" (click)="approveAction(action)" class="text-sm">
-                  <mat-icon class="w-4 h-4">check</mat-icon>
-                  Approve & Execute
-                </button>
-                <button mat-button color="warn" (click)="rejectAction(action)" class="text-sm">
-                  <mat-icon class="w-4 h-4">close</mat-icon>
-                  Reject
-                </button>
-              </ng-container>
-
-              <!-- Active Actions -->
-              <ng-container *ngIf="action.status === 'ACTIVE'">
-                <button mat-raised-button color="primary" (click)="completeAction(action)" class="text-sm">
-                  <mat-icon class="w-4 h-4">check_circle</mat-icon>
-                  Mark Complete
-                </button>
-
-                <!-- Schedule Meeting Button -->
-                <button *ngIf="action.actionType === 'SCHEDULE_MEETING'"
-                        mat-stroked-button color="accent" (click)="scheduleMeeting(action)" class="text-sm">
-                  <mat-icon class="w-4 h-4">event</mat-icon>
-                  Schedule Now
-                </button>
-              </ng-container>
-
-              <!-- Edit & Delete -->
-              <button mat-icon-button (click)="editAction(action)" class="ml-auto">
-                <mat-icon class="w-5 h-5">edit</mat-icon>
-              </button>
-              <button mat-icon-button color="warn" (click)="deleteAction(action)">
-                <mat-icon class="w-5 h-5">delete</mat-icon>
-              </button>
-            </div>
-
-            <!-- Send to External System Dropdown (shown on all actions) -->
-            <div class="mt-2 pt-2 border-t border-gray-200">
-              <p class="text-sm font-medium text-gray-900 mb-2">Manage Task in External System</p>
-              <mat-form-field class="w-full" appearance="outline">
-                <mat-label>Send to System</mat-label>
-                <mat-select (selectionChange)="sendToExternalSystem(action, $event.value)" class="text-sm">
-                  <mat-option value="">Select a system...</mat-option>
-                  <mat-option value="ZOHO_CRM">Zoho CRM</mat-option>
-                  <mat-option value="CLICKUP">ClickUp</mat-option>
-                </mat-select>
-              </mat-form-field>
-              <p class="text-xs text-gray-500 mt-1">
-                *Selecting a system will immediately send this action
-              </p>
-            </div>
-
-            <!-- Confidence Score (for Fathom actions) -->
-            <div *ngIf="action.fathomConfidenceScore" class="mt-2 text-xs text-purple-600">
-              Fathom Confidence: {{ action.fathomConfidenceScore | number:'1.0-2' }}%
+              <!-- Confidence Score (for Fathom actions) -->
+              <div *ngIf="action.fathomConfidenceScore" class="mt-3 text-xs text-purple-600 flex items-center gap-1">
+                <mat-icon class="w-3.5 h-3.5">analytics</mat-icon>
+                Fathom Confidence: {{ action.fathomConfidenceScore | number:'1.0-2' }}%
+              </div>
             </div>
           </div>
         </div>
