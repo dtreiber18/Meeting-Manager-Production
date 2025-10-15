@@ -59,6 +59,10 @@ export interface UnifiedAction {
   notes?: string;
   completionNotes?: string;
   tags?: string[];
+
+  // N8N fields
+  n8nExecutionId?: string;
+  n8nWorkflowStatus?: string;
 }
 
 @Injectable({

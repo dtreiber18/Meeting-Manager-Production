@@ -200,72 +200,61 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
             <!-- Action Header -->
             <div class="flex items-start justify-between mb-2">
               <div class="flex-1">
-                <div class="flex items-center space-x-2 mb-1">
+                <div class="flex items-center space-x-2 mb-1 flex-wrap">
                   <h4 class="text-sm font-semibold text-gray-900">{{ action.title }}</h4>
 
-                  <!-- Source Badge -->
-                  <span class="px-2 py-0.5 text-xs rounded-full"
-                        [ngClass]="{
-                          'bg-purple-100 text-purple-800': action.source === 'FATHOM',
-                          'bg-blue-100 text-blue-800': action.source === 'AI_SUGGESTION',
-                          'bg-green-100 text-green-800': action.source === 'MANUAL',
-                          'bg-orange-100 text-orange-800': action.source === 'N8N'
-                        }">
-                    {{ getSourceLabel(action.source) }}
+                  <!-- Fathom Source Badge -->
+                  <span *ngIf="isFathomAction(action)"
+                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-300"
+                        title="Imported from Fathom Note-taking App">
+                    🎤 Fathom
                   </span>
 
-                  <!-- Priority Badge -->
-                  <span class="px-2 py-0.5 text-xs rounded-full font-medium"
+                  <!-- Fathom Recording Link Button -->
+                  <button *ngIf="getFathomRecordingLink(action)"
+                          type="button"
+                          (click)="playFathomRecording(action); $event.stopPropagation()"
+                          class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors border border-purple-300"
+                          title="Play Fathom recording at this timestamp">
+                    🎥 Play Recording
+                  </button>
+
+                  <!-- Fathom Timestamp Badge -->
+                  <span *ngIf="getFathomTimestamp(action)"
+                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 border border-gray-300"
+                        title="Timestamp in recording">
+                    ⏱️ {{ getFathomTimestamp(action) }}
+                  </span>
+
+                  <!-- N8N Workflow Status Badge -->
+                  <span *ngIf="action.n8nWorkflowStatus"
+                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
+                        [title]="'Source: ' + action.n8nWorkflowStatus">
+                    {{ action.n8nWorkflowStatus }}
+                  </span>
+                </div>
+
+                <p *ngIf="action.description" class="text-xs text-gray-600 mt-1">{{ action.description }}</p>
+
+                <!-- Metadata (assignee, due date, priority) -->
+                <div class="flex items-center flex-wrap gap-2 mt-1 text-xs text-gray-500">
+                  <span>Assigned to: {{ action.assigneeName || action.assigneeEmail || 'Unassigned' }}</span>
+                  <span *ngIf="action.dueDate">Due: {{ action.dueDate | date:'M/d/yy, h:mm a' }}</span>
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
                         [ngClass]="{
                           'bg-red-100 text-red-800': action.priority === 'URGENT',
                           'bg-orange-100 text-orange-800': action.priority === 'HIGH',
                           'bg-yellow-100 text-yellow-800': action.priority === 'MEDIUM',
                           'bg-gray-100 text-gray-800': action.priority === 'LOW'
                         }">
-                    {{ action.priority }}
-                  </span>
-                </div>
-
-                <p *ngIf="action.description" class="text-xs text-gray-600 mt-1">{{ action.description }}</p>
-
-                <!-- Fathom Recording Link (for Fathom-sourced actions) -->
-                <div *ngIf="action.source === 'FATHOM' && action.fathomTranscriptTimestamp"
-                     class="mt-2 flex items-center space-x-2">
-                  <button class="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center space-x-1"
-                          (click)="playFathomRecording(action)">
-                    <mat-icon class="w-3 h-3">play_arrow</mat-icon>
-                    <span>Play Recording</span>
-                  </button>
-                  <span class="text-xs text-purple-600">
-                    <mat-icon class="w-3 h-3 inline">access_time</mat-icon>
-                    {{ formatTimestamp(action.fathomTranscriptTimestamp) }}
-                  </span>
-                </div>
-
-                <!-- Metadata -->
-                <div class="flex items-center flex-wrap gap-2 mt-2 text-xs text-gray-500">
-                  <span *ngIf="action.assigneeEmail || action.assigneeName">
-                    <mat-icon class="w-3 h-3 inline">person</mat-icon>
-                    {{ action.assigneeName || action.assigneeEmail }}
-                  </span>
-                  <span *ngIf="action.dueDate">
-                    <mat-icon class="w-3 h-3 inline">schedule</mat-icon>
-                    {{ action.dueDate | date:'short' }}
-                  </span>
-                  <span *ngIf="action.targetSystem">
-                    <mat-icon class="w-3 h-3 inline">send</mat-icon>
-                    {{ getSystemLabel(action.targetSystem) }}
-                  </span>
-                  <span *ngIf="action.source === 'FATHOM' && action.fathomActionId">
-                    <mat-icon class="w-3 h-3 inline">tag</mat-icon>
-                    fathom_webhook
+                    {{ action.priority || 'MEDIUM' }}
                   </span>
                 </div>
               </div>
 
               <!-- Status Badge -->
               <div class="ml-4">
-                <span class="px-3 py-1 text-xs font-medium rounded-full"
+                <span class="px-3 py-1 text-xs font-medium rounded-full uppercase"
                       [ngClass]="{
                         'bg-yellow-200 text-yellow-900': action.status === 'NEW',
                         'bg-blue-200 text-blue-900': action.status === 'ACTIVE',
@@ -601,36 +590,41 @@ export class UnifiedActionsComponent implements OnInit {
   }
 
   /**
-   * Play Fathom recording at specific timestamp
+   * Check if action is from Fathom (based on n8nExecutionId starting with "fathom_")
    */
-  playFathomRecording(action: UnifiedAction): void {
-    if (!action.fathomTranscriptTimestamp) {
-      this.showError('No recording timestamp available');
-      return;
-    }
-
-    // Check if we have Fathom recording URL in the meeting
-    const fathomUrl = (this.meeting as any)?.fathomRecordingUrl;
-    if (fathomUrl) {
-      // Open Fathom recording at specific timestamp
-      const timestampInSeconds = Math.floor(action.fathomTranscriptTimestamp / 1000);
-      const urlWithTimestamp = `${fathomUrl}?t=${timestampInSeconds}`;
-      window.open(urlWithTimestamp, '_blank');
-    } else {
-      this.showError('Fathom recording URL not available for this meeting');
-    }
+  isFathomAction(action: UnifiedAction): boolean {
+    return !!action.n8nExecutionId && action.n8nExecutionId.startsWith('fathom_');
   }
 
   /**
-   * Format timestamp in milliseconds to MM:SS format
+   * Extract Fathom recording link from notes field
+   * Notes format: "Recording: https://app.fathom.video/share/prod-strategy-q4?t=165\nTimestamp: 00:02:45"
    */
-  formatTimestamp(milliseconds?: number): string {
-    if (!milliseconds) return '00:00';
+  getFathomRecordingLink(action: UnifiedAction): string | null {
+    if (!action.notes) return null;
+    const match = action.notes.match(/Recording: (https:\/\/app\.fathom\.video\/[^\s\n]+)/);
+    return match ? match[1] : null;
+  }
 
-    const totalSeconds = Math.floor(milliseconds / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
+  /**
+   * Extract timestamp from notes field
+   * Notes format: "Recording: https://app.fathom.video/share/prod-strategy-q4?t=165\nTimestamp: 00:02:45"
+   */
+  getFathomTimestamp(action: UnifiedAction): string | null {
+    if (!action.notes) return null;
+    const match = action.notes.match(/Timestamp: (\d{2}:\d{2}:\d{2})/);
+    return match ? match[1] : null;
+  }
 
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  /**
+   * Play Fathom recording at specific timestamp
+   */
+  playFathomRecording(action: UnifiedAction): void {
+    const recordingLink = this.getFathomRecordingLink(action);
+    if (recordingLink) {
+      window.open(recordingLink, '_blank');
+    } else {
+      this.showError('Fathom recording link not available');
+    }
   }
 }
