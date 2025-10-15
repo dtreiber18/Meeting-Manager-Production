@@ -2,9 +2,9 @@
 
 **Meeting Manager + Fathom Note-Taking App Integration**
 
-Version: 2.0 (Phase 2 Complete)
-Last Updated: October 14, 2025
-Status: ✅ Production Ready (Phase 2: Advanced Analytics)
+Version: 2.1 (Phase 2 Complete + UI Enhancements)
+Last Updated: October 15, 2025
+Status: ✅ Production Ready (Phase 2: Advanced Analytics + Collapsible UI)
 
 ---
 
@@ -1096,6 +1096,83 @@ public class FathomController {
 
 ---
 
+## UI Enhancements (v2.1) 🆕
+
+### Collapsible Sections
+
+**NEW in Version 2.1** - All Fathom analytics sections now feature individual expand/collapse controls for better UX:
+
+#### Features:
+- **9 Collapsible Sections:** Each analytics section can be independently expanded/collapsed
+- **Collapsed by Default:** Clean initial view - expand only what you need
+- **Visual Feedback:** Headers highlight on hover, clear chevron icons indicate state
+- **No Redundancy:** Mock "Meeting Intelligence" panel automatically hidden when Fathom data is available
+
+#### Collapsible Sections:
+1. ✅ **Fathom-Enhanced Effectiveness** - Overall meeting quality score
+2. ✅ **Decisions Made** - Key decisions extracted from summary
+3. ✅ **Key Topics** - Topic chips from content analysis
+4. ✅ **Speaker Balance** - Participation distribution charts
+5. ✅ **Key Discussion Points** - Bullet list of main points
+6. ✅ **Participant Engagement (Phase 2)** - Individual engagement scores
+7. ✅ **Most Relevant Keywords (Phase 2)** - TF-IDF extracted keywords
+8. ✅ **AI-Detected Action Items (Phase 2)** - Pattern-detected actions
+9. ✅ **Topic Evolution (Phase 2)** - Timeline of topic progression
+
+#### User Experience:
+```
+Fathom AI Insights (expand to view)
+  ↓ (user clicks to expand main panel)
+
+  ➤ Fathom-Enhanced Effectiveness (collapsed)
+  ➤ Decisions Made (4) (collapsed)
+  ➤ Key Topics (collapsed)
+  ➤ Speaker Balance (collapsed)
+  ... (all sections collapsed by default)
+
+  ↓ (user clicks individual section headers)
+
+  ✓ Shows only the analytics they want to see
+  ✓ Cleaner, more organized interface
+  ✓ Faster page load and better performance
+```
+
+#### Implementation Details:
+
+**Frontend Changes:**
+- Added 9 boolean state variables for section visibility
+- Implemented toggle methods for each section
+- Updated template with clickable headers and conditional rendering
+- Added hover effects and chevron icons for visual feedback
+
+**Benefits:**
+- **Reduced Cognitive Load:** Users see only relevant data
+- **Faster Navigation:** No scrolling through unwanted sections
+- **Better Mobile Experience:** Cleaner on small screens
+- **Performance:** Reduced DOM rendering for collapsed sections
+
+### Smart Panel Display
+
+**Automatic Mock Data Hiding:**
+When Fathom data is available, the system automatically:
+- Hides the mock "Meeting Intelligence" panel
+- Shows only the real "Fathom AI Insights" panel
+- Displays "Mock Data" badges on synthetic analytics
+- Prevents confusion between real and simulated data
+
+**Logic:**
+```typescript
+// Only show mock panel if no Fathom data exists
+<mat-card *ngIf="!hasFathomData" class="analysis-card">
+  <mat-card-title>
+    Meeting Intelligence
+    <span class="badge">Mock Data</span>
+  </mat-card-title>
+</mat-card>
+```
+
+---
+
 ## Related Documentation
 
 - [AI Intelligence Framework Design](docs/AI-Intelligence-Framework-Design.md)
@@ -1113,6 +1190,6 @@ public class FathomController {
 
 ---
 
-**Last Updated:** October 14, 2025
-**Version:** 1.0.0
-**Status:** ✅ Production Ready
+**Last Updated:** October 15, 2025
+**Version:** 2.1.0
+**Status:** ✅ Production Ready (Phase 2 + UI Enhancements Complete)

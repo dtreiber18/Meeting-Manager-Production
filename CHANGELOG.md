@@ -5,6 +5,89 @@ All notable changes to the Meeting Manager project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.0] - 2025-10-15 - Fathom Phase 2 Data Parsing & UI Enhancements
+
+### 🔧 Fixed - Frontend Data Parsing
+- **MeetingMapperService Enhanced** - Fixed critical data format mismatch
+  - Added parsing of `transcriptEntriesJson` (JSON string from backend) to `transcriptEntries` (array for frontend)
+  - Implemented `parseTimestampToSeconds()` helper to convert Fathom timestamps ("HH:MM:SS") to seconds
+  - Added speaker name extraction from nested Fathom payload structure
+  - Added console logging for successful transcript parsing (debugging aid)
+  - **Impact:** Phase 2 analytics now display correctly - no more "Processing Fathom AI analysis..." spinner
+- **Backend Meeting Entity** - Added 5 Fathom-specific fields
+  - `fathomRecordingId` (VARCHAR 100) - Fathom's recording identifier
+  - `fathomRecordingUrl` (VARCHAR 500) - Direct link to recording
+  - `fathomSummary` (TEXT) - AI-generated markdown summary
+  - `transcript` (LONGTEXT) - Full formatted transcript text
+  - `transcriptEntriesJson` (LONGTEXT) - JSON array of transcript entries with speaker attribution
+- **Database Migration** - Added columns to meetings table
+  - Executed ALTER TABLE to add 5 new columns
+  - Fixed source ENUM to include 'FATHOM' value
+  - **Migration SQL:** All Fathom fields added with NULL constraints for backward compatibility
+
+### 🎨 Enhanced - User Interface
+- **Collapsible Fathom Sections** - All 9 analytics sections now independently collapsible
+  - Added expand/collapse state variables for each section
+  - Implemented 9 toggle methods (toggleFathomEffectiveness, toggleFathomDecisions, etc.)
+  - **Sections:** Effectiveness, Decisions, Topics, Speaker Balance, Key Points, Participant Engagement, Keywords, Extracted Actions, Topic Evolution
+  - **UX Benefits:** Cleaner UI, reduced cognitive load, faster navigation, better mobile experience
+- **All Panels Collapsed by Default** - Improved initial page load experience
+  - Changed `intelligenceExpanded`, `suggestionsExpanded`, `fathomInsightsExpanded` to `false`
+  - Users expand only the analytics they need
+  - Reduced initial DOM rendering for better performance
+- **Smart Mock Data Handling** - Eliminated redundancy
+  - "Meeting Intelligence" panel now hidden when Fathom data exists (`*ngIf="!hasFathomData"`)
+  - Added "Mock Data" badges to synthetic analytics (AI Suggestions, Meeting Intelligence)
+  - Prevents confusion between real Fathom data and simulated analysis
+  - **Result:** Only one effectiveness score shown (real Fathom score, not mock score)
+
+### 📐 Visual Improvements
+- **Clickable Section Headers** - Enhanced interaction design
+  - Added `cursor-pointer` and `hover:bg-gray-50` for visual feedback
+  - Chevron icons (`expand_more`/`expand_less`) show current state
+  - Consistent styling across all 9 Fathom sections
+- **Phase 2 Analytics Now Fully Functional** - Complete data flow working
+  - Participant Engagement with individual scores
+  - TF-IDF keyword extraction showing relevance
+  - AI-detected action items from transcript patterns
+  - Topic evolution timeline across meeting segments
+  - **Data Flow:** Backend → MeetingMapper (parsing) → Frontend Analytics Services → UI Display
+
+### 📝 Documentation
+- **Updated FATHOM_INTEGRATION_DOCUMENTATION.md** - Version 2.1
+  - Added "UI Enhancements" section documenting collapsible sections
+  - Updated version from 2.0 to 2.1
+  - Added implementation details and benefits
+  - Documented smart panel display logic
+  - Last updated: October 15, 2025
+
+### 🗂️ Files Changed
+**Frontend:**
+- `frontend/src/app/meetings/meeting-mapper.service.ts` - Added transcript parsing logic
+- `frontend/src/app/ai-chat/meeting-intelligence-panel.component.ts` - Added collapsible sections, removed redundancy
+
+**Backend:**
+- `backend/src/main/java/com/g37/meetingmanager/model/Meeting.java` - Added 5 Fathom fields + getters/setters
+- `backend/src/main/java/com/g37/meetingmanager/service/FathomWebhookService.java` - Populate new Fathom fields
+
+**Database:**
+- Executed ALTER TABLE migrations for meetings table
+- Added 5 columns: fathom_recording_id, fathom_recording_url, fathom_summary, transcript, transcript_entries_json
+- Fixed source ENUM to include 'FATHOM'
+
+**Documentation:**
+- `FATHOM_INTEGRATION_DOCUMENTATION.md` - Updated to v2.1 with UI enhancements section
+- `CHANGELOG.md` - This entry
+
+### 🎯 Impact Summary
+- **Phase 2 Analytics:** Now fully operational with correct data parsing
+- **User Experience:** Cleaner, more organized interface with collapsible sections
+- **Performance:** Reduced initial rendering, collapsed panels by default
+- **Data Quality:** Complete Fathom data now stored in database for historical analysis
+- **No More Redundancy:** Single source of truth for analytics (Fathom data when available, mock fallback otherwise)
+
+---
+
 ## [3.7.0] - 2025-10-12 - N8N Operations Integration - Production Ready
 
 ### 🔄 Added - Complete N8N Workflow Integration
