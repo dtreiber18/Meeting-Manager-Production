@@ -961,10 +961,20 @@ export class MeetingIntelligencePanelComponent implements OnInit {
     alert('Meeting report generation started - you will receive it via email shortly');
   }
 
+  /**
+   * Schedule a follow-up meeting using Microsoft Graph
+   * TODO: Implement full integration with Microsoft Graph Calendar API
+   */
   scheduleFollowUp(): void {
-    console.log('Initiating follow-up scheduling...');
+    console.log('Initiating follow-up meeting scheduling for:', this.meeting.title);
+
+    // Emit event to parent component to handle scheduling
+    // The parent component should open a meeting creation dialog
+    // with pre-filled data from the current meeting
     this.followUpScheduled.emit();
-    alert('Follow-up meeting scheduling initiated');
+
+    // Temporary alert - will be replaced with actual dialog
+    alert(`Schedule Follow-up for: ${this.meeting.title}\n\nThis will open a meeting creation dialog using Microsoft Graph API to create a follow-up meeting in Outlook.`);
   }
 
   escalateRiskyItems(): void {
