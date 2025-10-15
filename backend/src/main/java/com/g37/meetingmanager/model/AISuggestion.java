@@ -1,5 +1,6 @@
 package com.g37.meetingmanager.model;
 
+import com.g37.meetingmanager.model.PendingAction.Priority;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
