@@ -53,8 +53,19 @@ export class MeetingService {
   }
 
   getMeetings(): Observable<Meeting[]> {
-    return this.http.get<BackendMeeting[]>(this.apiConfig.endpoints.meetings()).pipe(
-      map(backendMeetings => this.mapper.transformMeetingsFromBackend(backendMeetings))
+    const url = this.apiConfig.endpoints.meetings();
+    console.log('🌐 MeetingService.getMeetings() calling:', url);
+    return this.http.get<BackendMeeting[]>(url).pipe(
+      tap(backendMeetings => {
+        console.log('📥 MeetingService: Received from backend:', backendMeetings.length, 'meetings');
+        console.log('📥 First backend meeting:', backendMeetings[0]);
+      }),
+      map(backendMeetings => {
+        const transformed = this.mapper.transformMeetingsFromBackend(backendMeetings);
+        console.log('🔄 MeetingService: Transformed to:', transformed.length, 'meetings');
+        console.log('🔄 First transformed meeting:', transformed[0]);
+        return transformed;
+      })
     );
   }
 
