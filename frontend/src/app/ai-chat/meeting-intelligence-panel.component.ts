@@ -31,7 +31,7 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
     <div class="meeting-intelligence-panel space-y-4">
 
       <!-- Action Item Suggestions -->
-      <mat-card class="suggestions-card">
+      <mat-card *ngIf="!hideAISuggestions" class="suggestions-card">
         <mat-card-header>
           <mat-card-title class="flex items-center">
             <mat-icon class="mr-2 text-purple-600">lightbulb</mat-icon>
@@ -129,7 +129,7 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
       </mat-card>
 
       <!-- Smart Insights & Predictions -->
-      <mat-card class="smart-insights-card">
+      <mat-card *ngIf="!showOnlyAISuggestions" class="smart-insights-card">
         <mat-card-header>
           <mat-card-title class="flex items-center">
             <mat-icon class="mr-2 text-indigo-600">psychology</mat-icon>
@@ -232,7 +232,7 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
       </mat-card>
 
       <!-- Fathom Intelligence Card (only shows for Fathom meetings) -->
-      <mat-card class="fathom-insights-card" *ngIf="hasFathomData">
+      <mat-card class="fathom-insights-card" *ngIf="hasFathomData && !showOnlyAISuggestions">
         <mat-card-header>
           <mat-card-title class="flex items-center">
             <mat-icon class="mr-2 text-purple-600">mic</mat-icon>
@@ -583,6 +583,8 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
 })
 export class MeetingIntelligencePanelComponent implements OnInit {
   @Input() meeting!: Meeting;
+  @Input() showOnlyAISuggestions: boolean = false; // When true, shows only AI Suggestions section
+  @Input() hideAISuggestions: boolean = false; // When true, hides AI Suggestions section
   @Output() actionItemAdded = new EventEmitter<ActionItemSuggestion>();
   @Output() followUpScheduled = new EventEmitter<void>();
 
