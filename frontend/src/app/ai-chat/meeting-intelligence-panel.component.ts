@@ -43,28 +43,12 @@ import { ScheduleFollowupDialogComponent } from '../shared/schedule-followup-dia
             <mat-icon class="mr-2 text-blue-600">event</mat-icon>
             Schedule a Meeting
           </mat-card-title>
-          <div class="flex items-center space-x-1">
-            <button
-              mat-icon-button
-              (click)="toggleAutoSuggestions()"
-              [color]="autoSuggestionsEnabled ? 'primary' : ''"
-              matTooltip="Auto-generate suggestions">
-              <mat-icon>{{ autoSuggestionsEnabled ? 'auto_mode' : 'smart_toy' }}</mat-icon>
-            </button>
-            <button
-              mat-icon-button
-              (click)="refreshSuggestions()"
-              [disabled]="loadingSuggestions"
-              matTooltip="Refresh Suggestions">
-              <mat-icon [class.spin]="loadingSuggestions">refresh</mat-icon>
-            </button>
-            <button
-              mat-icon-button
-              (click)="toggleSuggestions()"
-              [matTooltip]="suggestionsExpanded ? 'Collapse' : 'Expand'">
-              <mat-icon>{{ suggestionsExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
-            </button>
-          </div>
+          <button
+            mat-icon-button
+            (click)="toggleSuggestions()"
+            [matTooltip]="suggestionsExpanded ? 'Collapse' : 'Expand'">
+            <mat-icon>{{ suggestionsExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+          </button>
         </mat-card-header>
 
         <mat-card-content *ngIf="suggestionsExpanded">
@@ -74,42 +58,53 @@ import { ScheduleFollowupDialogComponent } from '../shared/schedule-followup-dia
           </div>
 
           <div *ngIf="!loadingSuggestions && suggestions.length > 0" class="space-y-3">
-            <div *ngFor="let suggestion of suggestions" 
-                 class="suggestion-item p-3 bg-gray-50 rounded-lg border">
-              <div class="flex items-start justify-between mb-2">
-                <h4 class="text-sm font-semibold text-gray-900">{{ suggestion.title }}</h4>
-                <mat-chip [ngClass]="getPriorityClass(suggestion.priority)" class="text-xs">
+            <div *ngFor="let suggestion of suggestions"
+                 class="suggestion-item p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+
+              <!-- Description -->
+              <p class="text-sm text-gray-700 mb-3">{{ suggestion.description }}</p>
+
+              <!-- Metadata Row -->
+              <div class="flex items-center gap-3 text-xs text-gray-600 mb-3">
+                <span *ngIf="suggestion.estimatedHours" class="inline-flex items-center gap-1">
+                  <mat-icon class="w-3.5 h-3.5 text-gray-400">schedule</mat-icon>
+                  {{ suggestion.estimatedHours }}h estimated
+                </span>
+                <span *ngIf="suggestion.suggestedAssignee" class="inline-flex items-center gap-1">
+                  <mat-icon class="w-3.5 h-3.5 text-gray-400">person</mat-icon>
+                  {{ suggestion.suggestedAssignee }}
+                </span>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ml-auto"
+                      [ngClass]="{
+                        'bg-red-100 text-red-700': suggestion.priority === 'URGENT',
+                        'bg-orange-100 text-orange-700': suggestion.priority === 'HIGH',
+                        'bg-yellow-100 text-yellow-700': suggestion.priority === 'MEDIUM',
+                        'bg-gray-100 text-gray-700': suggestion.priority === 'LOW'
+                      }">
                   {{ suggestion.priority }}
-                </mat-chip>
-              </div>
-              
-              <p class="text-xs text-gray-600 mb-2">{{ suggestion.description }}</p>
-              
-              <div class="flex items-center justify-between text-xs text-gray-500">
-                <span *ngIf="suggestion.estimatedHours">
-                  ⏱️ {{ suggestion.estimatedHours }}h estimated
                 </span>
-                <span *ngIf="suggestion.suggestedAssignee" class="ml-auto">
-                  👤 {{ suggestion.suggestedAssignee }}
-                </span>
-              </div>
-              
-              <div class="mt-2 text-xs text-blue-600 italic">
-                💡 {{ suggestion.reasoning }}
               </div>
 
-              <div class="flex gap-2 mt-2">
+              <!-- Reasoning -->
+              <div *ngIf="suggestion.reasoning" class="mb-3 p-2 bg-blue-50 rounded text-xs text-blue-700 border border-blue-100">
+                <mat-icon class="w-3 h-3 inline align-text-bottom mr-1">lightbulb</mat-icon>
+                {{ suggestion.reasoning }}
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex gap-2">
                 <button
-                  mat-raised-button
-                  color="primary"
+                  type="button"
                   (click)="scheduleMeetingFromSuggestion(suggestion)"
-                  class="text-xs">
+                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                  <mat-icon class="w-3.5 h-3.5">event</mat-icon>
                   Schedule Meeting
                 </button>
                 <button
-                  mat-button
+                  type="button"
                   (click)="dismissSuggestion(suggestion)"
-                  class="text-xs">
+                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">
+                  <mat-icon class="w-3.5 h-3.5">close</mat-icon>
                   Dismiss
                 </button>
               </div>
