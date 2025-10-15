@@ -8,6 +8,8 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { ChatService } from '../services/chat.service';
 import { FathomIntelligenceService } from '../services/fathom-intelligence.service';
 import { Meeting } from '../meetings/meeting.model';
@@ -25,7 +27,9 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
     MatExpansionModule,
     MatChipsModule,
     MatProgressSpinnerModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatSelectModule,
+    MatFormFieldModule
   ],
   template: `
     <div class="meeting-intelligence-panel space-y-4">
@@ -95,24 +99,28 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
                 💡 {{ suggestion.reasoning }}
               </div>
 
-              <div class="flex gap-2 mt-3">
-                <button 
-                  mat-button 
-                  color="primary" 
-                  (click)="acceptSuggestion(suggestion)"
+              <!-- System Selection Dropdown -->
+              <div class="mt-3">
+                <mat-form-field class="w-full" appearance="outline">
+                  <mat-label>Send to System</mat-label>
+                  <mat-select [(value)]="suggestionSystemMap[getSuggestionId(suggestion)]" class="text-xs">
+                    <mat-option value="zoho">Zoho CRM</mat-option>
+                    <mat-option value="clickup">ClickUp</mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <div class="flex gap-2 mt-2">
+                <button
+                  mat-raised-button
+                  color="primary"
+                  (click)="sendToSystem(suggestion)"
+                  [disabled]="!suggestionSystemMap[getSuggestionId(suggestion)]"
                   class="text-xs">
-                  Add as Action Item
+                  Send to {{ getSystemDisplayName(suggestionSystemMap[getSuggestionId(suggestion)]) }}
                 </button>
-                <button 
-                  mat-button 
-                  color="accent"
-                  (click)="acceptSuggestionAsWorkflow(suggestion)"
-                  class="text-xs"
-                  *ngIf="suggestion.priority === 'HIGH' || suggestion.priority === 'URGENT'">
-                  Create Workflow
-                </button>
-                <button 
-                  mat-button 
+                <button
+                  mat-button
                   (click)="dismissSuggestion(suggestion)"
                   class="text-xs">
                   Dismiss
@@ -579,6 +587,25 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
     .stat-item {
       @apply flex justify-between items-center;
     }
+
+    /* System selection dropdown styling */
+    mat-form-field {
+      font-size: 0.75rem;
+    }
+
+    mat-form-field ::ng-deep .mat-mdc-text-field-wrapper {
+      padding-bottom: 0;
+    }
+
+    mat-form-field ::ng-deep .mat-mdc-form-field-infix {
+      padding-top: 8px;
+      padding-bottom: 8px;
+      min-height: 36px;
+    }
+
+    mat-form-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+      display: none;
+    }
   `]
 })
 export class MeetingIntelligencePanelComponent implements OnInit {
@@ -593,6 +620,9 @@ export class MeetingIntelligencePanelComponent implements OnInit {
   loadingAnalysis = false;
   loadingSuggestions = false;
   autoSuggestionsEnabled = false;
+
+  // System selection for AI suggestions
+  suggestionSystemMap: { [key: string]: string } = {}; // Maps suggestion ID to selected system ('zoho' or 'clickup')
 
   // Fathom Intelligence - Phase 1
   fathomDecisions: string[] = [];
@@ -756,6 +786,52 @@ export class MeetingIntelligencePanelComponent implements OnInit {
 
   dismissSuggestion(suggestion: ActionItemSuggestion): void {
     this.suggestions = this.suggestions.filter(s => s !== suggestion);
+  }
+
+  /**
+   * Generate a unique ID for a suggestion (used for system selection mapping)
+   */
+  getSuggestionId(suggestion: ActionItemSuggestion): string {
+    return `${suggestion.title}-${suggestion.priority}`;
+  }
+
+  /**
+   * Get display name for the selected system
+   */
+  getSystemDisplayName(system: string | undefined): string {
+    if (!system) return 'System';
+    if (system === 'zoho') return 'Zoho CRM';
+    if (system === 'clickup') return 'ClickUp';
+    return 'System';
+  }
+
+  /**
+   * Send suggestion to the selected system (Zoho CRM or ClickUp)
+   */
+  sendToSystem(suggestion: ActionItemSuggestion): void {
+    const selectedSystem = this.suggestionSystemMap[this.getSuggestionId(suggestion)];
+
+    if (!selectedSystem) {
+      console.warn('No system selected for suggestion:', suggestion);
+      return;
+    }
+
+    console.log(`Sending suggestion to ${selectedSystem}:`, suggestion);
+
+    // Emit the suggestion with system metadata
+    const suggestionWithSystem = {
+      ...suggestion,
+      targetSystem: selectedSystem,
+      systemName: this.getSystemDisplayName(selectedSystem)
+    };
+
+    this.actionItemAdded.emit(suggestionWithSystem);
+
+    // Remove from suggestions list
+    this.suggestions = this.suggestions.filter(s => s !== suggestion);
+
+    // Clean up the system selection
+    delete this.suggestionSystemMap[this.getSuggestionId(suggestion)];
   }
 
   toggleAutoSuggestions(): void {
