@@ -29,135 +29,13 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
   ],
   template: `
     <div class="meeting-intelligence-panel space-y-4">
-      
-      <!-- Meeting Analysis Card - Only show if no Fathom data (mock fallback) -->
-      <mat-card *ngIf="!hasFathomData" class="analysis-card">
-        <mat-card-header>
-          <mat-card-title class="flex items-center">
-            <mat-icon class="mr-2 text-blue-600">analytics</mat-icon>
-            Meeting Intelligence
-            <span class="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-              Mock Data
-            </span>
-          </mat-card-title>
-          <div class="flex items-center space-x-1">
-            <button
-              mat-icon-button
-              (click)="refreshAnalysis()"
-              [disabled]="loadingAnalysis"
-              matTooltip="Refresh Analysis">
-              <mat-icon [class.spin]="loadingAnalysis">refresh</mat-icon>
-            </button>
-            <button
-              mat-icon-button
-              (click)="toggleIntelligence()"
-              [matTooltip]="intelligenceExpanded ? 'Collapse' : 'Expand'">
-              <mat-icon>{{ intelligenceExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
-            </button>
-          </div>
-        </mat-card-header>
 
-        <mat-card-content *ngIf="intelligenceExpanded">
-          <div *ngIf="loadingAnalysis" class="text-center py-4">
-            <mat-spinner diameter="40"></mat-spinner>
-            <p class="mt-2 text-gray-600">Analyzing meeting...</p>
-          </div>
-
-          <div *ngIf="!loadingAnalysis && analysis" class="space-y-4">
-            <!-- Effectiveness Score -->
-            <div class="effectiveness-score">
-              <div class="flex items-center justify-between mb-2">
-                <span class="font-semibold">Meeting Effectiveness</span>
-                <div class="flex items-center">
-                  <div class="score-circle" [ngClass]="getScoreClass(analysis.meetingEffectiveness.score)">
-                    {{ analysis.meetingEffectiveness.score }}/10
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Strengths -->
-              <div *ngIf="analysis.meetingEffectiveness.strengths.length > 0" class="mb-3">
-                <h4 class="text-sm font-medium text-green-700 mb-1">✅ Strengths</h4>
-                <div class="space-y-1">
-                  <div *ngFor="let strength of analysis.meetingEffectiveness.strengths" 
-                       class="text-xs bg-green-50 text-green-800 px-2 py-1 rounded">
-                    {{ strength }}
-                  </div>
-                </div>
-              </div>
-
-              <!-- Improvements -->
-              <div *ngIf="analysis.meetingEffectiveness.improvements.length > 0">
-                <h4 class="text-sm font-medium text-amber-700 mb-1">💡 Improvements</h4>
-                <div class="space-y-1">
-                  <div *ngFor="let improvement of analysis.meetingEffectiveness.improvements" 
-                       class="text-xs bg-amber-50 text-amber-800 px-2 py-1 rounded">
-                    {{ improvement }}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Key Insights -->
-            <div *ngIf="analysis.keyInsights.length > 0" class="insights-section">
-              <h4 class="text-sm font-semibold mb-2 text-gray-700">🔍 Key Insights</h4>
-              <div class="space-y-2">
-                <div *ngFor="let insight of analysis.keyInsights" 
-                     class="text-xs bg-blue-50 text-blue-800 px-3 py-2 rounded border-l-3 border-blue-400">
-                  {{ insight }}
-                </div>
-              </div>
-            </div>
-
-            <!-- Participant Insights -->
-            <div class="participant-insights">
-              <h4 class="text-sm font-semibold mb-2 text-gray-700">👥 Participant Insights</h4>
-              <div class="grid grid-cols-2 gap-3 text-xs">
-                <div class="stat-item">
-                  <span class="text-gray-600">Total:</span>
-                  <span class="font-medium">{{ analysis.participantInsights.totalParticipants }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="text-gray-600">Attendance:</span>
-                  <span class="font-medium" [ngClass]="getAttendanceClass(analysis.participantInsights.attendanceRate)">
-                    {{ analysis.participantInsights.attendanceRate.toFixed(1) }}%
-                  </span>
-                </div>
-              </div>
-              
-              <div *ngIf="analysis.participantInsights.keyParticipants.length > 0" class="mt-2">
-                <span class="text-xs text-gray-600">Key Participants:</span>
-                <div class="flex flex-wrap gap-1 mt-1">
-                  <mat-chip *ngFor="let participant of analysis.participantInsights.keyParticipants" 
-                           class="text-xs">
-                    {{ participant }}
-                  </mat-chip>
-                </div>
-              </div>
-
-              <div *ngIf="analysis.participantInsights.missingStakeholders.length > 0" class="mt-2">
-                <span class="text-xs text-red-600">Missing Required:</span>
-                <div class="flex flex-wrap gap-1 mt-1">
-                  <mat-chip *ngFor="let missing of analysis.participantInsights.missingStakeholders" 
-                           color="warn" class="text-xs">
-                    {{ missing }}
-                  </mat-chip>
-                </div>
-              </div>
-            </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <!-- Action Item Suggestions - Mock data for now -->
+      <!-- Action Item Suggestions -->
       <mat-card class="suggestions-card">
         <mat-card-header>
           <mat-card-title class="flex items-center">
             <mat-icon class="mr-2 text-purple-600">lightbulb</mat-icon>
             AI Suggestions
-            <span class="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-              Mock Data
-            </span>
             <mat-chip *ngIf="suggestions.length > 0" class="ml-2 text-xs">
               {{ suggestions.length }} new
             </mat-chip>
