@@ -60,17 +60,19 @@ export class ApiConfigService {
       console.error('❌ ApiConfigService: No apiUrl configured for production!');
       return '/api'; // Fallback to relative
     } else {
-      const url = isTestEnvironment ? '/api' : 'http://localhost:8080/api';
-      console.log('✅ ApiConfigService: Using direct backend URL for development testing');
+      // Always use relative URL in development - Angular proxy will handle routing
+      const url = '/api';
+      console.log('✅ ApiConfigService: Using proxy (/api) for development');
       return url;
     }
   }
 
   private handleDevApiUrl(isTestEnvironment: boolean): string {
-    const url = isTestEnvironment ? '/api' : 'http://localhost:8080/api';
-    const message = isTestEnvironment ? 
-                   '🧪 ApiConfigService: Using relative URLs for testing' : 
-                   '✅ ApiConfigService: Using direct backend URL for development testing';
+    // Always use relative URL in development - Angular proxy will handle routing
+    const url = '/api';
+    const message = isTestEnvironment ?
+                   '🧪 ApiConfigService: Using relative URLs for testing' :
+                   '✅ ApiConfigService: Using proxy (/api) for development';
     console.log(message);
     return url;
   }

@@ -42,13 +42,13 @@ public class FathomWebhookController {
     /**
      * Receive and process Fathom webhook for new meeting
      *
-     * @param signature Webhook signature header (webhook-signature)
+     * @param signature Webhook signature header (Webhook-Signature from Svix)
      * @param rawPayload Raw JSON payload from Fathom
      * @return 200 OK immediately (processing happens async)
      */
     @PostMapping(value = "/fathom", consumes = "application/json", produces = "application/json")
     public ResponseEntity<Map<String, Object>> receiveFathomWebhook(
-            @RequestHeader(value = "webhook-signature", required = false) String signature,
+            @RequestHeader(value = "Webhook-Signature", required = false) String signature,
             HttpServletRequest request) {
 
         // Generate unique webhook ID for tracking
