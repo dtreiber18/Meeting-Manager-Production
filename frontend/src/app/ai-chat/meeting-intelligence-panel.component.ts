@@ -42,9 +42,6 @@ import { ScheduleFollowupDialogComponent } from '../shared/schedule-followup-dia
           <mat-card-title class="flex items-center">
             <mat-icon class="mr-2 text-blue-600">event</mat-icon>
             Schedule a Meeting
-            <mat-chip *ngIf="suggestions.length > 0" class="ml-2 text-xs">
-              {{ suggestions.length }} new
-            </mat-chip>
           </mat-card-title>
           <div class="flex items-center space-x-1">
             <button
