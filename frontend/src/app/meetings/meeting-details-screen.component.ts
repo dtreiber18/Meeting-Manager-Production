@@ -19,6 +19,9 @@ import { ModalService } from '../shared/modal/modal.service';
 import { ModalContainerComponent } from '../shared/modal/modal-container/modal-container.component';
 import { ToastService } from '../shared/services/toast.service';
 import { UnifiedActionsComponent } from './unified-actions/unified-actions.component';
+import { DocumentUploadDialogComponent } from '../shared/document-upload-dialog/document-upload-dialog.component';
+import { DocumentService } from '../services/document.service';
+import { Document } from '../models/document.interface';
 
 
 interface N8nEventData {
@@ -84,6 +87,7 @@ export class MeetingDetailsScreenComponent implements OnInit {
     participants: { collapsed: true, editing: false },
     overview: { collapsed: true, editing: false },
     recording: { collapsed: true, editing: false },
+    documents: { collapsed: false, editing: false },
     pendingActions: { collapsed: true, editing: false },
     actionItems: { collapsed: true, editing: false }
   };
@@ -147,6 +151,10 @@ export class MeetingDetailsScreenComponent implements OnInit {
     estimatedHours: undefined
   };
 
+  // Document upload properties
+  meetingDocuments: Document[] = [];
+  loadingDocuments = false;
+
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
@@ -155,7 +163,8 @@ export class MeetingDetailsScreenComponent implements OnInit {
     private readonly modalService: ModalService,
     private readonly dialog: MatDialog,
     private readonly pendingActionService: PendingActionService,
-    private readonly toastService: ToastService
+    private readonly toastService: ToastService,
+    private readonly documentService: DocumentService
   ) {}
 
   ngOnInit(): void {
@@ -187,7 +196,7 @@ export class MeetingDetailsScreenComponent implements OnInit {
 
   loadMeetingManagerMeeting() {
     if (!this.meetingId) return;
-    
+
     console.log('📞 Fetching Meeting Manager meeting details...');
     this.meetingService.getMeeting(this.meetingId).subscribe({
       next: (data) => {
@@ -195,6 +204,8 @@ export class MeetingDetailsScreenComponent implements OnInit {
         this.meeting = { ...data, source: 'mm' };
         this.initializeEditedMeeting();
         this.loading = false;
+        // Load documents for this meeting
+        this.loadMeetingDocuments();
       },
       error: (error) => {
         console.error('❌ Error fetching Meeting Manager meeting:', error);
@@ -1623,5 +1634,114 @@ export class MeetingDetailsScreenComponent implements OnInit {
     }
 
     return null;
+  }
+
+  /**
+   * Load documents for the current meeting
+   */
+  loadMeetingDocuments(): void {
+    if (!this.meeting?.id) return;
+
+    this.loadingDocuments = true;
+    this.documentService.getDocumentsByMeeting(this.meeting.id).subscribe({
+      next: (documents) => {
+        this.meetingDocuments = documents;
+        this.loadingDocuments = false;
+        console.log(`✅ Loaded ${documents.length} documents for meeting ${this.meeting?.id}`);
+      },
+      error: (error) => {
+        console.error('Error loading documents:', error);
+        this.loadingDocuments = false;
+        this.toastService.showError('Failed to load documents');
+      }
+    });
+  }
+
+  /**
+   * Open upload dialog for uploading notes/documents to this meeting
+   */
+  openUploadDialog(): void {
+    if (!this.meeting) return;
+
+    const dialogRef = this.dialog.open(DocumentUploadDialogComponent, {
+      width: '600px',
+      maxHeight: '90vh',
+      data: {
+        meetingId: this.meeting.id,
+        preselectedMeeting: {
+          id: this.meeting.id,
+          subject: this.meeting.subject || this.meeting.title,
+          date: this.meeting.startTime?.split('T')[0] || this.meeting.date
+        }
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((uploadedDocument) => {
+      if (uploadedDocument) {
+        console.log('✅ Document uploaded successfully:', uploadedDocument);
+        this.toastService.showSuccess('Document uploaded successfully');
+        // Reload documents to show the new upload
+        this.loadMeetingDocuments();
+      }
+    });
+  }
+
+  /**
+   * Download a document
+   */
+  downloadDocument(doc: Document): void {
+    if (!doc.id) return;
+
+    this.documentService.downloadDocument(doc.id).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const anchor = window.document.createElement('a');
+        anchor.href = url;
+        anchor.download = doc.fileName || 'download';
+        window.document.body.appendChild(anchor);
+        anchor.click();
+        window.URL.revokeObjectURL(url);
+        window.document.body.removeChild(anchor);
+        this.toastService.showSuccess('Document downloaded');
+      },
+      error: (error) => {
+        console.error('Error downloading document:', error);
+        this.toastService.showError('Failed to download document');
+      }
+    });
+  }
+
+  /**
+   * Delete a document
+   */
+  deleteDocument(doc: Document): void {
+    if (!doc.id) return;
+    if (!confirm(`Delete document "${doc.title}"?`)) return;
+
+    this.documentService.deleteDocument(doc.id).subscribe({
+      next: () => {
+        this.toastService.showSuccess('Document deleted successfully');
+        this.loadMeetingDocuments();
+      },
+      error: (error) => {
+        console.error('Error deleting document:', error);
+        this.toastService.showError('Failed to delete document');
+      }
+    });
+  }
+
+  /**
+   * Get file icon for document type
+   */
+  getDocumentIcon(doc: Document): string {
+    const fileType = doc.fileType || doc.fileName?.split('.').pop() || '';
+    return this.documentService.getFileIcon(fileType);
+  }
+
+  /**
+   * Format file size for display
+   */
+  formatFileSize(bytes?: number): string {
+    return this.documentService.formatFileSize(bytes);
   }
 }
