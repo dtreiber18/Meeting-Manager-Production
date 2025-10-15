@@ -11,7 +11,7 @@ export interface UnifiedAction {
   status: 'NEW' | 'ACTIVE' | 'COMPLETE' | 'REJECTED';
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   source: 'MANUAL' | 'FATHOM' | 'AI_SUGGESTION' | 'N8N';
-  actionType: 'TASK' | 'SCHEDULE_MEETING' | 'UPDATE_CRM' | 'FOLLOW_UP' | 'DECISION' | 'RESEARCH' | 'APPROVAL' | 'DOCUMENTATION' | 'MEETING' | 'SEND_EMAIL';
+  actionType: 'TASK' | 'FOLLOW_UP' | 'DECISION' | 'RESEARCH' | 'APPROVAL' | 'DOCUMENTATION' | 'MEETING' | 'SCHEDULE_MEETING' | 'UPDATE_CRM' | 'SEND_EMAIL';
   targetSystem?: 'MEETING_MANAGER' | 'ZOHO_CRM' | 'CLICKUP' | 'N8N_AGENT';
   assigneeEmail?: string;
   assigneeName?: string;
@@ -73,7 +73,7 @@ export class ActionsService {
    * Get all actions for a specific meeting
    */
   getActionsForMeeting(meetingId: number): Observable<UnifiedAction[]> {
-    const url = `${this.apiUrl}/meetings/${meetingId}/actions`;
+    const url = `${this.apiUrl}/pending-actions/meeting/${meetingId}`;
     return this.http.get<UnifiedAction[]>(url).pipe(
       tap(actions => console.log(`Loaded ${actions.length} actions for meeting ${meetingId}`)),
       catchError(this.handleError('getActionsForMeeting'))
@@ -84,7 +84,7 @@ export class ActionsService {
    * Get pending actions (NEW status) for a meeting
    */
   getPendingActionsForMeeting(meetingId: number): Observable<UnifiedAction[]> {
-    const url = `${this.apiUrl}/meetings/${meetingId}/actions/pending`;
+    const url = `${this.apiUrl}/pending-actions/meeting/${meetingId}`;
     return this.http.get<UnifiedAction[]>(url).pipe(
       tap(actions => console.log(`Loaded ${actions.length} pending actions for meeting ${meetingId}`)),
       catchError(this.handleError('getPendingActionsForMeeting'))
@@ -95,9 +95,10 @@ export class ActionsService {
    * Create a new action for a meeting
    */
   createAction(meetingId: number, action: Partial<UnifiedAction>): Observable<UnifiedAction> {
-    const url = `${this.apiUrl}/meetings/${meetingId}/actions`;
-    return this.http.post<UnifiedAction>(url, action).pipe(
-      tap(newAction => console.log(`Created action: ${newAction.id}`)),
+    const url = `${this.apiUrl}/pending-actions`;
+    const payload = { ...action, meetingId };
+    return this.http.post<UnifiedAction>(url, payload).pipe(
+      tap(newAction => console.log(`Created action:`, newAction)),
       catchError(this.handleError('createAction'))
     );
   }
@@ -106,7 +107,7 @@ export class ActionsService {
    * Update an existing action
    */
   updateAction(actionId: string, updates: Partial<UnifiedAction>): Observable<UnifiedAction> {
-    const url = `${this.apiUrl}/actions/${actionId}`;
+    const url = `${this.apiUrl}/pending-actions/${actionId}`;
     return this.http.put<UnifiedAction>(url, updates).pipe(
       tap(updated => console.log(`Updated action: ${actionId}`)),
       catchError(this.handleError('updateAction'))
@@ -115,24 +116,32 @@ export class ActionsService {
 
   /**
    * Approve an action (NEW -> ACTIVE)
+   * Note: Backend expects approvedById as query param - using hardcoded user ID 1 for now
    */
-  approveAction(actionId: string, notes?: string): Observable<{ success: boolean; message: string; action: UnifiedAction }> {
-    const url = `${this.apiUrl}/actions/${actionId}/approve`;
-    const payload = notes ? { notes } : {};
-    return this.http.put<{ success: boolean; message: string; action: UnifiedAction }>(url, payload).pipe(
-      tap(result => console.log(`Approved action: ${actionId}`)),
+  approveAction(actionId: string, notes?: string): Observable<UnifiedAction> {
+    const url = `${this.apiUrl}/pending-actions/${actionId}/approve`;
+    const params: any = { approvedById: 1 }; // TODO: Get actual user ID from auth service
+    if (notes) {
+      params.notes = notes;
+    }
+    return this.http.post<UnifiedAction>(url, null, { params }).pipe(
+      tap(result => console.log(`Approved action: ${actionId}`, result)),
       catchError(this.handleError('approveAction'))
     );
   }
 
   /**
    * Reject an action
+   * Note: Backend expects rejectedById as query param - using hardcoded user ID 1 for now
    */
-  rejectAction(actionId: string, notes?: string): Observable<{ success: boolean; message: string; action: UnifiedAction }> {
-    const url = `${this.apiUrl}/actions/${actionId}/reject`;
-    const payload = notes ? { notes } : {};
-    return this.http.put<{ success: boolean; message: string; action: UnifiedAction }>(url, payload).pipe(
-      tap(result => console.log(`Rejected action: ${actionId}`)),
+  rejectAction(actionId: string, notes?: string): Observable<UnifiedAction> {
+    const url = `${this.apiUrl}/pending-actions/${actionId}/reject`;
+    const params: any = { rejectedById: 1 }; // TODO: Get actual user ID from auth service
+    if (notes) {
+      params.notes = notes;
+    }
+    return this.http.post<UnifiedAction>(url, null, { params }).pipe(
+      tap(result => console.log(`Rejected action: ${actionId}`, result)),
       catchError(this.handleError('rejectAction'))
     );
   }
@@ -140,11 +149,14 @@ export class ActionsService {
   /**
    * Mark action as complete (ACTIVE -> COMPLETE)
    */
-  completeAction(actionId: string, completionNotes?: string): Observable<{ success: boolean; message: string; action: UnifiedAction }> {
-    const url = `${this.apiUrl}/actions/${actionId}/complete`;
-    const payload = completionNotes ? { completionNotes } : {};
-    return this.http.put<{ success: boolean; message: string; action: UnifiedAction }>(url, payload).pipe(
-      tap(result => console.log(`Completed action: ${actionId}`)),
+  completeAction(actionId: string, completionNotes?: string): Observable<any> {
+    const url = `${this.apiUrl}/pending-actions/${actionId}/complete`;
+    const params: any = {};
+    if (completionNotes) {
+      params.completionNotes = completionNotes;
+    }
+    return this.http.post<any>(url, null, { params }).pipe(
+      tap(result => console.log(`Completed action: ${actionId}`, result)),
       catchError(this.handleError('completeAction'))
     );
   }
@@ -152,9 +164,9 @@ export class ActionsService {
   /**
    * Delete an action
    */
-  deleteAction(actionId: string): Observable<void> {
-    const url = `${this.apiUrl}/actions/${actionId}`;
-    return this.http.delete<void>(url).pipe(
+  deleteAction(actionId: string): Observable<any> {
+    const url = `${this.apiUrl}/pending-actions/${actionId}`;
+    return this.http.delete<any>(url).pipe(
       tap(() => console.log(`Deleted action: ${actionId}`)),
       catchError(this.handleError('deleteAction'))
     );
@@ -163,11 +175,14 @@ export class ActionsService {
   /**
    * Bulk approve multiple actions
    */
-  bulkApproveActions(actionIds: string[], notes?: string): Observable<{ success: boolean; approvedCount: number }> {
-    const url = `${this.apiUrl}/actions/bulk-approve`;
-    const payload = { actionIds, notes };
-    return this.http.post<{ success: boolean; approvedCount: number }>(url, payload).pipe(
-      tap(result => console.log(`Bulk approved ${result.approvedCount} actions`)),
+  bulkApproveActions(actionIds: string[], notes?: string): Observable<UnifiedAction[]> {
+    const url = `${this.apiUrl}/pending-actions/bulk/approve`;
+    const params: any = { approvedById: 1 }; // TODO: Get actual user ID from auth service
+    if (notes) {
+      params.notes = notes;
+    }
+    return this.http.post<UnifiedAction[]>(url, actionIds, { params }).pipe(
+      tap(result => console.log(`Bulk approved ${result.length} actions`)),
       catchError(this.handleError('bulkApproveActions'))
     );
   }
@@ -190,11 +205,12 @@ export class ActionsService {
 
   /**
    * Sync actions from n8n for a specific meeting
+   * Note: Uses the n8n/fetch endpoint with meeting ID as eventId
    */
-  syncFromN8n(meetingId: number): Observable<{ success: boolean; syncedCount: number; actions: UnifiedAction[] }> {
-    const url = `${this.apiUrl}/meetings/${meetingId}/actions/sync-n8n`;
-    return this.http.post<{ success: boolean; syncedCount: number; actions: UnifiedAction[] }>(url, {}).pipe(
-      tap(result => console.log(`Synced ${result.syncedCount} actions from n8n for meeting ${meetingId}`)),
+  syncFromN8n(meetingId: number): Observable<{ status: string; message: string; count?: number; operations: UnifiedAction[] }> {
+    const url = `${this.apiUrl}/pending-actions/n8n/fetch/${meetingId}`;
+    return this.http.get<{ status: string; message: string; count?: number; operations: UnifiedAction[] }>(url).pipe(
+      tap(result => console.log(`Synced ${result.count || 0} actions from n8n for meeting ${meetingId}`)),
       catchError(this.handleError('syncFromN8n'))
     );
   }

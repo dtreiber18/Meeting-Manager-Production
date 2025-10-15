@@ -96,9 +96,15 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
                 <mat-label>Action Type</mat-label>
                 <mat-select [(ngModel)]="newAction.actionType">
                   <mat-option value="TASK">Task</mat-option>
+                  <mat-option value="FOLLOW_UP">Follow-up</mat-option>
+                  <mat-option value="DECISION">Decision</mat-option>
+                  <mat-option value="RESEARCH">Research</mat-option>
+                  <mat-option value="APPROVAL">Approval</mat-option>
+                  <mat-option value="DOCUMENTATION">Documentation</mat-option>
+                  <mat-option value="MEETING">Meeting (General)</mat-option>
                   <mat-option value="SCHEDULE_MEETING">Schedule Meeting</mat-option>
                   <mat-option value="UPDATE_CRM">Update CRM</mat-option>
-                  <mat-option value="FOLLOW_UP">Follow-up</mat-option>
+                  <mat-option value="SEND_EMAIL">Send Email</mat-option>
                 </mat-select>
               </mat-form-field>
 
@@ -222,16 +228,37 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
 
                 <p *ngIf="action.description" class="text-xs text-gray-600 mt-1">{{ action.description }}</p>
 
+                <!-- Fathom Recording Link (for Fathom-sourced actions) -->
+                <div *ngIf="action.source === 'FATHOM' && action.fathomTranscriptTimestamp"
+                     class="mt-2 flex items-center space-x-2">
+                  <button class="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center space-x-1"
+                          (click)="playFathomRecording(action)">
+                    <mat-icon class="w-3 h-3">play_arrow</mat-icon>
+                    <span>Play Recording</span>
+                  </button>
+                  <span class="text-xs text-purple-600">
+                    <mat-icon class="w-3 h-3 inline">access_time</mat-icon>
+                    {{ formatTimestamp(action.fathomTranscriptTimestamp) }}
+                  </span>
+                </div>
+
                 <!-- Metadata -->
-                <div class="flex items-center space-x-3 mt-2 text-xs text-gray-500">
-                  <span *ngIf="action.assigneeEmail">
-                    <mat-icon class="w-3 h-3 inline">person</mat-icon> {{ action.assigneeEmail }}
+                <div class="flex items-center flex-wrap gap-2 mt-2 text-xs text-gray-500">
+                  <span *ngIf="action.assigneeEmail || action.assigneeName">
+                    <mat-icon class="w-3 h-3 inline">person</mat-icon>
+                    {{ action.assigneeName || action.assigneeEmail }}
                   </span>
                   <span *ngIf="action.dueDate">
-                    <mat-icon class="w-3 h-3 inline">schedule</mat-icon> {{ action.dueDate | date:'short' }}
+                    <mat-icon class="w-3 h-3 inline">schedule</mat-icon>
+                    {{ action.dueDate | date:'short' }}
                   </span>
                   <span *ngIf="action.targetSystem">
-                    <mat-icon class="w-3 h-3 inline">send</mat-icon> {{ getSystemLabel(action.targetSystem) }}
+                    <mat-icon class="w-3 h-3 inline">send</mat-icon>
+                    {{ getSystemLabel(action.targetSystem) }}
+                  </span>
+                  <span *ngIf="action.source === 'FATHOM' && action.fathomActionId">
+                    <mat-icon class="w-3 h-3 inline">tag</mat-icon>
+                    fathom_webhook
                   </span>
                 </div>
               </div>
@@ -420,6 +447,7 @@ export class UnifiedActionsComponent implements OnInit {
 
   approveAction(action: UnifiedAction): void {
     const notes = prompt('Approval notes (optional):');
+    if (notes === null) return; // User cancelled
 
     this.actionsService.approveAction(action.id, notes || undefined).subscribe({
       next: (result) => {
@@ -436,6 +464,7 @@ export class UnifiedActionsComponent implements OnInit {
 
   rejectAction(action: UnifiedAction): void {
     const notes = prompt('Rejection reason (optional):');
+    if (notes === null) return; // User cancelled
 
     this.actionsService.rejectAction(action.id, notes || undefined).subscribe({
       next: (result) => {
@@ -452,6 +481,7 @@ export class UnifiedActionsComponent implements OnInit {
 
   completeAction(action: UnifiedAction): void {
     const completionNotes = prompt('Completion notes (optional):');
+    if (completionNotes === null) return; // User cancelled
 
     this.actionsService.completeAction(action.id, completionNotes || undefined).subscribe({
       next: (result) => {
@@ -504,7 +534,14 @@ export class UnifiedActionsComponent implements OnInit {
     this.isSyncing = true;
     this.actionsService.syncFromN8n(this.meeting.id).subscribe({
       next: (result) => {
-        this.showSuccess(`Synced ${result.syncedCount} actions from n8n`);
+        const count = result.count || result.operations?.length || 0;
+        if (result.status === 'success') {
+          this.showSuccess(`Synced ${count} actions from n8n`);
+        } else if (result.status === 'unavailable') {
+          this.showInfo('n8n service is not enabled or configured');
+        } else {
+          this.showInfo(result.message || 'No new actions from n8n');
+        }
         this.loadActions();
         this.isSyncing = false;
       },
@@ -561,5 +598,39 @@ export class UnifiedActionsComponent implements OnInit {
       verticalPosition: 'top',
       panelClass: ['info-snackbar']
     });
+  }
+
+  /**
+   * Play Fathom recording at specific timestamp
+   */
+  playFathomRecording(action: UnifiedAction): void {
+    if (!action.fathomTranscriptTimestamp) {
+      this.showError('No recording timestamp available');
+      return;
+    }
+
+    // Check if we have Fathom recording URL in the meeting
+    const fathomUrl = (this.meeting as any)?.fathomRecordingUrl;
+    if (fathomUrl) {
+      // Open Fathom recording at specific timestamp
+      const timestampInSeconds = Math.floor(action.fathomTranscriptTimestamp / 1000);
+      const urlWithTimestamp = `${fathomUrl}?t=${timestampInSeconds}`;
+      window.open(urlWithTimestamp, '_blank');
+    } else {
+      this.showError('Fathom recording URL not available for this meeting');
+    }
+  }
+
+  /**
+   * Format timestamp in milliseconds to MM:SS format
+   */
+  formatTimestamp(milliseconds?: number): string {
+    if (!milliseconds) return '00:00';
+
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
 }
