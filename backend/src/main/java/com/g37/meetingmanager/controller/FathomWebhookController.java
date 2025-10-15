@@ -49,12 +49,14 @@ public class FathomWebhookController {
     @PostMapping(value = "/fathom", consumes = "application/json", produces = "application/json")
     public ResponseEntity<Map<String, Object>> receiveFathomWebhook(
             @RequestHeader(value = "Webhook-Signature", required = false) String signature,
+            @RequestHeader(value = "Webhook-Id", required = false) String svixWebhookId,
+            @RequestHeader(value = "Webhook-Timestamp", required = false) String svixTimestamp,
             HttpServletRequest request) {
 
         // Generate unique webhook ID for tracking
         String webhookId = UUID.randomUUID().toString();
 
-        logger.info("Received Fathom webhook ID: {}", webhookId);
+        logger.info("Received Fathom webhook ID: {} (Svix ID: {})", webhookId, svixWebhookId);
 
         // Read raw body manually to avoid Jackson deserialization
         String rawPayload;
@@ -70,7 +72,8 @@ public class FathomWebhookController {
                     ));
         }
 
-        logger.debug("Signature: {}, Payload length: {} bytes", signature, rawPayload.length());
+        logger.debug("Signature: {}, Svix ID: {}, Timestamp: {}, Payload length: {} bytes",
+                    signature, svixWebhookId, svixTimestamp, rawPayload.length());
 
         // 1. Verify webhook signature (HMAC SHA-256)
         if (signature == null || signature.isEmpty()) {
@@ -82,7 +85,8 @@ public class FathomWebhookController {
                     ));
         }
 
-        boolean signatureValid = fathomWebhookService.verifyWebhookSignature(signature, rawPayload);
+        boolean signatureValid = fathomWebhookService.verifyWebhookSignature(
+                signature, svixWebhookId, svixTimestamp, rawPayload);
 
         if (!signatureValid) {
             logger.error("Invalid Fathom webhook signature - webhook ID: {}", webhookId);

@@ -97,19 +97,26 @@ payload = {
     }
 }
 
-def generate_signature(payload_str, secret):
-    """Generate HMAC SHA-256 signature for Fathom webhook"""
-    # Fathom uses HMAC SHA-256
+def generate_svix_signature(payload_str, webhook_id, timestamp, secret):
+    """Generate Svix HMAC SHA-256 signature (used by Fathom)"""
+    # Svix signs: webhook_id + "." + timestamp + "." + body
+    # Secret should not include the "whsec_" prefix
+    secret_for_signing = secret[7:] if secret.startswith("whsec_") else secret
+
+    # Construct the signed content
+    signed_content = f"{webhook_id}.{timestamp}.{payload_str}"
+
+    # Calculate HMAC SHA-256
     signature = hmac.new(
-        secret.encode('utf-8'),
-        payload_str.encode('utf-8'),
+        secret_for_signing.encode('utf-8'),
+        signed_content.encode('utf-8'),
         hashlib.sha256
     ).digest()
 
     # Base64 encode the signature
     signature_b64 = base64.b64encode(signature).decode('utf-8')
 
-    # Return in Fathom's format: "v1,SIGNATURE"
+    # Return in Svix format: "v1,SIGNATURE"
     return f"v1,{signature_b64}"
 
 def test_webhook():
@@ -118,20 +125,30 @@ def test_webhook():
     # Convert payload to JSON string
     payload_json = json.dumps(payload, indent=2)
 
-    # Generate signature
-    signature = generate_signature(payload_json, WEBHOOK_SECRET)
+    # Generate Svix headers
+    webhook_id = f"msg_test_{int(datetime.now().timestamp())}"
+    webhook_timestamp = str(int(datetime.now().timestamp()))
 
-    # Prepare headers
+    # Generate Svix signature
+    signature = generate_svix_signature(payload_json, webhook_id, webhook_timestamp, WEBHOOK_SECRET)
+
+    # Prepare headers (Svix format)
     headers = {
         'Content-Type': 'application/json',
-        'webhook-signature': signature
+        'Webhook-Signature': signature,
+        'Webhook-Id': webhook_id,
+        'Webhook-Timestamp': webhook_timestamp,
+        'User-Agent': 'Svix-Webhooks/1.77.0 (test)'
     }
 
     print("=" * 80)
-    print("🧪 Testing Fathom Webhook")
+    print("🧪 Testing Fathom Webhook (Svix Format)")
     print("=" * 80)
     print(f"\n📍 Webhook URL: {WEBHOOK_URL}")
-    print(f"\n🔑 Signature: {signature}")
+    print(f"\n🔑 Svix Headers:")
+    print(f"   - Webhook-Signature: {signature}")
+    print(f"   - Webhook-Id: {webhook_id}")
+    print(f"   - Webhook-Timestamp: {webhook_timestamp}")
     print(f"\n📦 Payload Preview:")
     print(f"   - Title: {payload['title']}")
     print(f"   - Recording ID: {payload['recording_id']}")
@@ -139,7 +156,7 @@ def test_webhook():
     print(f"   - Action Items: {len(payload['action_items'])}")
     print(f"   - Participants: {len(payload['calendar_invitees'])}")
     print("\n" + "=" * 80)
-    print("📤 Sending webhook...")
+    print("📤 Sending webhook with Svix signature...")
     print("=" * 80 + "\n")
 
     try:

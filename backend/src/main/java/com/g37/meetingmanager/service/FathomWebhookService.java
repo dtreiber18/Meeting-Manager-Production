@@ -60,18 +60,32 @@ public class FathomWebhookService {
     private ObjectMapper objectMapper;
 
     /**
-     * Verify Fathom webhook signature using HMAC SHA-256
-     * Based on Fathom API documentation
+     * Verify Fathom webhook signature using Svix's HMAC SHA-256 algorithm
+     * Fathom uses Svix for webhook delivery
      *
      * Signature format: "v1,BASE64_SIGNATURE" or "v1,SIG1 SIG2 SIG3"
+     * Svix signs: webhook-id + "." + timestamp + "." + body
      *
-     * @param signatureHeader The webhook-signature header value
+     * @param signatureHeader The Webhook-Signature header value
      * @param rawBody The raw request body (before JSON parsing)
      * @return true if signature is valid
      */
     public boolean verifyWebhookSignature(String signatureHeader, String rawBody) {
+        return verifyWebhookSignature(signatureHeader, null, null, rawBody);
+    }
+
+    /**
+     * Verify Fathom webhook signature with full Svix headers
+     *
+     * @param signatureHeader The Webhook-Signature header value
+     * @param webhookId The Webhook-Id header value
+     * @param webhookTimestamp The Webhook-Timestamp header value
+     * @param rawBody The raw request body
+     * @return true if signature is valid
+     */
+    public boolean verifyWebhookSignature(String signatureHeader, String webhookId, String webhookTimestamp, String rawBody) {
         if (webhookSecret == null || webhookSecret.isEmpty()) {
-            logger.warn("Fathom webhook secret not configured - skipping signature verification");
+            logger.warn("Fathom webhook secret not configured - ALLOWING webhook in development mode");
             return true; // Allow webhooks if secret not configured (development mode)
         }
 
@@ -79,7 +93,7 @@ public class FathomWebhookService {
             // Parse signature header: "v1,BASE64_SIGNATURE"
             String[] parts = signatureHeader.split(",", 2);
             if (parts.length != 2) {
-                logger.warn("Invalid Fathom signature header format: {}", signatureHeader);
+                logger.warn("Invalid Svix signature header format: {}", signatureHeader);
                 return false;
             }
 
@@ -87,19 +101,36 @@ public class FathomWebhookService {
             String signatureBlock = parts[1];
 
             if (!"v1".equals(version)) {
-                logger.warn("Unknown Fathom webhook signature version: {}", version);
+                logger.warn("Unknown Svix webhook signature version: {}", version);
                 return false;
+            }
+
+            // Svix signs: webhook_id + "." + timestamp + "." + body
+            // If we don't have webhook-id and timestamp, try simple body signing (fallback)
+            String signedContent;
+            if (webhookId != null && webhookTimestamp != null) {
+                signedContent = webhookId + "." + webhookTimestamp + "." + rawBody;
+                logger.debug("Using Svix signing scheme with id and timestamp");
+            } else {
+                signedContent = rawBody;
+                logger.debug("Using simple body signing (no Svix headers)");
             }
 
             // Calculate expected signature using HMAC SHA-256
             Mac mac = Mac.getInstance("HmacSHA256");
+
+            // Svix expects the secret without the "whsec_" prefix for signing
+            String secretForSigning = webhookSecret.startsWith("whsec_")
+                ? webhookSecret.substring(7)
+                : webhookSecret;
+
             SecretKeySpec secretKey = new SecretKeySpec(
-                webhookSecret.getBytes(StandardCharsets.UTF_8),
+                secretForSigning.getBytes(StandardCharsets.UTF_8),
                 "HmacSHA256"
             );
             mac.init(secretKey);
 
-            byte[] hash = mac.doFinal(rawBody.getBytes(StandardCharsets.UTF_8));
+            byte[] hash = mac.doFinal(signedContent.getBytes(StandardCharsets.UTF_8));
             String expectedSignature = Base64.getEncoder().encodeToString(hash);
 
             // Signature block may contain multiple space-delimited signatures
@@ -109,16 +140,18 @@ public class FathomWebhookService {
             boolean verified = Arrays.asList(providedSignatures).contains(expectedSignature);
 
             if (!verified) {
-                logger.warn("Fathom webhook signature verification FAILED");
+                logger.warn("Svix webhook signature verification FAILED");
+                logger.debug("Signed content length: {} bytes", signedContent.length());
                 logger.debug("Expected: {}, Provided: {}", expectedSignature, signatureBlock);
+                logger.debug("Using secret prefix: {}", webhookSecret.substring(0, Math.min(10, webhookSecret.length())) + "...");
             } else {
-                logger.debug("Fathom webhook signature verified successfully");
+                logger.info("Svix webhook signature verified successfully");
             }
 
             return verified;
 
         } catch (Exception e) {
-            logger.error("Error verifying Fathom webhook signature: {}", e.getMessage(), e);
+            logger.error("Error verifying Svix webhook signature: {}", e.getMessage(), e);
             return false;
         }
     }
