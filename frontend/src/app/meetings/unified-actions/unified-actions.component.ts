@@ -203,13 +203,6 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
                 <div class="flex items-center space-x-2 mb-1 flex-wrap">
                   <h4 class="text-sm font-semibold text-gray-900">{{ action.title }}</h4>
 
-                  <!-- Fathom Source Badge -->
-                  <span *ngIf="isFathomAction(action)"
-                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-300"
-                        title="Imported from Fathom Note-taking App">
-                    🎤 Fathom
-                  </span>
-
                   <!-- Fathom Recording Link Button -->
                   <button *ngIf="getFathomRecordingLink(action)"
                           type="button"
@@ -226,15 +219,13 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
                     ⏱️ {{ getFathomTimestamp(action) }}
                   </span>
 
-                  <!-- N8N Workflow Status Badge -->
-                  <span *ngIf="action.n8nWorkflowStatus"
+                  <!-- Source Badge (for Fathom) -->
+                  <span *ngIf="isFathomAction(action)"
                         class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
-                        [title]="'Source: ' + action.n8nWorkflowStatus">
-                    {{ action.n8nWorkflowStatus }}
+                        title="Source: Fathom">
+                    Source: Fathom
                   </span>
                 </div>
-
-                <p *ngIf="action.description" class="text-xs text-gray-600 mt-1">{{ action.description }}</p>
 
                 <!-- Metadata (assignee, due date, priority) -->
                 <div class="flex items-center flex-wrap gap-2 mt-1 text-xs text-gray-500">
@@ -305,7 +296,8 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
             </div>
 
             <!-- Send to External System Dropdown (shown on all actions) -->
-            <div class="mt-3 pt-3 border-t border-gray-200">
+            <div class="mt-2 pt-2 border-t border-gray-200">
+              <p class="text-xs font-medium text-red-600 mb-2">Manage Task in External System</p>
               <mat-form-field class="w-full" appearance="outline">
                 <mat-label>Send to System</mat-label>
                 <mat-select (selectionChange)="sendToExternalSystem(action, $event.value)" class="text-xs">
