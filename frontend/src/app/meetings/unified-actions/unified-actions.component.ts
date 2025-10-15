@@ -230,17 +230,17 @@ import { ActionsService, UnifiedAction } from '../../services/actions.service';
 
                 <!-- Metadata Row (consistent labels and values) -->
                 <div class="flex items-center space-x-4 text-sm text-gray-700">
-                  <span class="font-medium">
-                    Assigned to: <span class="font-normal">{{ action.assigneeName || action.assigneeEmail || 'Unassigned' }}</span>
+                  <span>
+                    <span class="font-medium">Assigned to:</span> {{ action.assigneeName || action.assigneeEmail || 'Unassigned' }}
                   </span>
-                  <span class="font-medium inline-flex items-center px-2 py-0.5 rounded-full text-xs"
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
                         [ngClass]="{
                           'bg-red-100 text-red-800': action.priority === 'URGENT',
                           'bg-orange-100 text-orange-800': action.priority === 'HIGH',
                           'bg-yellow-100 text-yellow-800': action.priority === 'MEDIUM',
                           'bg-gray-100 text-gray-800': action.priority === 'LOW'
                         }">
-                    {{ action.priority || 'MEDIUM' }}
+                    Priority: {{ action.priority || 'MEDIUM' }}
                   </span>
                 </div>
               </div>
