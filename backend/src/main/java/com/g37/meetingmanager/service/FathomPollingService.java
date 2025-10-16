@@ -57,19 +57,38 @@ public class FathomPollingService {
             
             for (FathomWebhookPayload recording : recordings) {
                 // Check if recording already exists
-                String recordingId = recording.getRecordingId() != null ? 
+                String recordingId = recording.getRecordingId() != null ?
                     recording.getRecordingId().toString() : null;
-                    
+
                 if (recordingId != null) {
                     Optional<Meeting> existing = meetingRepository.findByFathomRecordingId(recordingId);
                     if (existing.isPresent()) {
-                        logger.debug("Recording {} already exists, skipping", recordingId);
-                        skipped++;
-                        continue;
+                        // Check if existing meeting is missing data that the recording now has
+                        Meeting existingMeeting = existing.get();
+                        boolean needsUpdate = false;
+
+                        // Check if transcript/summary data is now available
+                        if (existingMeeting.getTranscript() == null && recording.getTranscript() != null && !recording.getTranscript().isEmpty()) {
+                            logger.info("📝 Transcript now available for recording {}, updating meeting", recordingId);
+                            needsUpdate = true;
+                        }
+                        if (existingMeeting.getFathomSummary() == null && recording.getSummary() != null && !recording.getSummary().isEmpty()) {
+                            logger.info("📋 Summary now available for recording {}, updating meeting", recordingId);
+                            needsUpdate = true;
+                        }
+
+                        if (!needsUpdate) {
+                            logger.debug("Recording {} already exists with complete data, skipping", recordingId);
+                            skipped++;
+                            continue;
+                        }
+
+                        // Update existing meeting with new data
+                        logger.info("🔄 Updating existing meeting {} with new data from Fathom", existingMeeting.getId());
                     }
                 }
-                
-                // Process new recording
+
+                // Process recording (create new or update existing)
                 fathomApiService.processRecording(recording);
                 processed++;
             }
