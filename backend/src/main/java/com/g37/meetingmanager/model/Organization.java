@@ -86,7 +86,7 @@ public class Organization {
 
     // Relationships
     @OneToMany(mappedBy = "organization", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference("organization-users")
+    @JsonIgnore
     private List<User> users;
 
     @OneToMany(mappedBy = "organization", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

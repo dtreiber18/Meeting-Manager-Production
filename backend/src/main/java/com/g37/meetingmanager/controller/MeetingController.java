@@ -53,13 +53,13 @@ public class MeetingController {
     @GetMapping
     @Transactional(readOnly = true)
     public ResponseEntity<List<Meeting>> getAllMeetings() {
-        return ResponseEntity.ok(meetingRepository.findAll());
+        return ResponseEntity.ok(meetingRepository.findAllWithOrganizationAndOrganizer());
     }
 
     @GetMapping("/{id}")
     @Transactional(readOnly = true)
     public ResponseEntity<Meeting> getMeetingById(@PathVariable Long id) {
-        Optional<Meeting> meeting = meetingRepository.findById(id);
+        Optional<Meeting> meeting = meetingRepository.findByIdWithOrganizationAndOrganizer(id);
         return meeting.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
