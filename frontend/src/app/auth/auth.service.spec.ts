@@ -70,9 +70,7 @@ describe('AuthService', () => {
         result = response;
       });
 
-      const req = httpMock.expectOne(
-        'https://ca-backend-jq7rzfkj24zqy.mangoriver-904fd974.eastus.azurecontainerapps.io/api/auth/login'
-      );
+      const req = httpMock.expectOne('/api/auth/login');
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(credentials);
 
