@@ -10,8 +10,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
 import { Meeting } from '../meeting.model';
 import { ActionsService, UnifiedAction } from '../../services/actions.service';
+import { ScheduleFollowupDialogComponent } from '../../shared/schedule-followup-dialog/schedule-followup-dialog.component';
 
 @Component({
   selector: 'app-unified-actions',
@@ -470,7 +472,8 @@ export class UnifiedActionsComponent implements OnInit {
 
   constructor(
     private actionsService: ActionsService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -606,9 +609,44 @@ export class UnifiedActionsComponent implements OnInit {
   }
 
   scheduleMeeting(action: UnifiedAction): void {
-    // TODO: Open schedule meeting dialog (reuse from smart insights)
     console.log('Scheduling meeting for action:', action);
-    this.showInfo('Schedule meeting feature coming soon');
+
+    // Open schedule followup dialog
+    const dialogRef = this.dialog.open(ScheduleFollowupDialogComponent, {
+      width: '600px',
+      data: {
+        meeting: this.meeting // Pass current meeting context
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.showSuccess(`Follow-up meeting scheduled: ${result.title}`);
+        console.log('Scheduled meeting result:', result);
+
+        // Optionally link the created meeting to this action
+        if (result.meetingId && action.id) {
+          this.linkActionToMeeting(action.id, result.meetingId);
+        }
+      }
+    });
+  }
+
+  /**
+   * Link an action to a meeting
+   */
+  private linkActionToMeeting(actionId: string, meetingId: number): void {
+    const updates = { meetingId: meetingId };
+    this.actionsService.updateAction(actionId, updates).subscribe({
+      next: () => {
+        console.log('Action linked to meeting:', actionId, meetingId);
+        this.loadActions(); // Reload to show updated action
+      },
+      error: (err) => {
+        console.error('Failed to link action to meeting:', err);
+        this.showError('Failed to link action to meeting');
+      }
+    });
   }
 
   /**

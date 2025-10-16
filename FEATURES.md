@@ -19,6 +19,70 @@
 
 ## 🚀 Current Features (October 2025)
 
+### ✅ MongoDB Transcript Storage & Full-Text Search (NEW - October 2025)
+- **🗄️ Searchable Transcript Repository**
+  - **MeetingTranscript Collection**: Dedicated MongoDB document collection with full-text indexing
+  - **Segment Preservation**: Maintains speaker attribution and HH:MM:SS timestamps
+  - **Full-Text Search**: @TextIndexed fields enable searching across all meeting content
+  - **Multi-Tenant Isolation**: Transcripts segregated by organization_id for data privacy
+  - **Auto-Storage**: Automatic transcript storage from Fathom webhooks and API polling
+- **📊 Advanced Search Capabilities**
+  - **Speaker Search**: Find meetings by participant names
+  - **Content Search**: Search across all spoken words in transcripts
+  - **Timestamp Linking**: Direct links to specific moments in meeting recordings
+  - **Summary Storage**: Meeting summaries stored alongside transcripts
+  - **Duration Tracking**: Calculated meeting duration in seconds
+- **🛠️ Technical Implementation**
+  - **Repository**: MeetingTranscriptRepository with findByMeetingId, findByFathomRecordingId
+  - **Model**: MeetingTranscript with TranscriptSegment nested class
+  - **Integration**: Automatic storage in FathomWebhookService.storeTranscriptInMongoDB()
+  - **Graceful Degradation**: Works with or without MongoDB available
+
+### ✅ Complete CRM Integration Pipeline (NEW - October 2025)
+- **🔗 Zoho CRM & ClickUp Integration**
+  - **Automatic PendingActions**: Creates approval workflow for all CRM operations
+  - **Contact Sync**: Detects CRM contacts from Fathom meetings and creates sync actions
+  - **Deal Tracking**: Links deals to meetings with intelligent HIGH priority for >$10K deals
+  - **Company Detection**: Logs company information from CRM matches
+  - **External Contact Discovery**: Identifies external calendar invitees for potential CRM addition
+- **✉️ AI Suggestion External System Integration**
+  - **Direct ZohoCRMService Integration**: Sends AI-generated tasks directly to Zoho CRM
+  - **Direct ClickUpService Integration**: Sends AI-generated tasks directly to ClickUp
+  - **External Task ID Tracking**: Stores external system task IDs for bidirectional sync
+  - **Error Handling**: Graceful degradation when external services unavailable
+  - **API Enhancement**: Response includes external system results
+- **📋 Approval Workflow**
+  - **User Control**: All CRM operations require explicit user approval
+  - **Record URL Storage**: Stores Zoho/ClickUp record URLs in PendingActions
+  - **Source Tracking**: All actions tagged with source=FATHOM for traceability
+  - **Priority Intelligence**: Automatically sets HIGH/MEDIUM/LOW based on deal value
+- **🛠️ Technical Implementation**
+  - **Methods**: createCRMSyncPendingAction(), createDealTrackingPendingAction(), createContactCreationPendingAction()
+  - **Integration Point**: FathomWebhookService processes CRM matches and external contacts
+  - **Service Routing**: AISuggestionController.sendToExternalSystem() routes to appropriate service
+
+### ✅ Azure AD OAuth 2.0 Authentication (NEW - October 2025)
+- **🔐 Microsoft Identity Platform Integration**
+  - **OAuth 2.0 Flow**: Complete authorization code flow with token exchange
+  - **Microsoft Graph API**: Retrieves user profile (email, displayName, givenName, surname)
+  - **Token Exchange**: Server-side exchange using client secret for enhanced security
+  - **Auto-User Creation**: Creates users on first login with all required fields
+  - **Profile Sync**: Updates user names from Azure AD on each login
+- **🏢 Organization Management**
+  - **Domain-Based Assignment**: Auto-creates organizations based on email domain
+  - **Intelligent Naming**: Uses domain name for organization (e.g., "contoso.com Organization")
+  - **Email Verification**: Azure AD pre-verified emails bypass local verification
+  - **Default Roles**: New users automatically assigned USER role
+- **🔑 Security Features**
+  - **Secure Token Storage**: Access tokens used only for Graph API calls
+  - **Random Password Generation**: Generated for Azure AD users (not used for auth)
+  - **Last Login Tracking**: Updates lastLoginAt on each authentication
+  - **Error Handling**: Comprehensive error logging and user-friendly messages
+- **🛠️ Technical Implementation**
+  - **Methods**: handleAzureCallback(), exchangeCodeForToken(), getUserInfoFromGraph(), createOrUpdateUserFromAzure()
+  - **Configuration**: app.microsoft.graph.* properties in application.yml
+  - **Endpoints**: /oauth2/v2.0/token for token exchange, /v1.0/me for user info
+
 ### ✅ Multi-Tenant Architecture (NEW - October 2025)
 - **🏢 Organization-Based Data Isolation**
   - **Automatic Assignment**: Meetings automatically assigned to recorder's organization
@@ -54,6 +118,25 @@
   - **FathomApiService**: REST API communication with Fathom
   - **Repository Enhancement**: Added `findByFathomRecordingId()` method
   - **Spring Boot**: Uses `@ConditionalOnProperty` for feature toggle
+
+### ✅ Advanced Meeting Analytics (NEW - October 2025)
+- **🔍 Intelligent Participant Analysis**
+  - **Silent Participants Detection**: Automatically identifies attendees who didn't speak during meeting
+  - **Fuzzy Name Matching**: Smart matching handles name variations (full name vs email)
+  - **Attendance Filtering**: Only counts participants marked as PRESENT
+  - **Engagement Insights**: Reveals participation patterns and potential disengagement
+- **🔗 Meeting Discovery Features**
+  - **Related Meetings API**: Finds meetings with similar topics and themes
+  - **Topic-Based Search**: Uses comma-separated topics for intelligent matching
+  - **Smart Filtering**: Excludes current meeting from results automatically
+  - **Configurable Limits**: Returns up to 5 most relevant meetings
+  - **Graceful Fallbacks**: Empty results don't break user experience
+- **📅 Action Item Workflow Integration**
+  - **Schedule Meeting Dialog**: Direct meeting scheduling from action items
+  - **Bidirectional Linking**: Actions automatically linked to scheduled meetings
+  - **Context Preservation**: Current meeting context passed to scheduling dialog
+  - **Success Notifications**: Toast feedback for successful operations
+  - **Auto-Reload**: Actions list refreshes after linking operations
 
 ### ✅ Reliable Data Persistence (October 2025)
 - **💾 Complete Database Integration**

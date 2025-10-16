@@ -15,12 +15,21 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -40,14 +49,19 @@ public class AuthService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Value("${azure.ad.client-id:}")
+    @Value("${app.microsoft.graph.client-id:}")
     private String azureClientId;
 
-    @Value("${azure.ad.tenant-id:}")
+    @Value("${app.microsoft.graph.client-secret:}")
+    private String azureClientSecret;
+
+    @Value("${app.microsoft.graph.tenant-id:}")
     private String azureTenantId;
 
-    @Value("${azure.ad.redirect-uri:http://localhost:4200/auth/callback}")
+    @Value("${app.microsoft.graph.redirect-uri:http://localhost:4200/auth/callback}")
     private String azureRedirectUri;
+
+    private final RestTemplate restTemplate = new RestTemplate();
 
     /**
      * Authenticate user with email and password
@@ -136,15 +150,168 @@ public class AuthService {
      * Handle Azure AD callback and create/update user
      */
     public User handleAzureCallback(String code, String state) {
-        log.debug("Handling Azure AD callback");
-        
-        // TODO: Implement Azure AD token exchange and user creation
-        // This is a placeholder - in production, you would:
-        // 1. Exchange the authorization code for an access token
-        // 2. Get user info from Microsoft Graph API
-        // 3. Create or update the user in your database
-        
-        throw new UnsupportedOperationException("Azure AD integration not yet implemented");
+        log.debug("Handling Azure AD callback with code");
+
+        try {
+            // Step 1: Exchange authorization code for access token
+            String accessToken = exchangeCodeForToken(code);
+
+            // Step 2: Get user info from Microsoft Graph API
+            Map<String, Object> userInfo = getUserInfoFromGraph(accessToken);
+
+            // Step 3: Create or update the user in the database
+            User user = createOrUpdateUserFromAzure(userInfo);
+
+            log.info("Successfully authenticated Azure AD user: {}", user.getEmail());
+            return user;
+
+        } catch (Exception e) {
+            log.error("Error handling Azure AD callback: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to authenticate with Azure AD: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Exchange authorization code for access token
+     */
+    private String exchangeCodeForToken(String code) {
+        String tokenUrl = String.format(
+            "https://login.microsoftonline.com/%s/oauth2/v2.0/token",
+            azureTenantId
+        );
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("client_id", azureClientId);
+        body.add("client_secret", azureClientSecret);
+        body.add("code", code);
+        body.add("redirect_uri", azureRedirectUri);
+        body.add("grant_type", "authorization_code");
+        body.add("scope", "openid profile email User.Read");
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.postForEntity(tokenUrl, request, Map.class);
+            Map<String, Object> tokenResponse = response.getBody();
+
+            if (tokenResponse == null || !tokenResponse.containsKey("access_token")) {
+                throw new RuntimeException("No access token in response");
+            }
+
+            return (String) tokenResponse.get("access_token");
+
+        } catch (Exception e) {
+            log.error("Failed to exchange code for token: {}", e.getMessage(), e);
+            throw new RuntimeException("Token exchange failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Get user information from Microsoft Graph API
+     */
+    private Map<String, Object> getUserInfoFromGraph(String accessToken) {
+        String graphUrl = "https://graph.microsoft.com/v1.0/me";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<String> request = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(
+                graphUrl,
+                HttpMethod.GET,
+                request,
+                Map.class
+            );
+
+            Map<String, Object> userInfo = response.getBody();
+
+            if (userInfo == null) {
+                throw new RuntimeException("No user info in response");
+            }
+
+            log.debug("Retrieved user info from Microsoft Graph: {}", userInfo.get("mail"));
+            return userInfo;
+
+        } catch (Exception e) {
+            log.error("Failed to get user info from Graph API: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to retrieve user info: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Create or update user from Azure AD user info
+     */
+    private User createOrUpdateUserFromAzure(Map<String, Object> userInfo) {
+        String email = (String) userInfo.get("mail");
+        if (email == null || email.isEmpty()) {
+            email = (String) userInfo.get("userPrincipalName");
+        }
+
+        if (email == null || email.isEmpty()) {
+            throw new RuntimeException("No email found in Azure AD user info");
+        }
+
+        String displayName = (String) userInfo.get("displayName");
+        String givenName = (String) userInfo.get("givenName");
+        String surname = (String) userInfo.get("surname");
+
+        // Check if user already exists
+        Optional<User> existingUser = userRepository.findByEmail(email);
+
+        if (existingUser.isPresent()) {
+            // Update existing user
+            User user = existingUser.get();
+            user.setLastLoginAt(java.time.LocalDateTime.now());
+
+            // Update profile if names changed
+            if (givenName != null) {
+                user.setFirstName(givenName);
+            }
+            if (surname != null) {
+                user.setLastName(surname);
+            }
+
+            log.info("Updated existing user from Azure AD: {}", email);
+            return userRepository.save(user);
+        }
+
+        // Create new user
+        User newUser = new User();
+        newUser.setEmail(email);
+        newUser.setFirstName(givenName != null ? givenName : email.split("@")[0]);
+        newUser.setLastName(surname != null ? surname : "");
+        newUser.setIsActive(true);
+        newUser.setCreatedAt(java.time.LocalDateTime.now());
+        newUser.setUpdatedAt(java.time.LocalDateTime.now());
+        newUser.setLastLoginAt(java.time.LocalDateTime.now());
+
+        // Set a random password (won't be used for Azure AD auth)
+        newUser.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
+
+        // Get or create organization based on email domain
+        String domain = extractDomainFromEmail(email);
+        Organization organization = getOrCreateOrganization(domain + " Organization", email);
+        newUser.setOrganization(organization);
+
+        // Assign default USER role
+        Optional<Role> userRole = roleRepository.findByName("USER");
+        if (userRole.isPresent()) {
+            Set<Role> roles = new HashSet<>();
+            roles.add(userRole.get());
+            newUser.setRoles(roles);
+        }
+
+        User savedUser = userRepository.save(newUser);
+        log.info("Created new user from Azure AD: {} in organization: {}",
+            email, organization.getName());
+
+        return savedUser;
     }
 
     /**

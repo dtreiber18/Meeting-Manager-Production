@@ -6,8 +6,11 @@ import com.g37.meetingmanager.model.PendingAction;
 import com.g37.meetingmanager.model.PendingAction.Priority;
 import com.g37.meetingmanager.repository.mysql.AISuggestionRepository;
 import com.g37.meetingmanager.repository.mongodb.PendingActionRepository;
+import com.g37.meetingmanager.service.ZohoCRMService;
+import com.g37.meetingmanager.service.ClickUpService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +29,12 @@ public class AISuggestionController {
 
     private final AISuggestionRepository aiSuggestionRepository;
     private final PendingActionRepository pendingActionRepository;
+
+    @Autowired(required = false)
+    private ZohoCRMService zohoCRMService;
+
+    @Autowired(required = false)
+    private ClickUpService clickUpService;
 
     public AISuggestionController(AISuggestionRepository aiSuggestionRepository,
                                   PendingActionRepository pendingActionRepository) {
@@ -222,15 +231,25 @@ public class AISuggestionController {
             suggestion.setSentToSystem(targetSystem);
             aiSuggestionRepository.save(suggestion);
 
-            // TODO: Actually send to external system via ZohoCRMService or ClickUpService
-            // For now, just mark as sent and return success
+            // Actually send to external system via ZohoCRMService or ClickUpService
+            Map<String, Object> externalResult = sendToExternalSystem(savedAction, targetSystem);
+
+            // Store external task ID if created successfully
+            if (externalResult.containsKey("id")) {
+                savedAction.setExternalTaskId(externalResult.get("id").toString());
+                pendingActionRepository.save(savedAction);
+                logger.info("✅ Created task in {} with ID: {}", targetSystem, externalResult.get("id"));
+            } else if (externalResult.containsKey("error")) {
+                logger.warn("⚠️ Failed to create task in {}: {}", targetSystem, externalResult.get("error"));
+            }
 
             return ResponseEntity.ok(Map.of(
                 "success", true,
                 "message", "Suggestion sent to " + targetSystem,
                 "actionId", savedAction.getId(),
                 "suggestionId", id,
-                "targetSystem", targetSystem
+                "targetSystem", targetSystem,
+                "externalResult", externalResult
             ));
 
         } catch (Exception e) {
@@ -252,6 +271,45 @@ public class AISuggestionController {
         } catch (Exception e) {
             logger.error("Error deleting AI suggestion {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Send PendingAction to external system (Zoho CRM or ClickUp)
+     * @param action The PendingAction to send
+     * @param targetSystem The target system ("zoho" or "clickup")
+     * @return Map containing result with "id" on success or "error" on failure
+     */
+    private Map<String, Object> sendToExternalSystem(PendingAction action, String targetSystem) {
+        try {
+            if ("zoho".equalsIgnoreCase(targetSystem)) {
+                if (zohoCRMService == null) {
+                    logger.warn("ZohoCRMService not available - integration may be disabled");
+                    return Map.of("error", "Zoho CRM integration not available");
+                }
+                // Call Zoho CRM service to create task
+                Map<String, Object> result = zohoCRMService.createTask(action, null);
+                logger.info("Zoho CRM createTask result: {}", result);
+                return result;
+
+            } else if ("clickup".equalsIgnoreCase(targetSystem)) {
+                if (clickUpService == null) {
+                    logger.warn("ClickUpService not available - integration may be disabled");
+                    return Map.of("error", "ClickUp integration not available");
+                }
+                // Call ClickUp service to create task
+                Map<String, Object> result = clickUpService.createTask(action, null);
+                logger.info("ClickUp createTask result: {}", result);
+                return result;
+
+            } else {
+                logger.warn("Unknown target system: {}", targetSystem);
+                return Map.of("error", "Unknown target system: " + targetSystem);
+            }
+
+        } catch (Exception e) {
+            logger.error("Error sending to external system {}: {}", targetSystem, e.getMessage(), e);
+            return Map.of("error", e.getMessage());
         }
     }
 }

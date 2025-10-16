@@ -1,5 +1,8 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Meeting, TranscriptEntry } from '../meetings/meeting.model';
+import { AttendanceStatus } from '../models/meeting-participant.model';
+import { environment } from '../../environments/environment';
 
 /**
  * PHASE 2: Participant engagement interface
@@ -24,8 +27,9 @@ export interface ParticipantEngagement {
   providedIn: 'root'
 })
 export class FathomIntelligenceService {
+  private apiUrl = environment.apiUrl || 'http://localhost:8080/api';
 
-  constructor() {}
+  constructor(private http: HttpClient) {}
 
   /**
    * Extract decisions from Fathom's AI-generated summary
@@ -446,8 +450,29 @@ export class FathomIntelligenceService {
       };
     }).sort((a, b) => b.engagementScore - a.engagementScore);
 
-    // Identify silent participants (TODO: need full participant list from meeting)
+    // Identify silent participants by comparing meeting participants with speakers
     const silentParticipants: string[] = [];
+    if (meeting.participants && meeting.participants.length > 0) {
+      const speakers = new Set(participants.map(p => p.participant.toLowerCase()));
+
+      meeting.participants.forEach(participant => {
+        const participantName = participant.name || participant.email || '';
+        const participantEmail = participant.email?.toLowerCase() || '';
+
+        // Check if participant spoke (by name or email)
+        const didSpeak = speakers.has(participantName.toLowerCase()) ||
+                         speakers.has(participantEmail) ||
+                         Array.from(speakers).some(speaker =>
+                           speaker.includes(participantName.toLowerCase()) ||
+                           participantName.toLowerCase().includes(speaker)
+                         );
+
+        // Only count as silent if they attended but didn't speak
+        if (!didSpeak && participant.attendanceStatus === AttendanceStatus.PRESENT) {
+          silentParticipants.push(participantName || participantEmail);
+        }
+      });
+    }
 
     // Identify dominant speakers (>40% talk time)
     const dominantSpeakers = participants
@@ -588,16 +613,28 @@ export class FathomIntelligenceService {
 
   /**
    * PHASE 2: Find related meetings based on topic similarity
-   * This would query the backend for meetings with similar topics/keywords
+   * Queries the backend for meetings with similar topics/keywords
    */
   async findRelatedMeetings(topics: string[], currentMeeting: Meeting): Promise<Meeting[]> {
-    // TODO: Implement backend API call to find related meetings
-    // For now, return empty array
-    // In full implementation, this would:
-    // 1. Send topics/keywords to backend
-    // 2. Backend searches meetings using vector similarity or keyword matching
-    // 3. Returns meetings with similar content
-    return [];
+    if (!topics || topics.length === 0) {
+      return [];
+    }
+
+    try {
+      const url = `${this.apiUrl}/meetings/search/related`;
+      const params = {
+        topics: topics.join(','),
+        excludeMeetingId: currentMeeting.id.toString(),
+        limit: '5'
+      };
+
+      const meetings = await this.http.get<Meeting[]>(url, { params }).toPromise();
+      console.log(`Found ${meetings?.length || 0} related meetings for topics:`, topics);
+      return meetings || [];
+    } catch (error) {
+      console.error('Error finding related meetings:', error);
+      return [];
+    }
   }
 
   /**

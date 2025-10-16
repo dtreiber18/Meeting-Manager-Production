@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { AuthService } from '../auth/auth.service';
 
 export interface UnifiedAction {
   id: string;
@@ -71,7 +72,18 @@ export interface UnifiedAction {
 export class ActionsService {
   private apiUrl = environment.apiUrl || 'http://localhost:8080/api';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) {}
+
+  /**
+   * Get current user ID from auth service, fallback to 1 if not available
+   */
+  private getCurrentUserId(): number {
+    const user = this.authService.getCurrentUser();
+    return user ? parseInt(user.id, 10) : 1;
+  }
 
   /**
    * Get all actions for a specific meeting
@@ -120,11 +132,10 @@ export class ActionsService {
 
   /**
    * Approve an action (NEW -> ACTIVE)
-   * Note: Backend expects approvedById as query param - using hardcoded user ID 1 for now
    */
   approveAction(actionId: string, notes?: string): Observable<UnifiedAction> {
     const url = `${this.apiUrl}/pending-actions/${actionId}/approve`;
-    const params: any = { approvedById: 1 }; // TODO: Get actual user ID from auth service
+    const params: any = { approvedById: this.getCurrentUserId() };
     if (notes) {
       params.notes = notes;
     }
@@ -136,11 +147,10 @@ export class ActionsService {
 
   /**
    * Reject an action
-   * Note: Backend expects rejectedById as query param - using hardcoded user ID 1 for now
    */
   rejectAction(actionId: string, notes?: string): Observable<UnifiedAction> {
     const url = `${this.apiUrl}/pending-actions/${actionId}/reject`;
-    const params: any = { rejectedById: 1 }; // TODO: Get actual user ID from auth service
+    const params: any = { rejectedById: this.getCurrentUserId() };
     if (notes) {
       params.notes = notes;
     }
@@ -181,7 +191,7 @@ export class ActionsService {
    */
   bulkApproveActions(actionIds: string[], notes?: string): Observable<UnifiedAction[]> {
     const url = `${this.apiUrl}/pending-actions/bulk/approve`;
-    const params: any = { approvedById: 1 }; // TODO: Get actual user ID from auth service
+    const params: any = { approvedById: this.getCurrentUserId() };
     if (notes) {
       params.notes = notes;
     }

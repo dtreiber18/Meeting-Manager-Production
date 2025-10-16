@@ -11,6 +11,8 @@ import com.g37.meetingmanager.repository.mysql.UserRepository;
 import com.g37.meetingmanager.repository.mysql.OrganizationRepository;
 import com.g37.meetingmanager.repository.mysql.MeetingRepository;
 import com.g37.meetingmanager.repository.mysql.MeetingParticipantRepository;
+import com.g37.meetingmanager.repository.mongodb.MeetingTranscriptRepository;
+import com.g37.meetingmanager.model.MeetingTranscript;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +57,9 @@ public class FathomWebhookService {
 
     @Autowired
     private MeetingParticipantRepository meetingParticipantRepository;
+
+    @Autowired(required = false)
+    private MeetingTranscriptRepository meetingTranscriptRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -291,7 +296,8 @@ public class FathomWebhookService {
             createMeetingParticipants(savedMeeting, payload.getCalendarInvitees());
         }
 
-        // TODO: Store full transcript in MongoDB for searchability
+        // Store full transcript in MongoDB for searchability
+        storeTranscriptInMongoDB(savedMeeting, payload);
 
         return savedMeeting;
     }
@@ -485,9 +491,26 @@ public class FathomWebhookService {
         logger.info("Processing Zoho CRM matches for meeting {}: {} contacts, {} companies, {} deals",
             meetingId, contactCount, companyCount, dealCount);
 
-        // TODO: Create PendingActions for CRM sync operations
-        // TODO: Store CRM record URLs for quick access
-        // TODO: Link deals to meetings for tracking
+        // Create PendingActions for CRM contact sync operations
+        if (crmMatches.getContacts() != null && !crmMatches.getContacts().isEmpty()) {
+            for (FathomWebhookPayload.Contact contact : crmMatches.getContacts()) {
+                createCRMSyncPendingAction(contact, meetingId, contact.getRecordUrl());
+            }
+        }
+
+        // Create PendingActions for deal tracking and link deals to meetings
+        if (crmMatches.getDeals() != null && !crmMatches.getDeals().isEmpty()) {
+            for (FathomWebhookPayload.Deal deal : crmMatches.getDeals()) {
+                createDealTrackingPendingAction(deal, meetingId, deal.getRecordUrl());
+            }
+        }
+
+        // Log company information (CRM record URLs stored in PendingActions)
+        if (crmMatches.getCompanies() != null && !crmMatches.getCompanies().isEmpty()) {
+            for (FathomWebhookPayload.Company company : crmMatches.getCompanies()) {
+                logger.info("CRM Company detected: {} - URL: {}", company.getName(), company.getRecordUrl());
+            }
+        }
     }
 
     /**
@@ -506,7 +529,227 @@ public class FathomWebhookService {
 
         logger.info("Found {} external contacts in meeting {} for potential CRM sync", externalCount, meetingId);
 
-        // TODO: Create ContactCandidate records for CRM sync approval
-        // TODO: Create PendingActions for contact creation
+        // Create PendingActions for contact creation approval
+        if (pendingActionService != null && externalCount > 0) {
+            for (FathomWebhookPayload.CalendarInvitee invitee : invitees) {
+                if (invitee.getIsExternal() != null && invitee.getIsExternal()) {
+                    createContactCreationPendingAction(invitee, meetingId);
+                }
+            }
+        }
+    }
+
+    /**
+     * Store full transcript in MongoDB for searchability
+     * MongoDB enables full-text search across large transcript data
+     */
+    private void storeTranscriptInMongoDB(Meeting meeting, FathomWebhookPayload payload) {
+        if (meetingTranscriptRepository == null) {
+            logger.debug("MongoDB not available - skipping transcript storage");
+            return;
+        }
+
+        if (payload.getTranscript() == null || payload.getTranscript().isEmpty()) {
+            logger.debug("No transcript available for meeting {}", meeting.getId());
+            return;
+        }
+
+        try {
+            MeetingTranscript transcript = new MeetingTranscript();
+            transcript.setMeetingId(meeting.getId());
+            transcript.setOrganizationId(meeting.getOrganization() != null ? meeting.getOrganization().getId() : null);
+            transcript.setFathomRecordingId(meeting.getFathomRecordingId());
+            transcript.setFathomRecordingUrl(payload.getUrl());
+            transcript.setFathomShareUrl(payload.getShareUrl());
+
+            // Build full transcript text for search
+            StringBuilder transcriptText = new StringBuilder();
+            List<MeetingTranscript.TranscriptSegment> segments = new ArrayList<>();
+
+            for (FathomWebhookPayload.TranscriptEntry entry : payload.getTranscript()) {
+                String speaker = entry.getSpeaker() != null ? entry.getSpeaker().getDisplayName() : "Unknown";
+                transcriptText.append(speaker).append(": ").append(entry.getText()).append("\n");
+
+                segments.add(new MeetingTranscript.TranscriptSegment(
+                    speaker,
+                    entry.getText(),
+                    entry.getTimestamp()
+                ));
+            }
+
+            transcript.setTranscriptText(transcriptText.toString());
+            transcript.setTranscriptSegments(segments);
+
+            // Store summary
+            if (payload.getDefaultSummary() != null) {
+                transcript.setSummary(payload.getDefaultSummary().getMarkdownFormatted());
+            }
+
+            // Calculate duration
+            if (payload.getRecordingStartTime() != null && payload.getRecordingEndTime() != null) {
+                long durationSeconds = java.time.Duration.between(
+                    payload.getRecordingStartTime(),
+                    payload.getRecordingEndTime()
+                ).getSeconds();
+                transcript.setDurationSeconds((int) durationSeconds);
+            }
+
+            transcript.setCreatedAt(java.time.LocalDateTime.now());
+            transcript.setUpdatedAt(java.time.LocalDateTime.now());
+
+            meetingTranscriptRepository.save(transcript);
+            logger.info("✅ Stored transcript for meeting {} in MongoDB ({} segments, {} chars)",
+                meeting.getId(), segments.size(), transcriptText.length());
+
+        } catch (Exception e) {
+            logger.error("Failed to store transcript in MongoDB for meeting {}: {}",
+                meeting.getId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Create PendingAction for CRM contact sync operation
+     */
+    private void createCRMSyncPendingAction(FathomWebhookPayload.Contact contact, Long meetingId, String recordUrl) {
+        if (pendingActionService == null) {
+            return;
+        }
+
+        try {
+            PendingAction action = new PendingAction();
+            action.setTitle("Sync CRM Contact: " + contact.getName());
+            action.setDescription(String.format(
+                "Contact %s (%s) from Fathom meeting. CRM Record: %s",
+                contact.getName(),
+                contact.getEmail() != null ? contact.getEmail() : "no email",
+                recordUrl != null ? recordUrl : "not available"
+            ));
+            action.setActionType(PendingAction.ActionType.UPDATE_CRM);
+            action.setPriority(PendingAction.Priority.MEDIUM);
+            action.setStatus(PendingAction.ActionStatus.NEW);
+            action.setSource(PendingAction.ActionSource.FATHOM);
+            action.setMeetingId(meetingId);
+
+            // Store CRM record URL
+            if (recordUrl != null) {
+                action.setSourceReferenceId(recordUrl);
+            }
+
+            // Find meeting to get organization
+            Optional<Meeting> meeting = meetingRepository.findById(meetingId);
+            if (meeting.isPresent()) {
+                action.setOrganizationId(meeting.get().getOrganization() != null
+                    ? meeting.get().getOrganization().getId() : null);
+                action.setReporterId(meeting.get().getOrganizer() != null
+                    ? meeting.get().getOrganizer().getId() : null);
+            }
+
+            action.setCreatedAt(java.time.LocalDateTime.now());
+            action.setUpdatedAt(java.time.LocalDateTime.now());
+
+            pendingActionService.createPendingAction(action);
+            logger.info("Created CRM sync PendingAction for contact: {}", contact.getName());
+
+        } catch (Exception e) {
+            logger.error("Failed to create CRM sync PendingAction: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Create PendingAction for CRM deal tracking
+     */
+    private void createDealTrackingPendingAction(FathomWebhookPayload.Deal deal, Long meetingId, String recordUrl) {
+        if (pendingActionService == null) {
+            return;
+        }
+
+        try {
+            PendingAction action = new PendingAction();
+            action.setTitle("Track CRM Deal: " + deal.getName());
+            action.setDescription(String.format(
+                "Deal %s (Amount: %s) from Fathom meeting. CRM Record: %s",
+                deal.getName(),
+                deal.getAmount() != null ? "$" + deal.getAmount() : "unknown",
+                recordUrl != null ? recordUrl : "not available"
+            ));
+            action.setActionType(PendingAction.ActionType.UPDATE_CRM);
+            action.setPriority(deal.getAmount() != null && deal.getAmount() > 10000
+                ? PendingAction.Priority.HIGH : PendingAction.Priority.MEDIUM);
+            action.setStatus(PendingAction.ActionStatus.NEW);
+            action.setSource(PendingAction.ActionSource.FATHOM);
+            action.setMeetingId(meetingId);
+
+            // Store deal URL and amount
+            if (recordUrl != null) {
+                action.setZohoDealId(recordUrl);
+                action.setSourceReferenceId(recordUrl);
+            }
+
+            // Find meeting to get organization
+            Optional<Meeting> meeting = meetingRepository.findById(meetingId);
+            if (meeting.isPresent()) {
+                action.setOrganizationId(meeting.get().getOrganization() != null
+                    ? meeting.get().getOrganization().getId() : null);
+                action.setReporterId(meeting.get().getOrganizer() != null
+                    ? meeting.get().getOrganizer().getId() : null);
+            }
+
+            action.setCreatedAt(java.time.LocalDateTime.now());
+            action.setUpdatedAt(java.time.LocalDateTime.now());
+
+            pendingActionService.createPendingAction(action);
+            logger.info("Created deal tracking PendingAction for: {} (${}) ", deal.getName(), deal.getAmount());
+
+        } catch (Exception e) {
+            logger.error("Failed to create deal tracking PendingAction: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Create PendingAction for contact creation from external calendar invitee
+     */
+    private void createContactCreationPendingAction(FathomWebhookPayload.CalendarInvitee invitee, Long meetingId) {
+        if (pendingActionService == null) {
+            return;
+        }
+
+        try {
+            PendingAction action = new PendingAction();
+            action.setTitle("Create CRM Contact: " + invitee.getName());
+            action.setDescription(String.format(
+                "External contact %s (%s) from Fathom meeting. Create in CRM?",
+                invitee.getName(),
+                invitee.getEmail() != null ? invitee.getEmail() : "no email"
+            ));
+            action.setActionType(PendingAction.ActionType.UPDATE_CRM);
+            action.setPriority(PendingAction.Priority.LOW);
+            action.setStatus(PendingAction.ActionStatus.NEW);
+            action.setSource(PendingAction.ActionSource.FATHOM);
+            action.setMeetingId(meetingId);
+
+            // Store contact email for later CRM sync
+            if (invitee.getEmail() != null) {
+                action.setAssigneeEmail(invitee.getEmail());
+                action.setAssigneeName(invitee.getName());
+            }
+
+            // Find meeting to get organization
+            Optional<Meeting> meeting = meetingRepository.findById(meetingId);
+            if (meeting.isPresent()) {
+                action.setOrganizationId(meeting.get().getOrganization() != null
+                    ? meeting.get().getOrganization().getId() : null);
+                action.setReporterId(meeting.get().getOrganizer() != null
+                    ? meeting.get().getOrganizer().getId() : null);
+            }
+
+            action.setCreatedAt(java.time.LocalDateTime.now());
+            action.setUpdatedAt(java.time.LocalDateTime.now());
+
+            pendingActionService.createPendingAction(action);
+            logger.info("Created contact creation PendingAction for: {}", invitee.getName());
+
+        } catch (Exception e) {
+            logger.error("Failed to create contact creation PendingAction: {}", e.getMessage(), e);
+        }
     }
 }
