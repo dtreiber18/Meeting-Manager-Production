@@ -22,8 +22,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO:update}
-    database-platform: org.hibernate.dialect.MySQLDialect
     show-sql: ${JPA_SHOW_SQL:false}
+    open-in-view: false
     properties:
       hibernate:
         format_sql: true
@@ -154,10 +154,15 @@ help:
 # 2. Set FATHOM_WEBHOOK_SECRET to the secret provided by Fathom in webhook settings
 # 3. Configure Fathom webhook URL to point to: https://your-domain.com/api/webhooks/fathom
 # 4. Enable "newMeeting" event in Fathom webhook settings
+# 5. Set FATHOM_API_KEY to enable API polling (alternative to webhooks)
 fathom:
   enabled: ${FATHOM_ENABLED:false}  # Set to 'true' to enable Fathom integration
   webhook:
     secret: ${FATHOM_WEBHOOK_SECRET:}  # Required: HMAC SHA-256 secret from Fathom
+  api:
+    enabled: ${FATHOM_API_ENABLED:false}  # Set to 'true' to enable API polling
+    key: ${FATHOM_API_KEY:}  # Required: API key from Fathom dashboard
+    base-url: ${FATHOM_API_BASE_URL:https://api.fathom.ai/external/v1}
 
 # Logging Configuration
 logging:

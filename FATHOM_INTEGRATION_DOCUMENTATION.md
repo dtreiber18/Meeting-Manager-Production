@@ -2,9 +2,9 @@
 
 **Meeting Manager + Fathom Note-Taking App Integration**
 
-Version: 2.1 (Phase 2 Complete + UI Enhancements)
-Last Updated: October 15, 2025
-Status: ✅ Production Ready (Phase 2: Advanced Analytics + Collapsible UI)
+Version: 3.0 (API Polling + Multi-Tenant Architecture)
+Last Updated: October 16, 2025
+Status: ✅ Production Ready (API Polling with Multi-Tenancy Support)
 
 ---
 
@@ -44,13 +44,18 @@ Meeting Manager + Fathom Integration provides:
 ✅ **Workflow Automation** - Trigger N8N workflows from meeting events
 ✅ **CRM Enrichment** - Match contacts to Zoho/Salesforce (coming soon)
 
-### Architecture
+### Architecture (Version 3.0 - API Polling)
 
 ```
-Fathom Meeting Recording
-   ↓ (webhook when processing complete)
-Meeting Manager Backend
-   ├─ Webhook Signature Verification (HMAC SHA-256)
+Fathom API (https://api.fathom.ai/external/v1)
+   ↓ (polled every 5 minutes)
+Meeting Manager Backend - FathomPollingService
+   ├─ API Polling (scheduled @5min intervals)
+   ├─ Duplicate Detection (findByFathomRecordingId)
+   ├─ Multi-Tenant Organization Assignment
+   │  ├─ Match recorded_by.email to User
+   │  ├─ If found → Assign to user's organization
+   │  └─ If not found → Assign to "Fathom External" org
    ├─ Meeting Creation (source: FATHOM)
    ├─ Participant Creation (external flagging)
    ├─ Action Item Extraction (timestamps + recording links)
@@ -65,6 +70,17 @@ Meeting Manager Frontend
    ├─ Fathom AI Insights Panel
    ├─ Timestamped Action Items
    └─ External Contact Badges
+```
+
+### Webhook Support (Backup Method)
+
+```
+Fathom Webhook (optional)
+   ↓ (Svix-delivered webhook)
+Meeting Manager Backend - FathomWebhookController
+   ├─ Svix Signature Verification (HMAC SHA-256)
+   ├─ Same processing as API polling
+   └─ Fallback if polling fails
 ```
 
 ---

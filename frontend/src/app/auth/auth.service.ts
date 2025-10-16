@@ -61,8 +61,9 @@ export interface TokenRefreshResponse {
   providedIn: 'root',
 })
 export class AuthService {
-  private readonly API_URL =
-    'https://ca-backend-jq7rzfkj24zqy.mangoriver-904fd974.eastus.azurecontainerapps.io/api';
+  // Use relative URL to work with Angular proxy in development
+  // In production, this will resolve to the production domain
+  private readonly API_URL = '/api';
   private readonly TOKEN_KEY = 'mm_auth_token';
   private readonly REFRESH_TOKEN_KEY = 'mm_refresh_token';
   private readonly USER_KEY = 'mm_user';
