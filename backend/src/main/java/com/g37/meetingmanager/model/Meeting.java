@@ -2,7 +2,22 @@ package com.g37.meetingmanager.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -83,6 +98,26 @@ public class Meeting {
 
     @Size(max = 500)
     private String transcriptUrl;
+
+    // Microsoft Outlook Integration
+    @Size(max = 255)
+    private String outlookEventId; // Microsoft Graph Event ID
+
+    // Fathom Integration Fields
+    @Size(max = 100)
+    private String fathomRecordingId;
+
+    @Size(max = 500)
+    private String fathomRecordingUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String fathomSummary;
+
+    @Column(columnDefinition = "LONGTEXT")
+    private String transcript; // Full transcript text
+
+    @Column(columnDefinition = "LONGTEXT")
+    private String transcriptEntriesJson; // JSON array of transcript entries
 
     @Column(nullable = false)
     private Boolean isPublic = false;
@@ -227,7 +262,8 @@ public class Meeting {
         WEBHOOK,
         N8N_WORKFLOW,
         MICROSOFT_GRAPH,
-        GOOGLE_CALENDAR
+        GOOGLE_CALENDAR,
+        FATHOM
     }
 
     public enum SourceType {
@@ -295,6 +331,26 @@ public class Meeting {
 
     public String getTranscriptUrl() { return transcriptUrl; }
     public void setTranscriptUrl(String transcriptUrl) { this.transcriptUrl = transcriptUrl; }
+
+    // Microsoft Outlook Integration Getters/Setters
+    public String getOutlookEventId() { return outlookEventId; }
+    public void setOutlookEventId(String outlookEventId) { this.outlookEventId = outlookEventId; }
+
+    // Fathom Integration Getters/Setters
+    public String getFathomRecordingId() { return fathomRecordingId; }
+    public void setFathomRecordingId(String fathomRecordingId) { this.fathomRecordingId = fathomRecordingId; }
+
+    public String getFathomRecordingUrl() { return fathomRecordingUrl; }
+    public void setFathomRecordingUrl(String fathomRecordingUrl) { this.fathomRecordingUrl = fathomRecordingUrl; }
+
+    public String getFathomSummary() { return fathomSummary; }
+    public void setFathomSummary(String fathomSummary) { this.fathomSummary = fathomSummary; }
+
+    public String getTranscript() { return transcript; }
+    public void setTranscript(String transcript) { this.transcript = transcript; }
+
+    public String getTranscriptEntriesJson() { return transcriptEntriesJson; }
+    public void setTranscriptEntriesJson(String transcriptEntriesJson) { this.transcriptEntriesJson = transcriptEntriesJson; }
 
     public Boolean getIsPublic() { return isPublic; }
     public void setIsPublic(Boolean isPublic) { this.isPublic = isPublic; }

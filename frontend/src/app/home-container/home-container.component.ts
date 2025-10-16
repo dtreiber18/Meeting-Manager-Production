@@ -58,12 +58,15 @@ export class HomeContainerComponent implements OnDestroy {
   }
 
   loadMeetings() {
+    console.log('🔄 HomeContainer: Loading meetings...');
     this.meetingService.getMeetings().subscribe({
       next: data => {
+        console.log('✅ HomeContainer: Received meetings from service:', data.length);
+        console.log('📋 First meeting:', data[0]);
         this.meetings = data;
       },
       error: err => {
-        console.error('Error loading meetings:', err);
+        console.error('❌ HomeContainer: Error loading meetings:', err);
       }
     });
   }

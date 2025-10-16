@@ -1,0 +1,755 @@
+package com.g37.meetingmanager.service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.g37.meetingmanager.dto.FathomWebhookPayload;
+import com.g37.meetingmanager.model.Meeting;
+import com.g37.meetingmanager.model.MeetingParticipant;
+import com.g37.meetingmanager.model.PendingAction;
+import com.g37.meetingmanager.model.User;
+import com.g37.meetingmanager.model.Organization;
+import com.g37.meetingmanager.repository.mysql.UserRepository;
+import com.g37.meetingmanager.repository.mysql.OrganizationRepository;
+import com.g37.meetingmanager.repository.mysql.MeetingRepository;
+import com.g37.meetingmanager.repository.mysql.MeetingParticipantRepository;
+import com.g37.meetingmanager.repository.mongodb.MeetingTranscriptRepository;
+import com.g37.meetingmanager.model.MeetingTranscript;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Optional;
+
+/**
+ * Service for processing Fathom webhooks
+ * Handles webhook signature verification and meeting data processing
+ */
+@Service
+@ConditionalOnProperty(name = "fathom.enabled", havingValue = "true", matchIfMissing = false)
+public class FathomWebhookService {
+
+    private static final Logger logger = LoggerFactory.getLogger(FathomWebhookService.class);
+
+    @Value("${fathom.webhook.secret}")
+    private String webhookSecret;
+
+    @Autowired
+    private MeetingRepository meetingRepository;
+
+    @Autowired(required = false)
+    private PendingActionService pendingActionService;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private OrganizationRepository organizationRepository;
+
+    @Autowired
+    private MeetingParticipantRepository meetingParticipantRepository;
+
+    @Autowired(required = false)
+    private MeetingTranscriptRepository meetingTranscriptRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    /**
+     * Verify Fathom webhook signature using Svix's HMAC SHA-256 algorithm
+     * Fathom uses Svix for webhook delivery
+     *
+     * Signature format: "v1,BASE64_SIGNATURE" or "v1,SIG1 SIG2 SIG3"
+     * Svix signs: webhook-id + "." + timestamp + "." + body
+     *
+     * @param signatureHeader The Webhook-Signature header value
+     * @param rawBody The raw request body (before JSON parsing)
+     * @return true if signature is valid
+     */
+    public boolean verifyWebhookSignature(String signatureHeader, String rawBody) {
+        return verifyWebhookSignature(signatureHeader, null, null, rawBody);
+    }
+
+    /**
+     * Verify Fathom webhook signature with full Svix headers
+     *
+     * @param signatureHeader The Webhook-Signature header value
+     * @param webhookId The Webhook-Id header value
+     * @param webhookTimestamp The Webhook-Timestamp header value
+     * @param rawBody The raw request body
+     * @return true if signature is valid
+     */
+    public boolean verifyWebhookSignature(String signatureHeader, String webhookId, String webhookTimestamp, String rawBody) {
+        if (webhookSecret == null || webhookSecret.isEmpty()) {
+            logger.warn("Fathom webhook secret not configured - ALLOWING webhook in development mode");
+            return true; // Allow webhooks if secret not configured (development mode)
+        }
+
+        try {
+            // Parse signature header: "v1,BASE64_SIGNATURE"
+            String[] parts = signatureHeader.split(",", 2);
+            if (parts.length != 2) {
+                logger.warn("Invalid Svix signature header format: {}", signatureHeader);
+                return false;
+            }
+
+            String version = parts[0]; // "v1"
+            String signatureBlock = parts[1];
+
+            if (!"v1".equals(version)) {
+                logger.warn("Unknown Svix webhook signature version: {}", version);
+                return false;
+            }
+
+            // Svix signs: webhook_id + "." + timestamp + "." + body
+            // If we don't have webhook-id and timestamp, try simple body signing (fallback)
+            String signedContent;
+            if (webhookId != null && webhookTimestamp != null) {
+                signedContent = webhookId + "." + webhookTimestamp + "." + rawBody;
+                logger.debug("Using Svix signing scheme with id and timestamp");
+            } else {
+                signedContent = rawBody;
+                logger.debug("Using simple body signing (no Svix headers)");
+            }
+
+            // Calculate expected signature using HMAC SHA-256
+            Mac mac = Mac.getInstance("HmacSHA256");
+
+            // Svix expects the secret without the "whsec_" prefix for signing
+            String secretForSigning = webhookSecret.startsWith("whsec_")
+                ? webhookSecret.substring(7)
+                : webhookSecret;
+
+            SecretKeySpec secretKey = new SecretKeySpec(
+                secretForSigning.getBytes(StandardCharsets.UTF_8),
+                "HmacSHA256"
+            );
+            mac.init(secretKey);
+
+            byte[] hash = mac.doFinal(signedContent.getBytes(StandardCharsets.UTF_8));
+            String expectedSignature = Base64.getEncoder().encodeToString(hash);
+
+            // Signature block may contain multiple space-delimited signatures
+            // Match if ANY signature matches (supports signature rotation)
+            String[] providedSignatures = signatureBlock.split(" ");
+
+            boolean verified = Arrays.asList(providedSignatures).contains(expectedSignature);
+
+            if (!verified) {
+                logger.warn("Svix webhook signature verification FAILED");
+                logger.debug("Signed content length: {} bytes", signedContent.length());
+                logger.debug("Expected: {}, Provided: {}", expectedSignature, signatureBlock);
+                logger.debug("Using secret prefix: {}", webhookSecret.substring(0, Math.min(10, webhookSecret.length())) + "...");
+            } else {
+                logger.info("Svix webhook signature verified successfully");
+            }
+
+            return verified;
+
+        } catch (Exception e) {
+            logger.error("Error verifying Svix webhook signature: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Process webhook asynchronously to avoid blocking Fathom's webhook delivery
+     * Returns 200 OK immediately to Fathom, processes in background
+     *
+     * @param webhookId Unique webhook message ID
+     * @param rawPayload Raw JSON payload from Fathom
+     */
+    @Async
+    public void processWebhookAsync(String webhookId, String rawPayload) {
+        try {
+            logger.info("Processing Fathom webhook ID: {}", webhookId);
+
+            // Parse JSON payload
+            FathomWebhookPayload payload = objectMapper.readValue(
+                rawPayload,
+                FathomWebhookPayload.class
+            );
+
+            logger.info("Parsed Fathom meeting: '{}' (Recording ID: {})",
+                payload.getTitle(), payload.getRecordingId());
+
+            // 1. Create Meeting record
+            Meeting meeting = createMeetingFromFathom(payload);
+            logger.info("Created meeting with ID: {} from Fathom recording {}",
+                meeting.getId(), payload.getRecordingId());
+
+            // 2. Extract and create PendingActions from action_items
+            if (payload.getActionItems() != null && !payload.getActionItems().isEmpty()) {
+                List<PendingAction> actions = extractActionItems(payload, meeting.getId());
+                logger.info("Created {} pending actions from Fathom meeting", actions.size());
+            } else {
+                logger.info("No action items found in Fathom meeting");
+            }
+
+            // 3. Extract CRM contacts (if available)
+            extractCRMContacts(payload, meeting.getId());
+
+            logger.info("Successfully processed Fathom webhook ID: {}", webhookId);
+
+        } catch (Exception e) {
+            logger.error("Error processing Fathom webhook ID {}: {}", webhookId, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Create Meeting entity from Fathom webhook payload
+     *
+     * @param payload Fathom webhook payload
+     * @return Created Meeting entity
+     */
+    private Meeting createMeetingFromFathom(FathomWebhookPayload payload) {
+        Meeting meeting = new Meeting();
+
+        // Basic meeting information
+        meeting.setTitle(payload.getTitle() != null ? payload.getTitle() : payload.getMeetingTitle());
+        meeting.setStartTime(payload.getScheduledStartTime() != null
+            ? payload.getScheduledStartTime()
+            : payload.getRecordingStartTime());
+        meeting.setEndTime(payload.getScheduledEndTime() != null
+            ? payload.getScheduledEndTime()
+            : payload.getRecordingEndTime());
+
+        // Fathom-specific fields
+        meeting.setRecordingUrl(payload.getUrl());
+        meeting.setSource(Meeting.MeetingSource.FATHOM);
+        meeting.setSourceType(Meeting.SourceType.EXTERNAL_SYSTEM);
+        meeting.setStatus(Meeting.MeetingStatus.COMPLETED); // Fathom only sends completed meetings
+
+        // Store Fathom summary
+        if (payload.getDefaultSummary() != null) {
+            meeting.setSummary(payload.getDefaultSummary().getMarkdownFormatted());
+        }
+
+        // Store transcript URL for linking
+        meeting.setTranscriptUrl(payload.getShareUrl());
+
+        // Store Fathom-specific fields for Phase 2 analytics
+        meeting.setFathomRecordingId(payload.getRecordingId() != null ? payload.getRecordingId().toString() : null);
+        meeting.setFathomRecordingUrl(payload.getUrl());
+        if (payload.getDefaultSummary() != null) {
+            meeting.setFathomSummary(payload.getDefaultSummary().getMarkdownFormatted());
+        }
+
+        // Store transcript data for Phase 2 analytics
+        if (payload.getTranscript() != null && !payload.getTranscript().isEmpty()) {
+            // Store full transcript as text
+            StringBuilder transcriptText = new StringBuilder();
+            for (FathomWebhookPayload.TranscriptEntry entry : payload.getTranscript()) {
+                transcriptText.append(entry.getSpeaker().getDisplayName())
+                    .append(" (").append(entry.getTimestamp()).append("): ")
+                    .append(entry.getText())
+                    .append("\n");
+            }
+            meeting.setTranscript(transcriptText.toString());
+
+            // Store transcript entries as JSON for Phase 2 analytics
+            try {
+                ObjectMapper objectMapper = new ObjectMapper();
+                meeting.setTranscriptEntriesJson(objectMapper.writeValueAsString(payload.getTranscript()));
+            } catch (Exception e) {
+                logger.warn("Failed to serialize transcript entries to JSON: {}", e.getMessage());
+            }
+        }
+
+        // Determine meeting type based on invitees
+        if ("only_internal".equals(payload.getCalendarInviteeDomainsType())) {
+            meeting.setMeetingType(Meeting.MeetingType.TEAM_MEETING);
+        } else if ("one_or_more_external".equals(payload.getCalendarInviteeDomainsType())) {
+            meeting.setMeetingType(Meeting.MeetingType.CLIENT_MEETING);
+        } else {
+            meeting.setMeetingType(Meeting.MeetingType.GENERAL);
+        }
+
+        // Set organizer from recordedBy
+        if (payload.getRecordedBy() != null && payload.getRecordedBy().getEmail() != null) {
+            Optional<User> organizer = userRepository.findByEmail(payload.getRecordedBy().getEmail());
+            if (organizer.isPresent()) {
+                meeting.setOrganizer(organizer.get());
+                meeting.setOrganization(organizer.get().getOrganization());
+            } else {
+                // Create default organizer/organization for Fathom meetings
+                setDefaultOrganizerAndOrganization(meeting);
+            }
+        } else {
+            setDefaultOrganizerAndOrganization(meeting);
+        }
+
+        // Save meeting first to get ID (needed for participant foreign key)
+        Meeting savedMeeting = meetingRepository.save(meeting);
+
+        // Create MeetingParticipant records from Fathom calendar invitees
+        if (payload.getCalendarInvitees() != null && !payload.getCalendarInvitees().isEmpty()) {
+            createMeetingParticipants(savedMeeting, payload.getCalendarInvitees());
+        }
+
+        // Store full transcript in MongoDB for searchability
+        storeTranscriptInMongoDB(savedMeeting, payload);
+
+        return savedMeeting;
+    }
+
+    /**
+     * Set default organizer and organization for Fathom meetings
+     * when user is not found in the system
+     */
+    private void setDefaultOrganizerAndOrganization(Meeting meeting) {
+        // Try to find or create a default "Fathom External" organization
+        Optional<Organization> fathomOrg = organizationRepository.findByName("Fathom External");
+        Organization org;
+
+        if (fathomOrg.isPresent()) {
+            org = fathomOrg.get();
+        } else {
+            // Create default organization for external Fathom meetings
+            org = new Organization();
+            org.setName("Fathom External");
+            org.setDomain("fathom.video");
+            org.setIsActive(true);
+            org = organizationRepository.save(org);
+            logger.info("Created default organization for Fathom meetings: {}", org.getId());
+        }
+
+        meeting.setOrganization(org);
+
+        // Try to find or create a default Fathom system user
+        Optional<User> fathomUser = userRepository.findByEmail("fathom@system.local");
+        User user;
+
+        if (fathomUser.isPresent()) {
+            user = fathomUser.get();
+        } else {
+            user = new User();
+            user.setEmail("fathom@system.local");
+            user.setFirstName("Fathom");
+            user.setLastName("System");
+            user.setOrganization(org);
+            user.setIsActive(true);
+            user.setPasswordHash(""); // No password for system user
+            user = userRepository.save(user);
+            logger.info("Created default user for Fathom meetings: {}", user.getId());
+        }
+
+        meeting.setOrganizer(user);
+    }
+
+    /**
+     * Create MeetingParticipant records from Fathom calendar invitees
+     * Marks external participants appropriately (user == null)
+     *
+     * @param meeting The meeting to add participants to
+     * @param calendarInvitees List of Fathom calendar invitees
+     */
+    private void createMeetingParticipants(Meeting meeting, List<FathomWebhookPayload.CalendarInvitee> calendarInvitees) {
+        logger.info("Creating {} participants for meeting {}", calendarInvitees.size(), meeting.getId());
+
+        for (FathomWebhookPayload.CalendarInvitee invitee : calendarInvitees) {
+            MeetingParticipant participant = new MeetingParticipant();
+            participant.setMeeting(meeting);
+            participant.setEmail(invitee.getEmail());
+            participant.setName(invitee.getName());
+
+            // Try to find existing user by email
+            Optional<User> existingUser = userRepository.findByEmail(invitee.getEmail());
+
+            if (existingUser.isPresent()) {
+                // Internal participant - link to user
+                participant.setUser(existingUser.get());
+                participant.setParticipantRole(MeetingParticipant.ParticipantRole.ATTENDEE);
+                logger.debug("Linked participant {} to existing user", invitee.getEmail());
+            } else {
+                // External participant - user remains null (this makes isExternal() return true)
+                participant.setUser(null);
+                participant.setParticipantRole(MeetingParticipant.ParticipantRole.ATTENDEE);
+                logger.debug("Created external participant: {}", invitee.getEmail());
+            }
+
+            // Set attendance based on speaker match (if they spoke, they attended)
+            if (invitee.getMatchedSpeakerDisplayName() != null) {
+                participant.setAttendanceStatus(MeetingParticipant.AttendanceStatus.PRESENT);
+                participant.setInvitationStatus(MeetingParticipant.InvitationStatus.ACCEPTED);
+            } else {
+                participant.setAttendanceStatus(MeetingParticipant.AttendanceStatus.UNKNOWN);
+                participant.setInvitationStatus(MeetingParticipant.InvitationStatus.NO_RESPONSE);
+            }
+
+            // Save participant
+            meetingParticipantRepository.save(participant);
+        }
+
+        logger.info("Created {} participants for Fathom meeting", calendarInvitees.size());
+    }
+
+    /**
+     * Extract action items from Fathom webhook and create PendingActions
+     *
+     * @param payload Fathom webhook payload
+     * @param meetingId ID of created meeting
+     * @return List of created PendingActions
+     */
+    private List<PendingAction> extractActionItems(FathomWebhookPayload payload, Long meetingId) {
+        List<PendingAction> actions = new ArrayList<>();
+
+        if (pendingActionService == null) {
+            logger.warn("PendingActionService not available (MongoDB may be disabled)");
+            return actions;
+        }
+
+        for (FathomWebhookPayload.ActionItem item : payload.getActionItems()) {
+            PendingAction action = new PendingAction();
+
+            action.setTitle(item.getDescription());
+            action.setDescription(item.getDescription());
+            action.setMeetingId(meetingId);
+            action.setActionType(PendingAction.ActionType.TASK);
+            action.setStatus(PendingAction.ActionStatus.NEW); // Requires user approval
+            action.setPriority(PendingAction.Priority.MEDIUM);
+
+            // Set assignee from Fathom data
+            if (item.getAssignee() != null) {
+                action.setAssigneeEmail(item.getAssignee().getEmail());
+                action.setAssigneeName(item.getAssignee().getName());
+
+                // Try to find user ID by email
+                if (item.getAssignee().getEmail() != null) {
+                    Optional<User> assignee = userRepository.findByEmail(item.getAssignee().getEmail());
+                    if (assignee.isPresent()) {
+                        action.setAssigneeId(assignee.get().getId());
+                    }
+                }
+            }
+
+            // Store link to exact recording timestamp
+            StringBuilder notes = new StringBuilder();
+            if (item.getRecordingPlaybackUrl() != null) {
+                notes.append("Recording: ").append(item.getRecordingPlaybackUrl());
+            }
+            if (item.getRecordingTimestamp() != null) {
+                if (notes.length() > 0) notes.append("\n");
+                notes.append("Timestamp: ").append(item.getRecordingTimestamp());
+            }
+            if (notes.length() > 0) {
+                action.setNotes(notes.toString());
+            }
+
+            // Mark as from Fathom (use recording ID as execution ID)
+            action.setN8nExecutionId("fathom_" + payload.getRecordingId());
+            action.setN8nWorkflowStatus("fathom_webhook");
+
+            // Save to MongoDB
+            try {
+                action = pendingActionService.createPendingAction(action);
+                actions.add(action);
+                logger.debug("Created pending action: {} for meeting {}", action.getTitle(), meetingId);
+            } catch (Exception e) {
+                logger.error("Error creating pending action: {}", e.getMessage(), e);
+            }
+        }
+
+        return actions;
+    }
+
+    /**
+     * Extract CRM contacts from Fathom webhook data
+     * Handles both Zoho CRM matches (if Fathom has CRM connected)
+     * and calendar invitees (fallback)
+     *
+     * @param payload Fathom webhook payload
+     * @param meetingId ID of created meeting
+     */
+    private void extractCRMContacts(FathomWebhookPayload payload, Long meetingId) {
+        // Check if Fathom has CRM connected and returned matches
+        if (payload.getCrmMatches() != null && payload.getCrmMatches().getError() == null) {
+            processZohoCRMMatches(payload.getCrmMatches(), meetingId);
+        } else {
+            // No CRM in Fathom - extract contacts from calendar invitees
+            extractContactsFromInvitees(payload.getCalendarInvitees(), meetingId);
+        }
+    }
+
+    /**
+     * Process CRM matches from Fathom (Zoho CRM if connected)
+     */
+    private void processZohoCRMMatches(FathomWebhookPayload.CrmMatches crmMatches, Long meetingId) {
+        int contactCount = crmMatches.getContacts() != null ? crmMatches.getContacts().size() : 0;
+        int companyCount = crmMatches.getCompanies() != null ? crmMatches.getCompanies().size() : 0;
+        int dealCount = crmMatches.getDeals() != null ? crmMatches.getDeals().size() : 0;
+
+        logger.info("Processing Zoho CRM matches for meeting {}: {} contacts, {} companies, {} deals",
+            meetingId, contactCount, companyCount, dealCount);
+
+        // Create PendingActions for CRM contact sync operations
+        if (crmMatches.getContacts() != null && !crmMatches.getContacts().isEmpty()) {
+            for (FathomWebhookPayload.Contact contact : crmMatches.getContacts()) {
+                createCRMSyncPendingAction(contact, meetingId, contact.getRecordUrl());
+            }
+        }
+
+        // Create PendingActions for deal tracking and link deals to meetings
+        if (crmMatches.getDeals() != null && !crmMatches.getDeals().isEmpty()) {
+            for (FathomWebhookPayload.Deal deal : crmMatches.getDeals()) {
+                createDealTrackingPendingAction(deal, meetingId, deal.getRecordUrl());
+            }
+        }
+
+        // Log company information (CRM record URLs stored in PendingActions)
+        if (crmMatches.getCompanies() != null && !crmMatches.getCompanies().isEmpty()) {
+            for (FathomWebhookPayload.Company company : crmMatches.getCompanies()) {
+                logger.info("CRM Company detected: {} - URL: {}", company.getName(), company.getRecordUrl());
+            }
+        }
+    }
+
+    /**
+     * Extract external contacts from calendar invitees
+     * for potential CRM sync
+     */
+    private void extractContactsFromInvitees(List<FathomWebhookPayload.CalendarInvitee> invitees, Long meetingId) {
+        if (invitees == null || invitees.isEmpty()) {
+            logger.debug("No calendar invitees to process for meeting {}", meetingId);
+            return;
+        }
+
+        long externalCount = invitees.stream()
+            .filter(inv -> inv.getIsExternal() != null && inv.getIsExternal())
+            .count();
+
+        logger.info("Found {} external contacts in meeting {} for potential CRM sync", externalCount, meetingId);
+
+        // Create PendingActions for contact creation approval
+        if (pendingActionService != null && externalCount > 0) {
+            for (FathomWebhookPayload.CalendarInvitee invitee : invitees) {
+                if (invitee.getIsExternal() != null && invitee.getIsExternal()) {
+                    createContactCreationPendingAction(invitee, meetingId);
+                }
+            }
+        }
+    }
+
+    /**
+     * Store full transcript in MongoDB for searchability
+     * MongoDB enables full-text search across large transcript data
+     */
+    private void storeTranscriptInMongoDB(Meeting meeting, FathomWebhookPayload payload) {
+        if (meetingTranscriptRepository == null) {
+            logger.debug("MongoDB not available - skipping transcript storage");
+            return;
+        }
+
+        if (payload.getTranscript() == null || payload.getTranscript().isEmpty()) {
+            logger.debug("No transcript available for meeting {}", meeting.getId());
+            return;
+        }
+
+        try {
+            MeetingTranscript transcript = new MeetingTranscript();
+            transcript.setMeetingId(meeting.getId());
+            transcript.setOrganizationId(meeting.getOrganization() != null ? meeting.getOrganization().getId() : null);
+            transcript.setFathomRecordingId(meeting.getFathomRecordingId());
+            transcript.setFathomRecordingUrl(payload.getUrl());
+            transcript.setFathomShareUrl(payload.getShareUrl());
+
+            // Build full transcript text for search
+            StringBuilder transcriptText = new StringBuilder();
+            List<MeetingTranscript.TranscriptSegment> segments = new ArrayList<>();
+
+            for (FathomWebhookPayload.TranscriptEntry entry : payload.getTranscript()) {
+                String speaker = entry.getSpeaker() != null ? entry.getSpeaker().getDisplayName() : "Unknown";
+                transcriptText.append(speaker).append(": ").append(entry.getText()).append("\n");
+
+                segments.add(new MeetingTranscript.TranscriptSegment(
+                    speaker,
+                    entry.getText(),
+                    entry.getTimestamp()
+                ));
+            }
+
+            transcript.setTranscriptText(transcriptText.toString());
+            transcript.setTranscriptSegments(segments);
+
+            // Store summary
+            if (payload.getDefaultSummary() != null) {
+                transcript.setSummary(payload.getDefaultSummary().getMarkdownFormatted());
+            }
+
+            // Calculate duration
+            if (payload.getRecordingStartTime() != null && payload.getRecordingEndTime() != null) {
+                long durationSeconds = java.time.Duration.between(
+                    payload.getRecordingStartTime(),
+                    payload.getRecordingEndTime()
+                ).getSeconds();
+                transcript.setDurationSeconds((int) durationSeconds);
+            }
+
+            transcript.setCreatedAt(java.time.LocalDateTime.now());
+            transcript.setUpdatedAt(java.time.LocalDateTime.now());
+
+            meetingTranscriptRepository.save(transcript);
+            logger.info("✅ Stored transcript for meeting {} in MongoDB ({} segments, {} chars)",
+                meeting.getId(), segments.size(), transcriptText.length());
+
+        } catch (Exception e) {
+            logger.error("Failed to store transcript in MongoDB for meeting {}: {}",
+                meeting.getId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Create PendingAction for CRM contact sync operation
+     */
+    private void createCRMSyncPendingAction(FathomWebhookPayload.Contact contact, Long meetingId, String recordUrl) {
+        if (pendingActionService == null) {
+            return;
+        }
+
+        try {
+            PendingAction action = new PendingAction();
+            action.setTitle("Sync CRM Contact: " + contact.getName());
+            action.setDescription(String.format(
+                "Contact %s (%s) from Fathom meeting. CRM Record: %s",
+                contact.getName(),
+                contact.getEmail() != null ? contact.getEmail() : "no email",
+                recordUrl != null ? recordUrl : "not available"
+            ));
+            action.setActionType(PendingAction.ActionType.UPDATE_CRM);
+            action.setPriority(PendingAction.Priority.MEDIUM);
+            action.setStatus(PendingAction.ActionStatus.NEW);
+            action.setSource(PendingAction.ActionSource.FATHOM);
+            action.setMeetingId(meetingId);
+
+            // Store CRM record URL
+            if (recordUrl != null) {
+                action.setSourceReferenceId(recordUrl);
+            }
+
+            // Find meeting to get organization
+            Optional<Meeting> meeting = meetingRepository.findById(meetingId);
+            if (meeting.isPresent()) {
+                action.setOrganizationId(meeting.get().getOrganization() != null
+                    ? meeting.get().getOrganization().getId() : null);
+                action.setReporterId(meeting.get().getOrganizer() != null
+                    ? meeting.get().getOrganizer().getId() : null);
+            }
+
+            action.setCreatedAt(java.time.LocalDateTime.now());
+            action.setUpdatedAt(java.time.LocalDateTime.now());
+
+            pendingActionService.createPendingAction(action);
+            logger.info("Created CRM sync PendingAction for contact: {}", contact.getName());
+
+        } catch (Exception e) {
+            logger.error("Failed to create CRM sync PendingAction: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Create PendingAction for CRM deal tracking
+     */
+    private void createDealTrackingPendingAction(FathomWebhookPayload.Deal deal, Long meetingId, String recordUrl) {
+        if (pendingActionService == null) {
+            return;
+        }
+
+        try {
+            PendingAction action = new PendingAction();
+            action.setTitle("Track CRM Deal: " + deal.getName());
+            action.setDescription(String.format(
+                "Deal %s (Amount: %s) from Fathom meeting. CRM Record: %s",
+                deal.getName(),
+                deal.getAmount() != null ? "$" + deal.getAmount() : "unknown",
+                recordUrl != null ? recordUrl : "not available"
+            ));
+            action.setActionType(PendingAction.ActionType.UPDATE_CRM);
+            action.setPriority(deal.getAmount() != null && deal.getAmount() > 10000
+                ? PendingAction.Priority.HIGH : PendingAction.Priority.MEDIUM);
+            action.setStatus(PendingAction.ActionStatus.NEW);
+            action.setSource(PendingAction.ActionSource.FATHOM);
+            action.setMeetingId(meetingId);
+
+            // Store deal URL and amount
+            if (recordUrl != null) {
+                action.setZohoDealId(recordUrl);
+                action.setSourceReferenceId(recordUrl);
+            }
+
+            // Find meeting to get organization
+            Optional<Meeting> meeting = meetingRepository.findById(meetingId);
+            if (meeting.isPresent()) {
+                action.setOrganizationId(meeting.get().getOrganization() != null
+                    ? meeting.get().getOrganization().getId() : null);
+                action.setReporterId(meeting.get().getOrganizer() != null
+                    ? meeting.get().getOrganizer().getId() : null);
+            }
+
+            action.setCreatedAt(java.time.LocalDateTime.now());
+            action.setUpdatedAt(java.time.LocalDateTime.now());
+
+            pendingActionService.createPendingAction(action);
+            logger.info("Created deal tracking PendingAction for: {} (${}) ", deal.getName(), deal.getAmount());
+
+        } catch (Exception e) {
+            logger.error("Failed to create deal tracking PendingAction: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Create PendingAction for contact creation from external calendar invitee
+     */
+    private void createContactCreationPendingAction(FathomWebhookPayload.CalendarInvitee invitee, Long meetingId) {
+        if (pendingActionService == null) {
+            return;
+        }
+
+        try {
+            PendingAction action = new PendingAction();
+            action.setTitle("Create CRM Contact: " + invitee.getName());
+            action.setDescription(String.format(
+                "External contact %s (%s) from Fathom meeting. Create in CRM?",
+                invitee.getName(),
+                invitee.getEmail() != null ? invitee.getEmail() : "no email"
+            ));
+            action.setActionType(PendingAction.ActionType.UPDATE_CRM);
+            action.setPriority(PendingAction.Priority.LOW);
+            action.setStatus(PendingAction.ActionStatus.NEW);
+            action.setSource(PendingAction.ActionSource.FATHOM);
+            action.setMeetingId(meetingId);
+
+            // Store contact email for later CRM sync
+            if (invitee.getEmail() != null) {
+                action.setAssigneeEmail(invitee.getEmail());
+                action.setAssigneeName(invitee.getName());
+            }
+
+            // Find meeting to get organization
+            Optional<Meeting> meeting = meetingRepository.findById(meetingId);
+            if (meeting.isPresent()) {
+                action.setOrganizationId(meeting.get().getOrganization() != null
+                    ? meeting.get().getOrganization().getId() : null);
+                action.setReporterId(meeting.get().getOrganizer() != null
+                    ? meeting.get().getOrganizer().getId() : null);
+            }
+
+            action.setCreatedAt(java.time.LocalDateTime.now());
+            action.setUpdatedAt(java.time.LocalDateTime.now());
+
+            pendingActionService.createPendingAction(action);
+            logger.info("Created contact creation PendingAction for: {}", invitee.getName());
+
+        } catch (Exception e) {
+            logger.error("Failed to create contact creation PendingAction: {}", e.getMessage(), e);
+        }
+    }
+}

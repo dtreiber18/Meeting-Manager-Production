@@ -18,6 +18,10 @@ import { environment } from '../../environments/environment';
 import { ModalService } from '../shared/modal/modal.service';
 import { ModalContainerComponent } from '../shared/modal/modal-container/modal-container.component';
 import { ToastService } from '../shared/services/toast.service';
+import { UnifiedActionsComponent } from './unified-actions/unified-actions.component';
+import { DocumentUploadDialogComponent } from '../shared/document-upload-dialog/document-upload-dialog.component';
+import { DocumentService } from '../services/document.service';
+import { Document } from '../models/document.interface';
 
 
 interface N8nEventData {
@@ -45,7 +49,17 @@ interface EditableMeeting extends Meeting {
 @Component({
   selector: 'app-meeting-details-screen',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatButtonModule, DragDropModule, MeetingIntelligencePanelComponent, HttpClientModule, ModalContainerComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatButtonModule,
+    DragDropModule,
+    MeetingIntelligencePanelComponent,
+    HttpClientModule,
+    ModalContainerComponent,
+    UnifiedActionsComponent
+  ],
   templateUrl: './meeting-details-screen.component.html',
   styleUrls: ['./meeting-details-screen.component.scss']
 })
@@ -56,7 +70,7 @@ export class MeetingDetailsScreenComponent implements OnInit {
   InvitationStatus = InvitationStatus;
   AttendanceStatus = AttendanceStatus;
 
-  meeting?: Meeting & { source?: 'mm' | 'n8n' };
+  meeting?: Meeting & { source?: 'mm' | 'n8n' | 'fathom' };
   loading = true;
   error: string | null = null;
   meetingId: string | null = null;
@@ -72,6 +86,8 @@ export class MeetingDetailsScreenComponent implements OnInit {
     header: { collapsed: true, editing: false },
     participants: { collapsed: true, editing: false },
     overview: { collapsed: true, editing: false },
+    recording: { collapsed: true, editing: false },
+    documents: { collapsed: false, editing: false },
     pendingActions: { collapsed: true, editing: false },
     actionItems: { collapsed: true, editing: false }
   };
@@ -135,6 +151,10 @@ export class MeetingDetailsScreenComponent implements OnInit {
     estimatedHours: undefined
   };
 
+  // Document upload properties
+  meetingDocuments: Document[] = [];
+  loadingDocuments = false;
+
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
@@ -143,7 +163,8 @@ export class MeetingDetailsScreenComponent implements OnInit {
     private readonly modalService: ModalService,
     private readonly dialog: MatDialog,
     private readonly pendingActionService: PendingActionService,
-    private readonly toastService: ToastService
+    private readonly toastService: ToastService,
+    private readonly documentService: DocumentService
   ) {}
 
   ngOnInit(): void {
@@ -175,7 +196,7 @@ export class MeetingDetailsScreenComponent implements OnInit {
 
   loadMeetingManagerMeeting() {
     if (!this.meetingId) return;
-    
+
     console.log('📞 Fetching Meeting Manager meeting details...');
     this.meetingService.getMeeting(this.meetingId).subscribe({
       next: (data) => {
@@ -183,6 +204,8 @@ export class MeetingDetailsScreenComponent implements OnInit {
         this.meeting = { ...data, source: 'mm' };
         this.initializeEditedMeeting();
         this.loading = false;
+        // Load documents for this meeting
+        this.loadMeetingDocuments();
       },
       error: (error) => {
         console.error('❌ Error fetching Meeting Manager meeting:', error);
@@ -1504,11 +1527,221 @@ export class MeetingDetailsScreenComponent implements OnInit {
       item.assignedTo = original.assignedTo;
       item.dueDate = original.dueDate;
       item.priority = original.priority;
-      
+
       // Clean up
       delete this.originalActionItems[item.id];
     }
     // Disable editing mode
     item.editing = false;
+  }
+
+  /**
+   * Fathom Integration Helper Methods
+   */
+
+  /**
+   * Extract Fathom recording link from pending action notes
+   */
+  getFathomRecordingLink(action: PendingAction): string | null {
+    if (!action.notes) return null;
+    const match = action.notes.match(/Recording: (https:\/\/app\.fathom\.video\/[^\s\n]+)/);
+    return match ? match[1] : null;
+  }
+
+  /**
+   * Extract timestamp from pending action notes
+   */
+  getFathomTimestamp(action: PendingAction): string | null {
+    if (!action.notes) return null;
+    const match = action.notes.match(/Timestamp: (\d{2}:\d{2}:\d{2})/);
+    return match ? match[1] : null;
+  }
+
+  /**
+   * Check if pending action is from Fathom
+   */
+  isFathomAction(action: PendingAction): boolean {
+    return !!action.n8nExecutionId && action.n8nExecutionId.startsWith('fathom_');
+  }
+
+  /**
+   * Open Fathom recording at specific timestamp
+   */
+  playFathomRecording(action: PendingAction): void {
+    const recordingLink = this.getFathomRecordingLink(action);
+    if (recordingLink) {
+      window.open(recordingLink, '_blank');
+    }
+  }
+
+  /**
+   * Format timestamp for transcript display
+   */
+  formatTranscriptTimestamp(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  /**
+   * Check if meeting is from Fathom
+   * Checks multiple indicators: source field, recordingUrl pattern, or fathomRecordingId
+   */
+  isFathomMeeting(): boolean {
+    if (!this.meeting) return false;
+
+    // Check if explicitly marked as fathom
+    if (this.meeting.source === 'fathom') return true;
+
+    // Check if has fathomRecordingId
+    if (this.meeting.fathomRecordingId) return true;
+
+    // Check if has fathomRecordingUrl
+    if (this.meeting.fathomRecordingUrl) return true;
+
+    // Check if regular recordingUrl is from Fathom
+    if (this.meeting.recordingUrl && this.meeting.recordingUrl.includes('fathom.video')) {
+      return true;
+    }
+
+    // Check if any pending actions are from Fathom
+    const hasFathomActions = this.pendingActions.some(action => this.isFathomAction(action));
+    if (hasFathomActions) return true;
+
+    return false;
+  }
+
+  /**
+   * Get Fathom recording URL for the meeting
+   * Checks multiple possible locations for the recording URL
+   */
+  getFathomRecordingUrl(): string | null {
+    if (!this.meeting) return null;
+
+    // Check explicit fathomRecordingUrl first
+    if (this.meeting.fathomRecordingUrl) {
+      return this.meeting.fathomRecordingUrl;
+    }
+
+    // Check regular recordingUrl if it's from Fathom
+    if (this.meeting.recordingUrl && this.meeting.recordingUrl.includes('fathom.video')) {
+      return this.meeting.recordingUrl;
+    }
+
+    return null;
+  }
+
+  /**
+   * Load documents for the current meeting
+   */
+  loadMeetingDocuments(): void {
+    if (!this.meeting?.id) return;
+
+    this.loadingDocuments = true;
+    this.documentService.getDocumentsByMeeting(this.meeting.id).subscribe({
+      next: (documents) => {
+        this.meetingDocuments = documents;
+        this.loadingDocuments = false;
+        console.log(`✅ Loaded ${documents.length} documents for meeting ${this.meeting?.id}`);
+      },
+      error: (error) => {
+        console.error('Error loading documents:', error);
+        this.loadingDocuments = false;
+        this.toastService.showError('Failed to load documents');
+      }
+    });
+  }
+
+  /**
+   * Open upload dialog for uploading notes/documents to this meeting
+   */
+  openUploadDialog(): void {
+    if (!this.meeting) return;
+
+    const dialogRef = this.dialog.open(DocumentUploadDialogComponent, {
+      width: '600px',
+      maxHeight: '90vh',
+      data: {
+        meetingId: this.meeting.id,
+        preselectedMeeting: {
+          id: this.meeting.id,
+          subject: this.meeting.subject || this.meeting.title,
+          date: this.meeting.startTime?.split('T')[0] || this.meeting.date
+        }
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((uploadedDocument) => {
+      if (uploadedDocument) {
+        console.log('✅ Document uploaded successfully:', uploadedDocument);
+        this.toastService.showSuccess('Document uploaded successfully');
+        // Reload documents to show the new upload
+        this.loadMeetingDocuments();
+      }
+    });
+  }
+
+  /**
+   * Download a document
+   */
+  downloadDocument(doc: Document): void {
+    if (!doc.id) return;
+
+    this.documentService.downloadDocument(doc.id).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const anchor = window.document.createElement('a');
+        anchor.href = url;
+        anchor.download = doc.fileName || 'download';
+        window.document.body.appendChild(anchor);
+        anchor.click();
+        window.URL.revokeObjectURL(url);
+        window.document.body.removeChild(anchor);
+        this.toastService.showSuccess('Document downloaded');
+      },
+      error: (error) => {
+        console.error('Error downloading document:', error);
+        this.toastService.showError('Failed to download document');
+      }
+    });
+  }
+
+  /**
+   * Delete a document
+   */
+  deleteDocument(doc: Document): void {
+    if (!doc.id) return;
+    if (!confirm(`Delete document "${doc.title}"?`)) return;
+
+    this.documentService.deleteDocument(doc.id).subscribe({
+      next: () => {
+        this.toastService.showSuccess('Document deleted successfully');
+        this.loadMeetingDocuments();
+      },
+      error: (error) => {
+        console.error('Error deleting document:', error);
+        this.toastService.showError('Failed to delete document');
+      }
+    });
+  }
+
+  /**
+   * Get file icon for document type
+   */
+  getDocumentIcon(doc: Document): string {
+    const fileType = doc.fileType || doc.fileName?.split('.').pop() || '';
+    return this.documentService.getFileIcon(fileType);
+  }
+
+  /**
+   * Format file size for display
+   */
+  formatFileSize(bytes?: number): string {
+    return this.documentService.formatFileSize(bytes);
   }
 }

@@ -9,7 +9,16 @@ import com.g37.meetingmanager.repository.mysql.MeetingRepository;
 import com.g37.meetingmanager.repository.mysql.OrganizationRepository;
 import com.g37.meetingmanager.repository.mysql.UserRepository;
 import com.g37.meetingmanager.service.CalendarIntegrationService;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
@@ -43,28 +52,7 @@ public class MeetingController {
 
     @GetMapping
     @Transactional(readOnly = true)
-    public ResponseEntity<?> getAllMeetingsOrNotifications(@RequestParam(value = "type", required = false) String type) {
-        // Handle notification requests via query parameter
-        if ("notifications".equals(type)) {
-            logger.info("Getting notifications via MeetingController (query param)");
-            List<java.util.Map<String, Object>> notifications = List.of(
-                java.util.Map.of(
-                    "id", 1L,
-                    "title", "Sample Notification",
-                    "message", "This is a sample notification",
-                    "type", "SYSTEM_ANNOUNCEMENT",
-                    "priority", "NORMAL",
-                    "isRead", false,
-                    "createdAt", java.time.LocalDateTime.now().toString()
-                )
-            );
-            return ResponseEntity.ok(notifications);
-        } else if ("unread-count".equals(type)) {
-            logger.info("Getting unread notification count via MeetingController (query param)");
-            return ResponseEntity.ok(java.util.Map.of("count", 3L));
-        }
-        
-        // Default behavior - return meetings
+    public ResponseEntity<List<Meeting>> getAllMeetings() {
         return ResponseEntity.ok(meetingRepository.findAll());
     }
 
@@ -205,14 +193,14 @@ public class MeetingController {
             
             // Handle participants update
             if (request.getParticipants() != null) {
-                System.out.println("DEBUG: Received " + request.getParticipants().size() + " participants");
+                logger.debug("Received {} participants for meeting update", request.getParticipants().size());
                 // Clear existing participants and add new ones
                 meeting.getParticipants().clear();
                 for (com.g37.meetingmanager.dto.ParticipantDTO dto : request.getParticipants()) {
-                    System.out.println("DEBUG: Participant DTO - role: '" + dto.getParticipantRole() + "', name: '" + dto.getName() + "', email: '" + dto.getEmail() + "'");
+                    logger.debug("Processing participant - role: '{}', name: '{}', email: '{}'",
+                        dto.getParticipantRole(), dto.getName(), dto.getEmail());
                     // Convert DTO to entity
                     MeetingParticipant participant = dto.toEntity();
-                    System.out.println("DEBUG: After toEntity() - participantRole: " + participant.getParticipantRole());
                     // Set the meeting reference for each participant
                     participant.setMeeting(meeting);
                     meeting.getParticipants().add(participant);
@@ -248,49 +236,71 @@ public class MeetingController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
-     * Temporary notification endpoints - integrated into MeetingController while debugging controller registration
+     * Create an Outlook calendar event for a meeting via Microsoft Graph API
+     * This endpoint creates the meeting in Outlook for the authenticated user
      */
-    @GetMapping("/test-simple")
-    public ResponseEntity<String> testSimpleEndpoint() {
-        logger.info("Simple test endpoint called via MeetingController");
-        return ResponseEntity.ok("MeetingController simple test endpoint works!");
-    }
-    
-    @GetMapping("/notifications")
-    public ResponseEntity<List<java.util.Map<String, Object>>> getNotifications() {
-        logger.info("Getting notifications via MeetingController");
-        return ResponseEntity.ok(List.of(
-            java.util.Map.of(
-                "id", 1L,
-                "title", "Sample Notification",
-                "message", "This is a sample notification",
-                "type", "SYSTEM_ANNOUNCEMENT",
-                "priority", "NORMAL",
-                "isRead", false,
-                "createdAt", java.time.LocalDateTime.now().toString()
-            )
-        ));
-    }
-    
-    @GetMapping("/notifications/unread/count")
-    public ResponseEntity<java.util.Map<String, Long>> getUnreadNotificationCount() {
-        logger.info("Getting unread notification count via MeetingController");
-        return ResponseEntity.ok(java.util.Map.of("count", 3L));
-    }
-    
-    @GetMapping("/notifications/test")
-    public ResponseEntity<java.util.Map<String, Object>> testNotificationEndpoint() {
-        logger.info("Notification test endpoint called via MeetingController");
-        
-        return ResponseEntity.ok(java.util.Map.of(
-            "status", "ok",
-            "message", "NotificationController is working properly (via MeetingController)",
-            "timestamp", java.time.LocalDateTime.now().toString(),
-            "unreadCount", 3L,
-            "version", "production-integrated",
-            "note", "Notifications integrated into MeetingController while debugging standalone controller registration"
-        ));
+    @PostMapping("/create-outlook-event")
+    public ResponseEntity<?> createOutlookEvent(@RequestBody Meeting meeting) {
+        try {
+            logger.info("Creating Outlook event for meeting: {}", meeting.getTitle());
+
+            // Get the user who will create the event (organizer)
+            User organizer = meeting.getOrganizer();
+            if (organizer == null) {
+                throw new RuntimeException("Organizer not found");
+            }
+
+            // Check if user has Microsoft Graph token
+            if (organizer.getGraphAccessToken() == null || organizer.getGraphAccessToken().isEmpty()) {
+                logger.warn("User {} does not have Microsoft Graph access token", organizer.getEmail());
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(java.util.Map.of(
+                        "error", "Calendar not connected",
+                        "message", "Please connect your Outlook calendar before creating events"
+                    ));
+            }
+
+            // Check if token is expired
+            if (organizer.getGraphTokenExpiresAt() != null &&
+                organizer.getGraphTokenExpiresAt().isBefore(LocalDateTime.now())) {
+                logger.warn("Microsoft Graph token expired for user {}", organizer.getEmail());
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(java.util.Map.of(
+                        "error", "Calendar token expired",
+                        "message", "Please reconnect your Outlook calendar"
+                    ));
+            }
+
+            // Create the calendar event using CalendarIntegrationService
+            boolean eventCreated = calendarIntegrationService.createOutlookCalendarEvent(
+                meeting,
+                organizer.getGraphAccessToken()
+            );
+
+            if (eventCreated) {
+                logger.info("Successfully created Outlook event for meeting: {}", meeting.getTitle());
+                return ResponseEntity.ok(java.util.Map.of(
+                    "success", true,
+                    "message", "Calendar event created successfully"
+                ));
+            } else {
+                logger.error("Failed to create Outlook event for meeting: {}", meeting.getTitle());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Map.of(
+                        "error", "Failed to create event",
+                        "message", "Could not create calendar event in Outlook"
+                    ));
+            }
+
+        } catch (RuntimeException e) {
+            logger.error("Error creating Outlook event", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(java.util.Map.of(
+                    "error", "Internal server error",
+                    "message", e.getMessage()
+                ));
+        }
     }
 }

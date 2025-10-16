@@ -17,6 +17,13 @@ interface BackendMeetingData {
   summary?: string;
   details?: string;
   recordingUrl?: string;
+  // Fathom integration fields
+  source?: string;
+  fathomRecordingId?: string;
+  fathomRecordingUrl?: string;
+  fathomSummary?: string;
+  transcript?: string;
+  transcriptEntriesJson?: string; // JSON string from backend
   [key: string]: unknown; // For additional fields we might not have typed
 }
 
@@ -141,6 +148,27 @@ export class MeetingMapperService {
       nextStepsString = backendMeeting.nextSteps.join('; ');
     }
 
+    // Parse Fathom transcript entries from JSON string to array
+    let transcriptEntries: Array<{ speaker: string; timestamp: number; text: string }> | undefined;
+    if (backendMeeting.transcriptEntriesJson) {
+      try {
+        const parsed = JSON.parse(backendMeeting.transcriptEntriesJson);
+        // Transform backend format to frontend format
+        // Backend: { speaker: { display_name: string }, text: string, timestamp: "00:01:30" }
+        // Frontend: { speaker: string, text: string, timestamp: number (seconds) }
+        const entries = parsed.map((entry: any) => ({
+          speaker: entry.speaker?.display_name || entry.speaker?.name || 'Unknown Speaker',
+          text: entry.text || '',
+          timestamp: this.parseTimestampToSeconds(entry.timestamp || '00:00:00')
+        }));
+        transcriptEntries = entries;
+        console.log(`✅ Parsed ${entries.length} transcript entries for meeting "${backendMeeting.title}"`);
+      } catch (error) {
+        console.error('❌ Failed to parse transcriptEntriesJson:', error);
+        transcriptEntries = undefined;
+      }
+    }
+
     // Create a simplified meeting object with required properties
     const transformedMeeting: Meeting = {
       id: backendMeeting.id,
@@ -229,7 +257,14 @@ export class MeetingMapperService {
       // Legacy fields for backward compatibility
       date: dateStr,
       time: timeStr,
-      isJustCompleted: this.isRecentlyCompleted(backendMeeting)
+      isJustCompleted: this.isRecentlyCompleted(backendMeeting),
+      // Fathom integration fields
+      source: backendMeeting.source as 'mm' | 'n8n' | 'fathom' | undefined,
+      fathomRecordingId: backendMeeting.fathomRecordingId,
+      fathomRecordingUrl: backendMeeting.fathomRecordingUrl,
+      fathomSummary: backendMeeting.fathomSummary,
+      transcript: backendMeeting.transcript,
+      transcriptEntries
     };
 
     return transformedMeeting;
@@ -265,6 +300,23 @@ export class MeetingMapperService {
       return hoursSinceEnd <= 24; // Completed within last 24 hours
     }
     return false;
+  }
+
+  /**
+   * Converts Fathom timestamp format (HH:MM:SS) to seconds
+   * @param timestamp String in format "00:01:30" or "01:30"
+   * @returns Total seconds
+   */
+  private parseTimestampToSeconds(timestamp: string): number {
+    const parts = timestamp.split(':').map(p => parseInt(p, 10));
+    if (parts.length === 3) {
+      // HH:MM:SS format
+      return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    } else if (parts.length === 2) {
+      // MM:SS format
+      return parts[0] * 60 + parts[1];
+    }
+    return 0;
   }
 
   /**

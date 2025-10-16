@@ -71,9 +71,14 @@ export interface Participant {
   canInviteOthers?: boolean;
   createdAt?: string;
   updatedAt?: string;
-  
+
   // Legacy fields
   attended?: boolean;
+
+  // CRM integration fields
+  isExternal?: boolean;
+  crmContactId?: string;
+  crmSource?: 'zoho' | 'salesforce' | 'hubspot';
 }
 
 export enum ParticipantType {

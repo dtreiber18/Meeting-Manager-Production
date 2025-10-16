@@ -5,6 +5,279 @@ All notable changes to the Meeting Manager project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.0] - 2025-10-16 - Enhanced Integration & Authentication
+
+### 🗄️ Added - MongoDB Transcript Storage
+- **MeetingTranscript Model** - New MongoDB document for full-text searchable transcripts
+  - Full transcript text with `@TextIndexed` annotation for searchable content
+  - Speaker-segmented TranscriptSegment nested class with timestamps (HH:MM:SS format)
+  - Multi-tenant isolation via `organizationId` field
+  - Summary, topics, and duration tracking
+  - Automatic storage from Fathom webhooks and API polling
+- **MeetingTranscriptRepository** - MongoDB repository with advanced queries
+  - `findByMeetingId()` - Lookup transcript by SQL meeting ID
+  - `findByFathomRecordingId()` - Lookup by Fathom recording identifier
+  - `findByOrganizationId()` - Multi-tenant data retrieval
+  - `existsByMeetingId()` - Duplicate checking
+- **storeTranscriptInMongoDB()** - Integration method in FathomWebhookService
+  - Parses Fathom transcript entries into searchable format
+  - Calculates meeting duration from recording start/end times
+  - Gracefully handles MongoDB unavailability
+  - Logs storage success with segment count and character metrics
+
+### 🔗 Added - Complete CRM Integration Pipeline
+- **PendingAction Creation for CRM Operations**
+  - `createCRMSyncPendingAction()` - Creates approval workflow for Zoho CRM contacts
+  - `createDealTrackingPendingAction()` - Tracks deals with intelligent prioritization (HIGH >$10K)
+  - `createContactCreationPendingAction()` - External contact discovery and CRM sync approval
+- **processZohoCRMMatches() Enhancement** - Processes CRM data from Fathom
+  - Iterates through contacts and creates PendingActions with record URLs
+  - Processes deals with amount-based priority assignment
+  - Logs company information for future CRM enhancements
+- **extractContactsFromInvitees() Enhancement** - External participant detection
+  - Identifies external calendar invitees (isExternal flag)
+  - Creates CRM contact creation PendingActions for approval
+  - Links contacts to meetings and organizations
+
+### ✉️ Added - AI Suggestion External System Integration
+- **AISuggestionController Enhancement** - Direct CRM/ClickUp integration
+  - Added `ZohoCRMService` and `ClickUpService` autowiring with `@Autowired(required = false)`
+  - Implemented `sendToExternalSystem()` routing method
+  - Routes AI suggestions to Zoho CRM via `zohoCRMService.createTask()`
+  - Routes AI suggestions to ClickUp via `clickUpService.createTask()`
+  - Stores external task IDs in `PendingAction.externalTaskId` for tracking
+  - Enhanced API response with `externalResult` field
+  - Comprehensive error handling with service availability checks
+
+### 🔐 Added - Azure AD OAuth 2.0 Authentication
+- **handleAzureCallback()** - Complete OAuth 2.0 flow implementation
+  - Orchestrates token exchange → user info retrieval → user creation/update
+  - Returns authenticated User object for JWT generation
+- **exchangeCodeForToken()** - Microsoft Identity Platform token exchange
+  - POST to `https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token`
+  - Uses authorization code grant with client secret
+  - Retrieves access_token for Microsoft Graph API calls
+- **getUserInfoFromGraph()** - Microsoft Graph user profile retrieval
+  - GET from `https://graph.microsoft.com/v1.0/me`
+  - Returns email (mail or userPrincipalName), displayName, givenName, surname
+- **createOrUpdateUserFromAzure()** - Smart user management
+  - Updates existing users: lastLoginAt, firstName, lastName
+  - Creates new users with:
+    - Email from Azure AD (fallback to userPrincipalName)
+    - Domain-based organization auto-creation
+    - Default USER role assignment
+    - Random password generation (not used for Azure AD auth)
+    - Email verified flag (Azure AD pre-verification)
+- **Configuration** - Added Microsoft Graph settings
+  - `app.microsoft.graph.client-id`, `client-secret`, `tenant-id`, `redirect-uri`
+  - Reads from application.yml with environment variable overrides
+
+### 👤 Added - Frontend Authentication Context
+- **ActionsService Enhancement** - Integrated AuthService for user ID retrieval
+  - Added `AuthService` import and dependency injection
+  - Created `getCurrentUserId()` helper method with fallback to user ID 1
+  - Retrieves authenticated user from `AuthService.getCurrentUser()`
+  - Parses string user ID to number for backend API compatibility
+- **Fixed approveAction()** - Line 138: Replaced hardcoded `approvedById: 1` with `getCurrentUserId()`
+- **Fixed rejectAction()** - Line 153: Replaced hardcoded `rejectedById: 1` with `getCurrentUserId()`
+- **Fixed bulkApproveActions()** - Line 194: Replaced hardcoded `approvedById: 1` with `getCurrentUserId()`
+- **Benefits**:
+  - Accurate user tracking for all approval/rejection operations
+  - Full audit trail with proper user attribution
+  - Multi-user support in production environment
+  - Graceful fallback when authentication context unavailable
+
+### 🔍 Added - Advanced Meeting Analytics
+- **FathomIntelligenceService Enhancement** - Silent participants and related meetings
+  - **Silent Participants Detection** (Lines 449-471):
+    - Compares meeting participants with transcript speakers
+    - Uses fuzzy name matching to handle name variations (name vs email)
+    - Only counts participants with `AttendanceStatus.PRESENT`
+    - Excludes participants who spoke at any point in meeting
+    - Returns array of silent participant names/emails
+  - **Related Meetings API Call** (Lines 618-638):
+    - Implemented HTTP GET to `/api/meetings/search/related`
+    - Passes topics as comma-separated query parameter
+    - Excludes current meeting from results (by ID)
+    - Returns up to 5 related meetings based on topic matching
+    - Graceful error handling with empty array fallback
+    - Note: Backend endpoint implementation still pending
+- **UnifiedActionsComponent Enhancement** - Schedule meeting dialog integration
+  - **Schedule Meeting Dialog** (Lines 611-633):
+    - Opens `ScheduleFollowupDialogComponent` with MatDialog
+    - Passes current meeting context as dialog data
+    - Handles dialog result with success toast notification
+    - Automatically links created meetings to actions for tracking
+  - **Action-Meeting Linking Helper** (Lines 638-650):
+    - Created `linkActionToMeeting()` helper method
+    - Updates action with `meetingId` reference for bidirectional linking
+    - Reloads actions list after successful linking
+    - Comprehensive error handling with user feedback via toast
+
+### 🎯 Fixed - Code Quality (Resolved 12 TODO Items)
+
+**Backend TODOs (6 items):**
+- **FathomWebhookService TODO #1** - Line 294: MongoDB transcript storage ✅
+- **FathomWebhookService TODO #2-4** - Lines 488-490: CRM sync, record URLs, deal linking ✅
+- **FathomWebhookService TODO #5-6** - Lines 509-510: Contact candidate creation ✅
+- **AISuggestionController TODO** - Line 225: External system integration ✅
+- **AuthService TODO** - Line 141: Azure AD token exchange and user creation ✅
+
+**Frontend TODOs (6 items):**
+- **ActionsService TODO #1** - Line 127: Get actual user ID for approveAction() ✅
+- **ActionsService TODO #2** - Line 143: Get actual user ID for rejectAction() ✅
+- **ActionsService TODO #3** - Line 184: Get actual user ID for bulkApproveActions() ✅
+- **FathomIntelligenceService TODO #1** - Line 449: Identify silent participants ✅
+- **FathomIntelligenceService TODO #2** - Line 594: Implement backend API call for related meetings ✅
+- **UnifiedActionsComponent TODO** - Line 609: Open schedule meeting dialog ✅
+
+### 📊 Technical Improvements
+- **Multi-Tenant Transcript Storage** - organizationId filtering in MongoDB
+- **Intelligent Prioritization** - Deal amounts >$10K get HIGH priority
+- **Source Tracking** - All Fathom-generated actions tagged with `source=FATHOM`
+- **Graceful Degradation** - Services work when MongoDB/CRM systems unavailable
+- **Error Handling** - Comprehensive try-catch with detailed logging
+- **Build Status** - All 102 source files compile successfully (BUILD SUCCESS)
+
+### 🗂️ Files Changed
+**Backend - New Files:**
+- `backend/src/main/java/com/g37/meetingmanager/model/MeetingTranscript.java`
+- `backend/src/main/java/com/g37/meetingmanager/repository/mongodb/MeetingTranscriptRepository.java`
+
+**Backend - Enhanced Files:**
+- `backend/src/main/java/com/g37/meetingmanager/service/FathomWebhookService.java`
+  - Added transcript storage method
+  - Added 3 CRM PendingAction creation methods
+  - Enhanced processZohoCRMMatches() and extractContactsFromInvitees()
+- `backend/src/main/java/com/g37/meetingmanager/controller/AISuggestionController.java`
+  - Added service dependencies (ZohoCRMService, ClickUpService)
+  - Implemented sendToExternalSystem() routing
+  - Enhanced API response with external results
+- `backend/src/main/java/com/g37/meetingmanager/service/AuthService.java`
+  - Implemented 4 Azure AD authentication methods
+  - Added OAuth 2.0 token exchange
+  - Added Microsoft Graph integration
+  - Added user creation/update logic
+
+**Frontend - Enhanced Files:**
+- `frontend/src/app/services/actions.service.ts`
+  - Added AuthService import and injection
+  - Created getCurrentUserId() helper method
+  - Fixed approveAction(), rejectAction(), bulkApproveActions()
+  - Removed 3 hardcoded user ID TODO comments
+- `frontend/src/app/services/fathom-intelligence.service.ts`
+  - Added HttpClient import and injection for API calls
+  - Implemented silent participants detection with fuzzy matching
+  - Implemented findRelatedMeetings() API integration
+  - Added AttendanceStatus enum import
+  - Added environment import for API base URL
+- `frontend/src/app/meetings/unified-actions/unified-actions.component.ts`
+  - Added MatDialog import and injection
+  - Imported ScheduleFollowupDialogComponent
+  - Implemented scheduleMeeting() method
+  - Created linkActionToMeeting() helper method
+  - Added success/error toast notifications
+
+**Documentation:**
+- `README.md` - Added v3.9.0 release notes with frontend authentication context
+- `FEATURES.md` - Added 3 new feature sections
+- `CHANGELOG.md` - This entry
+
+### 📈 Impact
+- **Transcript Search**: MongoDB full-text search enables finding meetings by spoken content
+- **CRM Automation**: Automatic detection and approval workflow for CRM contacts and deals
+- **AI Task Creation**: AI-generated tasks automatically sent to Zoho CRM or ClickUp
+- **SSO Authentication**: Enterprise users can sign in with Microsoft accounts
+- **User Attribution**: Actions now correctly track which user approved/rejected them
+- **Audit Trail**: Full user tracking enables compliance and accountability
+- **Meeting Intelligence**: Silent participants detection reveals engagement patterns
+- **Discovery Features**: Related meetings API helps find connections between meetings
+- **Workflow Integration**: Direct meeting scheduling from action items streamlines follow-ups
+- **Code Quality**: 12 TODO items resolved (6 backend + 6 frontend), reducing technical debt
+
+## [3.8.0] - 2025-10-15 - Fathom Phase 2 Data Parsing & UI Enhancements
+
+### 🔧 Fixed - Frontend Data Parsing
+- **MeetingMapperService Enhanced** - Fixed critical data format mismatch
+  - Added parsing of `transcriptEntriesJson` (JSON string from backend) to `transcriptEntries` (array for frontend)
+  - Implemented `parseTimestampToSeconds()` helper to convert Fathom timestamps ("HH:MM:SS") to seconds
+  - Added speaker name extraction from nested Fathom payload structure
+  - Added console logging for successful transcript parsing (debugging aid)
+  - **Impact:** Phase 2 analytics now display correctly - no more "Processing Fathom AI analysis..." spinner
+- **Backend Meeting Entity** - Added 5 Fathom-specific fields
+  - `fathomRecordingId` (VARCHAR 100) - Fathom's recording identifier
+  - `fathomRecordingUrl` (VARCHAR 500) - Direct link to recording
+  - `fathomSummary` (TEXT) - AI-generated markdown summary
+  - `transcript` (LONGTEXT) - Full formatted transcript text
+  - `transcriptEntriesJson` (LONGTEXT) - JSON array of transcript entries with speaker attribution
+- **Database Migration** - Added columns to meetings table
+  - Executed ALTER TABLE to add 5 new columns
+  - Fixed source ENUM to include 'FATHOM' value
+  - **Migration SQL:** All Fathom fields added with NULL constraints for backward compatibility
+
+### 🎨 Enhanced - User Interface
+- **Collapsible Fathom Sections** - All 9 analytics sections now independently collapsible
+  - Added expand/collapse state variables for each section
+  - Implemented 9 toggle methods (toggleFathomEffectiveness, toggleFathomDecisions, etc.)
+  - **Sections:** Effectiveness, Decisions, Topics, Speaker Balance, Key Points, Participant Engagement, Keywords, Extracted Actions, Topic Evolution
+  - **UX Benefits:** Cleaner UI, reduced cognitive load, faster navigation, better mobile experience
+- **All Panels Collapsed by Default** - Improved initial page load experience
+  - Changed `intelligenceExpanded`, `suggestionsExpanded`, `fathomInsightsExpanded` to `false`
+  - Users expand only the analytics they need
+  - Reduced initial DOM rendering for better performance
+- **Smart Mock Data Handling** - Eliminated redundancy
+  - "Meeting Intelligence" panel now hidden when Fathom data exists (`*ngIf="!hasFathomData"`)
+  - Added "Mock Data" badges to synthetic analytics (AI Suggestions, Meeting Intelligence)
+  - Prevents confusion between real Fathom data and simulated analysis
+  - **Result:** Only one effectiveness score shown (real Fathom score, not mock score)
+
+### 📐 Visual Improvements
+- **Clickable Section Headers** - Enhanced interaction design
+  - Added `cursor-pointer` and `hover:bg-gray-50` for visual feedback
+  - Chevron icons (`expand_more`/`expand_less`) show current state
+  - Consistent styling across all 9 Fathom sections
+- **Phase 2 Analytics Now Fully Functional** - Complete data flow working
+  - Participant Engagement with individual scores
+  - TF-IDF keyword extraction showing relevance
+  - AI-detected action items from transcript patterns
+  - Topic evolution timeline across meeting segments
+  - **Data Flow:** Backend → MeetingMapper (parsing) → Frontend Analytics Services → UI Display
+
+### 📝 Documentation
+- **Updated FATHOM_INTEGRATION_DOCUMENTATION.md** - Version 2.1
+  - Added "UI Enhancements" section documenting collapsible sections
+  - Updated version from 2.0 to 2.1
+  - Added implementation details and benefits
+  - Documented smart panel display logic
+  - Last updated: October 15, 2025
+
+### 🗂️ Files Changed
+**Frontend:**
+- `frontend/src/app/meetings/meeting-mapper.service.ts` - Added transcript parsing logic
+- `frontend/src/app/ai-chat/meeting-intelligence-panel.component.ts` - Added collapsible sections, removed redundancy
+
+**Backend:**
+- `backend/src/main/java/com/g37/meetingmanager/model/Meeting.java` - Added 5 Fathom fields + getters/setters
+- `backend/src/main/java/com/g37/meetingmanager/service/FathomWebhookService.java` - Populate new Fathom fields
+
+**Database:**
+- Executed ALTER TABLE migrations for meetings table
+- Added 5 columns: fathom_recording_id, fathom_recording_url, fathom_summary, transcript, transcript_entries_json
+- Fixed source ENUM to include 'FATHOM'
+
+**Documentation:**
+- `FATHOM_INTEGRATION_DOCUMENTATION.md` - Updated to v2.1 with UI enhancements section
+- `CHANGELOG.md` - This entry
+
+### 🎯 Impact Summary
+- **Phase 2 Analytics:** Now fully operational with correct data parsing
+- **User Experience:** Cleaner, more organized interface with collapsible sections
+- **Performance:** Reduced initial rendering, collapsed panels by default
+- **Data Quality:** Complete Fathom data now stored in database for historical analysis
+- **No More Redundancy:** Single source of truth for analytics (Fathom data when available, mock fallback otherwise)
+
+---
+
 ## [3.7.0] - 2025-10-12 - N8N Operations Integration - Production Ready
 
 ### 🔄 Added - Complete N8N Workflow Integration

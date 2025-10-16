@@ -8,9 +8,14 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatDialog } from '@angular/material/dialog';
 import { ChatService } from '../services/chat.service';
+import { FathomIntelligenceService } from '../services/fathom-intelligence.service';
 import { Meeting } from '../meetings/meeting.model';
 import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-assistant.service';
+import { ScheduleFollowupDialogComponent } from '../shared/schedule-followup-dialog/schedule-followup-dialog.component';
 
 @Component({
   selector: 'app-meeting-intelligence-panel',
@@ -24,159 +29,26 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
     MatExpansionModule,
     MatChipsModule,
     MatProgressSpinnerModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatSelectModule,
+    MatFormFieldModule
   ],
   template: `
     <div class="meeting-intelligence-panel space-y-4">
-      
-      <!-- Meeting Analysis Card -->
-      <mat-card class="analysis-card">
-        <mat-card-header>
-          <mat-card-title class="flex items-center">
-            <mat-icon class="mr-2 text-blue-600">analytics</mat-icon>
-            Meeting Intelligence
-          </mat-card-title>
-          <div class="flex items-center space-x-1">
-            <button
-              mat-icon-button
-              (click)="refreshAnalysis()"
-              [disabled]="loadingAnalysis"
-              matTooltip="Refresh Analysis">
-              <mat-icon [class.spin]="loadingAnalysis">refresh</mat-icon>
-            </button>
-            <button
-              mat-icon-button
-              (click)="toggleIntelligence()"
-              [matTooltip]="intelligenceExpanded ? 'Collapse' : 'Expand'">
-              <mat-icon>{{ intelligenceExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
-            </button>
-          </div>
-        </mat-card-header>
-
-        <mat-card-content *ngIf="intelligenceExpanded">
-          <div *ngIf="loadingAnalysis" class="text-center py-4">
-            <mat-spinner diameter="40"></mat-spinner>
-            <p class="mt-2 text-gray-600">Analyzing meeting...</p>
-          </div>
-
-          <div *ngIf="!loadingAnalysis && analysis" class="space-y-4">
-            <!-- Effectiveness Score -->
-            <div class="effectiveness-score">
-              <div class="flex items-center justify-between mb-2">
-                <span class="font-semibold">Meeting Effectiveness</span>
-                <div class="flex items-center">
-                  <div class="score-circle" [ngClass]="getScoreClass(analysis.meetingEffectiveness.score)">
-                    {{ analysis.meetingEffectiveness.score }}/10
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Strengths -->
-              <div *ngIf="analysis.meetingEffectiveness.strengths.length > 0" class="mb-3">
-                <h4 class="text-sm font-medium text-green-700 mb-1">✅ Strengths</h4>
-                <div class="space-y-1">
-                  <div *ngFor="let strength of analysis.meetingEffectiveness.strengths" 
-                       class="text-xs bg-green-50 text-green-800 px-2 py-1 rounded">
-                    {{ strength }}
-                  </div>
-                </div>
-              </div>
-
-              <!-- Improvements -->
-              <div *ngIf="analysis.meetingEffectiveness.improvements.length > 0">
-                <h4 class="text-sm font-medium text-amber-700 mb-1">💡 Improvements</h4>
-                <div class="space-y-1">
-                  <div *ngFor="let improvement of analysis.meetingEffectiveness.improvements" 
-                       class="text-xs bg-amber-50 text-amber-800 px-2 py-1 rounded">
-                    {{ improvement }}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Key Insights -->
-            <div *ngIf="analysis.keyInsights.length > 0" class="insights-section">
-              <h4 class="text-sm font-semibold mb-2 text-gray-700">🔍 Key Insights</h4>
-              <div class="space-y-2">
-                <div *ngFor="let insight of analysis.keyInsights" 
-                     class="text-xs bg-blue-50 text-blue-800 px-3 py-2 rounded border-l-3 border-blue-400">
-                  {{ insight }}
-                </div>
-              </div>
-            </div>
-
-            <!-- Participant Insights -->
-            <div class="participant-insights">
-              <h4 class="text-sm font-semibold mb-2 text-gray-700">👥 Participant Insights</h4>
-              <div class="grid grid-cols-2 gap-3 text-xs">
-                <div class="stat-item">
-                  <span class="text-gray-600">Total:</span>
-                  <span class="font-medium">{{ analysis.participantInsights.totalParticipants }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="text-gray-600">Attendance:</span>
-                  <span class="font-medium" [ngClass]="getAttendanceClass(analysis.participantInsights.attendanceRate)">
-                    {{ analysis.participantInsights.attendanceRate.toFixed(1) }}%
-                  </span>
-                </div>
-              </div>
-              
-              <div *ngIf="analysis.participantInsights.keyParticipants.length > 0" class="mt-2">
-                <span class="text-xs text-gray-600">Key Participants:</span>
-                <div class="flex flex-wrap gap-1 mt-1">
-                  <mat-chip *ngFor="let participant of analysis.participantInsights.keyParticipants" 
-                           class="text-xs">
-                    {{ participant }}
-                  </mat-chip>
-                </div>
-              </div>
-
-              <div *ngIf="analysis.participantInsights.missingStakeholders.length > 0" class="mt-2">
-                <span class="text-xs text-red-600">Missing Required:</span>
-                <div class="flex flex-wrap gap-1 mt-1">
-                  <mat-chip *ngFor="let missing of analysis.participantInsights.missingStakeholders" 
-                           color="warn" class="text-xs">
-                    {{ missing }}
-                  </mat-chip>
-                </div>
-              </div>
-            </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
 
       <!-- Action Item Suggestions -->
-      <mat-card class="suggestions-card">
+      <mat-card *ngIf="!hideAISuggestions" class="suggestions-card">
         <mat-card-header>
           <mat-card-title class="flex items-center">
-            <mat-icon class="mr-2 text-purple-600">lightbulb</mat-icon>
-            AI Suggestions
-            <mat-chip *ngIf="suggestions.length > 0" class="ml-2 text-xs">
-              {{ suggestions.length }} new
-            </mat-chip>
+            <mat-icon class="mr-2 text-blue-600">event</mat-icon>
+            Schedule a Meeting
           </mat-card-title>
-          <div class="flex items-center space-x-1">
-            <button
-              mat-icon-button
-              (click)="toggleAutoSuggestions()"
-              [color]="autoSuggestionsEnabled ? 'primary' : ''"
-              matTooltip="Auto-generate suggestions">
-              <mat-icon>{{ autoSuggestionsEnabled ? 'auto_mode' : 'smart_toy' }}</mat-icon>
-            </button>
-            <button
-              mat-icon-button
-              (click)="refreshSuggestions()"
-              [disabled]="loadingSuggestions"
-              matTooltip="Refresh Suggestions">
-              <mat-icon [class.spin]="loadingSuggestions">refresh</mat-icon>
-            </button>
-            <button
-              mat-icon-button
-              (click)="toggleSuggestions()"
-              [matTooltip]="suggestionsExpanded ? 'Collapse' : 'Expand'">
-              <mat-icon>{{ suggestionsExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
-            </button>
-          </div>
+          <button
+            mat-icon-button
+            (click)="toggleSuggestions()"
+            [matTooltip]="suggestionsExpanded ? 'Collapse' : 'Expand'">
+            <mat-icon>{{ suggestionsExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+          </button>
         </mat-card-header>
 
         <mat-card-content *ngIf="suggestionsExpanded">
@@ -186,50 +58,67 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
           </div>
 
           <div *ngIf="!loadingSuggestions && suggestions.length > 0" class="space-y-3">
-            <div *ngFor="let suggestion of suggestions" 
-                 class="suggestion-item p-3 bg-gray-50 rounded-lg border">
-              <div class="flex items-start justify-between mb-2">
-                <h4 class="text-sm font-semibold text-gray-900">{{ suggestion.title }}</h4>
-                <mat-chip [ngClass]="getPriorityClass(suggestion.priority)" class="text-xs">
-                  {{ suggestion.priority }}
-                </mat-chip>
-              </div>
-              
-              <p class="text-xs text-gray-600 mb-2">{{ suggestion.description }}</p>
-              
-              <div class="flex items-center justify-between text-xs text-gray-500">
-                <span *ngIf="suggestion.estimatedHours">
-                  ⏱️ {{ suggestion.estimatedHours }}h estimated
-                </span>
-                <span *ngIf="suggestion.suggestedAssignee" class="ml-auto">
-                  👤 {{ suggestion.suggestedAssignee }}
-                </span>
-              </div>
-              
-              <div class="mt-2 text-xs text-blue-600 italic">
-                💡 {{ suggestion.reasoning }}
+            <div *ngFor="let suggestion of suggestions; let i = index"
+                 class="suggestion-item p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+
+              <!-- Header with Description, Priority Badge, and Edit/Delete Icons -->
+              <div class="flex items-start justify-between gap-3 mb-3">
+                <!-- Description -->
+                <p class="text-sm text-gray-700 flex-1">{{ suggestion.description }}</p>
+
+                <!-- Priority Badge and Edit/Delete Icons (Horizontal) -->
+                <div class="flex-shrink-0 flex items-center gap-1">
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold"
+                        [ngClass]="{
+                          'bg-red-100 text-red-700 border border-red-200': suggestion.priority === 'URGENT',
+                          'bg-orange-100 text-orange-700 border border-orange-200': suggestion.priority === 'HIGH',
+                          'bg-yellow-100 text-yellow-700 border border-yellow-200': suggestion.priority === 'MEDIUM',
+                          'bg-gray-100 text-gray-700 border border-gray-200': suggestion.priority === 'LOW'
+                        }">
+                    {{ suggestion.priority }}
+                  </span>
+
+                  <button mat-icon-button (click)="editSuggestion(suggestion, i)" class="!text-gray-600 hover:!text-gray-900 !w-8 !h-8" title="Edit suggestion">
+                    <mat-icon class="w-4 h-4">edit</mat-icon>
+                  </button>
+                  <button mat-icon-button (click)="deleteSuggestion(suggestion, i)" class="!text-red-600 hover:!text-red-700 !w-8 !h-8" title="Delete suggestion">
+                    <mat-icon class="w-4 h-4">delete</mat-icon>
+                  </button>
+                </div>
               </div>
 
-              <div class="flex gap-2 mt-3">
-                <button 
-                  mat-button 
-                  color="primary" 
-                  (click)="acceptSuggestion(suggestion)"
-                  class="text-xs">
-                  Add as Action Item
+              <!-- Metadata Row -->
+              <div class="flex items-center gap-3 text-xs text-gray-600 mb-3">
+                <span *ngIf="suggestion.estimatedHours" class="inline-flex items-center gap-1">
+                  <mat-icon class="w-3.5 h-3.5 text-gray-400">schedule</mat-icon>
+                  {{ suggestion.estimatedHours }}h estimated
+                </span>
+                <span *ngIf="suggestion.suggestedAssignee" class="inline-flex items-center gap-1">
+                  <mat-icon class="w-3.5 h-3.5 text-gray-400">person</mat-icon>
+                  {{ suggestion.suggestedAssignee }}
+                </span>
+              </div>
+
+              <!-- Reasoning -->
+              <div *ngIf="suggestion.reasoning" class="mb-3 p-2 bg-blue-50 rounded text-xs text-blue-700 border border-blue-100">
+                <mat-icon class="w-3 h-3 inline align-text-bottom mr-1">lightbulb</mat-icon>
+                {{ suggestion.reasoning }}
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  (click)="scheduleMeetingFromSuggestion(suggestion)"
+                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                  <mat-icon class="w-3.5 h-3.5">event</mat-icon>
+                  Schedule Meeting
                 </button>
-                <button 
-                  mat-button 
-                  color="accent"
-                  (click)="acceptSuggestionAsWorkflow(suggestion)"
-                  class="text-xs"
-                  *ngIf="suggestion.priority === 'HIGH' || suggestion.priority === 'URGENT'">
-                  Create Workflow
-                </button>
-                <button 
-                  mat-button 
+                <button
+                  type="button"
                   (click)="dismissSuggestion(suggestion)"
-                  class="text-xs">
+                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">
+                  <mat-icon class="w-3.5 h-3.5">close</mat-icon>
                   Dismiss
                 </button>
               </div>
@@ -244,7 +133,7 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
       </mat-card>
 
       <!-- Smart Insights & Predictions -->
-      <mat-card class="smart-insights-card">
+      <mat-card *ngIf="!showOnlyAISuggestions" class="smart-insights-card">
         <mat-card-header>
           <mat-card-title class="flex items-center">
             <mat-icon class="mr-2 text-indigo-600">psychology</mat-icon>
@@ -346,6 +235,292 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
         </mat-card-content>
       </mat-card>
 
+      <!-- Fathom Intelligence Card (only shows for Fathom meetings) -->
+      <mat-card class="fathom-insights-card" *ngIf="hasFathomData && !showOnlyAISuggestions">
+        <mat-card-header>
+          <mat-card-title class="flex items-center">
+            <mat-icon class="mr-2 text-purple-600">mic</mat-icon>
+            Fathom AI Insights
+            <span class="ml-2 text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+              Powered by Fathom
+            </span>
+          </mat-card-title>
+          <div class="flex items-center space-x-1">
+            <button
+              mat-icon-button
+              (click)="refreshFathomAnalysis()"
+              matTooltip="Refresh Fathom Analysis">
+              <mat-icon>refresh</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              (click)="toggleFathomInsights()"
+              [matTooltip]="fathomInsightsExpanded ? 'Collapse' : 'Expand'">
+              <mat-icon>{{ fathomInsightsExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </button>
+          </div>
+        </mat-card-header>
+
+        <mat-card-content *ngIf="fathomInsightsExpanded">
+          <div class="space-y-4">
+
+            <!-- Fathom Effectiveness Score -->
+            <div *ngIf="fathomEffectiveness" class="effectiveness-section">
+              <div class="flex items-center justify-between mb-2 cursor-pointer hover:bg-gray-50 p-2 rounded -m-2"
+                   (click)="toggleFathomEffectiveness()">
+                <div class="flex items-center">
+                  <mat-icon class="text-sm mr-1">{{ fathomEffectivenessExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  <span class="font-semibold text-sm">Fathom-Enhanced Effectiveness</span>
+                </div>
+                <div class="score-circle" [ngClass]="getScoreClass(fathomEffectiveness.score)">
+                  {{ fathomEffectiveness.score }}/10
+                </div>
+              </div>
+
+              <!-- Strengths from Fathom analysis -->
+              <div *ngIf="fathomEffectivenessExpanded && fathomEffectiveness.strengths.length > 0" class="mb-2">
+                <h4 class="text-xs font-medium text-green-700 mb-1">✅ Strengths</h4>
+                <div class="space-y-1">
+                  <div *ngFor="let strength of fathomEffectiveness.strengths"
+                       class="text-xs bg-green-50 text-green-800 px-2 py-1 rounded">
+                    {{ strength }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Improvements from Fathom analysis -->
+              <div *ngIf="fathomEffectivenessExpanded && fathomEffectiveness.improvements.length > 0">
+                <h4 class="text-xs font-medium text-amber-700 mb-1">💡 Improvements</h4>
+                <div class="space-y-1">
+                  <div *ngFor="let improvement of fathomEffectiveness.improvements"
+                       class="text-xs bg-amber-50 text-amber-800 px-2 py-1 rounded">
+                    {{ improvement }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Decisions from Fathom -->
+            <div *ngIf="fathomDecisions.length > 0" class="decisions-section">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700 flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded -m-2"
+                  (click)="toggleFathomDecisions()">
+                <mat-icon class="text-sm mr-1">{{ fathomDecisionsExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+                <mat-icon class="w-4 h-4 mr-1 text-green-600">check_circle</mat-icon>
+                Decisions Made ({{ fathomDecisions.length }})
+              </h4>
+              <div *ngIf="fathomDecisionsExpanded" class="space-y-2">
+                <div *ngFor="let decision of fathomDecisions"
+                     class="text-xs bg-green-50 text-green-900 px-3 py-2 rounded border-l-4 border-green-500">
+                  {{ decision }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Topics from Fathom -->
+            <div *ngIf="fathomTopics.length > 0" class="topics-section">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700 flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded -m-2"
+                  (click)="toggleFathomTopics()">
+                <mat-icon class="text-sm mr-1">{{ fathomTopicsExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+                🏷️ Key Topics
+              </h4>
+              <div *ngIf="fathomTopicsExpanded" class="flex flex-wrap gap-2">
+                <mat-chip *ngFor="let topic of fathomTopics"
+                         class="text-xs bg-blue-100 text-blue-800">
+                  {{ topic }}
+                </mat-chip>
+              </div>
+            </div>
+
+            <!-- Speaker Balance Analysis -->
+            <div *ngIf="speakerBalance && speakerBalance.speakers.length > 0" class="speaker-section">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700 flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded -m-2"
+                  (click)="toggleFathomSpeakerBalance()">
+                <mat-icon class="text-sm mr-1">{{ fathomSpeakerBalanceExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+                👥 Speaker Balance
+              </h4>
+
+              <div *ngIf="fathomSpeakerBalanceExpanded" class="mb-2">
+                <span class="text-xs"
+                      [ngClass]="speakerBalance.balanced ? 'text-green-600' : 'text-amber-600'">
+                  {{ speakerBalance.balanced ? '✅ Well-balanced discussion' : '⚠️ Unbalanced participation' }}
+                </span>
+              </div>
+
+              <div *ngIf="fathomSpeakerBalanceExpanded" class="space-y-2">
+                <div *ngFor="let speaker of speakerBalance.speakers"
+                     class="flex items-center justify-between text-xs">
+                  <div class="flex items-center flex-1">
+                    <span class="font-medium mr-2">{{ speaker.speaker }}</span>
+                    <div class="flex-1 bg-gray-200 rounded-full h-2 mr-2 max-w-[200px]">
+                      <div class="bg-blue-600 h-2 rounded-full transition-all"
+                           [style.width.%]="speaker.percentage"></div>
+                    </div>
+                  </div>
+                  <span class="text-gray-600">
+                    {{ speaker.percentage.toFixed(1) }}% ({{ speaker.contributionCount }} times)
+                  </span>
+                </div>
+              </div>
+
+              <div *ngIf="fathomSpeakerBalanceExpanded && speakerBalance.dominantSpeaker" class="mt-2 text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded">
+                ⚠️ {{ speakerBalance.dominantSpeaker.speaker }} dominated the conversation ({{ speakerBalance.dominantSpeaker.percentage.toFixed(1) }}%)
+              </div>
+            </div>
+
+            <!-- Key Discussion Points -->
+            <div *ngIf="fathomKeyPoints.length > 0" class="key-points-section">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700 flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded -m-2"
+                  (click)="toggleFathomKeyPoints()">
+                <mat-icon class="text-sm mr-1">{{ fathomKeyPointsExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+                📝 Key Discussion Points
+              </h4>
+              <div *ngIf="fathomKeyPointsExpanded" class="space-y-1">
+                <div *ngFor="let point of fathomKeyPoints"
+                     class="text-xs bg-gray-50 text-gray-800 px-3 py-2 rounded border-l-2 border-gray-300">
+                  • {{ point }}
+                </div>
+              </div>
+            </div>
+
+            <!-- PHASE 2: Participant Engagement Analytics -->
+            <div *ngIf="participantEngagement && participantEngagement.participants.length > 0" class="engagement-section border-t pt-4 mt-4">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700 flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded -m-2"
+                  (click)="toggleFathomParticipantEngagement()">
+                <mat-icon class="text-sm mr-1">{{ fathomParticipantEngagementExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+                <mat-icon class="w-4 h-4 mr-1 text-indigo-600">people</mat-icon>
+                Participant Engagement (Phase 2)
+                <span class="ml-2 text-xs px-2 py-0.5 rounded-full"
+                      [ngClass]="{
+                        'bg-green-100 text-green-800': participantEngagement.overallEngagement === 'high',
+                        'bg-yellow-100 text-yellow-800': participantEngagement.overallEngagement === 'medium',
+                        'bg-red-100 text-red-800': participantEngagement.overallEngagement === 'low'
+                      }">
+                  {{ participantEngagement.overallEngagement }} engagement
+                </span>
+              </h4>
+
+              <div *ngIf="fathomParticipantEngagementExpanded" class="space-y-2 mb-3">
+                <div *ngFor="let participant of participantEngagement.participants.slice(0, 5)"
+                     class="flex items-center justify-between text-xs p-2 bg-gray-50 rounded">
+                  <div class="flex items-center">
+                    <span class="font-medium">{{ participant.participant }}</span>
+                    <span class="ml-2 text-gray-500">
+                      ({{ participant.contributionCount }} contributions, {{ participant.questionCount }} questions)
+                    </span>
+                  </div>
+                  <div class="flex items-center">
+                    <span class="mr-2 font-semibold"
+                          [ngClass]="{
+                            'text-green-600': participant.engagementScore >= 7,
+                            'text-yellow-600': participant.engagementScore >= 5 && participant.engagementScore < 7,
+                            'text-red-600': participant.engagementScore < 5
+                          }">
+                      Score: {{ participant.engagementScore.toFixed(1) }}/10
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Engagement Recommendations -->
+              <div *ngIf="fathomParticipantEngagementExpanded && participantEngagement.recommendations.length > 0" class="mt-2">
+                <h5 class="text-xs font-medium text-indigo-700 mb-1">💡 Recommendations</h5>
+                <div class="space-y-1">
+                  <div *ngFor="let rec of participantEngagement.recommendations"
+                       class="text-xs bg-indigo-50 text-indigo-800 px-2 py-1 rounded">
+                    {{ rec }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- PHASE 2: Transcript Keywords -->
+            <div *ngIf="transcriptKeywords.length > 0" class="keywords-section border-t pt-4 mt-4">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700 flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded -m-2"
+                  (click)="toggleFathomKeywords()">
+                <mat-icon class="text-sm mr-1">{{ fathomKeywordsExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+                <mat-icon class="w-4 h-4 mr-1 text-teal-600">tag</mat-icon>
+                Most Relevant Keywords (Phase 2)
+              </h4>
+              <div *ngIf="fathomKeywordsExpanded" class="flex flex-wrap gap-2">
+                <div *ngFor="let keyword of transcriptKeywords.slice(0, 15)"
+                     class="text-xs bg-teal-50 text-teal-800 px-2 py-1 rounded border border-teal-200"
+                     [title]="'Mentioned ' + keyword.count + ' times'">
+                  {{ keyword.word }} <span class="text-teal-600">({{ keyword.count }})</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- PHASE 2: Extracted Action Items from Transcript -->
+            <div *ngIf="extractedActionItems.length > 0" class="extracted-actions-section border-t pt-4 mt-4">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700 flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded -m-2"
+                  (click)="toggleFathomExtractedActions()">
+                <mat-icon class="text-sm mr-1">{{ fathomExtractedActionsExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+                <mat-icon class="w-4 h-4 mr-1 text-orange-600">auto_awesome</mat-icon>
+                AI-Detected Action Items (Phase 2)
+                <span class="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+                  {{ extractedActionItems.length }} found
+                </span>
+              </h4>
+              <div *ngIf="fathomExtractedActionsExpanded" class="space-y-2">
+                <div *ngFor="let item of extractedActionItems.slice(0, 5)"
+                     class="text-xs p-2 rounded border-l-3"
+                     [ngClass]="{
+                       'bg-green-50 border-green-500': item.confidence === 'high',
+                       'bg-yellow-50 border-yellow-500': item.confidence === 'medium',
+                       'bg-gray-50 border-gray-400': item.confidence === 'low'
+                     }">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="font-medium">{{ item.speaker }}</span>
+                    <span class="px-2 py-0.5 rounded text-xs"
+                          [ngClass]="{
+                            'bg-green-200 text-green-800': item.confidence === 'high',
+                            'bg-yellow-200 text-yellow-800': item.confidence === 'medium',
+                            'bg-gray-200 text-gray-800': item.confidence === 'low'
+                          }">
+                      {{ item.confidence }}
+                    </span>
+                  </div>
+                  <div class="text-gray-700">{{ item.description }}</div>
+                  <div class="text-gray-500 text-xs mt-1">&#64; {{ formatTimestamp(item.timestamp) }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- PHASE 2: Topic Evolution -->
+            <div *ngIf="topicEvolution.length > 0" class="topic-evolution-section border-t pt-4 mt-4">
+              <h4 class="text-sm font-semibold mb-2 text-gray-700 flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded -m-2"
+                  (click)="toggleFathomTopicEvolution()">
+                <mat-icon class="text-sm mr-1">{{ fathomTopicEvolutionExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+                <mat-icon class="w-4 h-4 mr-1 text-pink-600">timeline</mat-icon>
+                Topic Evolution (Phase 2)
+              </h4>
+              <div *ngIf="fathomTopicEvolutionExpanded" class="space-y-3">
+                <div *ngFor="let segment of topicEvolution; let i = index"
+                     class="text-xs p-2 bg-pink-50 rounded border-l-3 border-pink-400">
+                  <div class="font-medium text-pink-800 mb-1">
+                    Segment {{ i + 1 }}: {{ segment.timeSegment }}
+                  </div>
+                  <div class="flex flex-wrap gap-1">
+                    <span *ngFor="let topic of segment.topics"
+                          class="bg-pink-100 text-pink-800 px-2 py-0.5 rounded">
+                      {{ topic }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- No Fathom data message -->
+            <div *ngIf="!fathomDecisions.length && !fathomTopics.length && !speakerBalance"
+                 class="text-center py-4 text-gray-500">
+              <mat-icon class="text-3xl mb-2 opacity-50">pending</mat-icon>
+              <p class="text-sm">Processing Fathom AI analysis...</p>
+            </div>
+
+          </div>
+        </mat-card-content>
+      </mat-card>
+
     </div>
   `,
   styles: [`
@@ -408,10 +583,31 @@ import { MeetingAnalysis, ActionItemSuggestion } from '../services/meeting-ai-as
     .stat-item {
       @apply flex justify-between items-center;
     }
+
+    /* System selection dropdown styling */
+    mat-form-field {
+      font-size: 0.75rem;
+    }
+
+    mat-form-field ::ng-deep .mat-mdc-text-field-wrapper {
+      padding-bottom: 0;
+    }
+
+    mat-form-field ::ng-deep .mat-mdc-form-field-infix {
+      padding-top: 8px;
+      padding-bottom: 8px;
+      min-height: 36px;
+    }
+
+    mat-form-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+      display: none;
+    }
   `]
 })
 export class MeetingIntelligencePanelComponent implements OnInit {
   @Input() meeting!: Meeting;
+  @Input() showOnlyAISuggestions: boolean = false; // When true, shows only AI Suggestions section
+  @Input() hideAISuggestions: boolean = false; // When true, hides AI Suggestions section
   @Output() actionItemAdded = new EventEmitter<ActionItemSuggestion>();
   @Output() followUpScheduled = new EventEmitter<void>();
 
@@ -421,12 +617,45 @@ export class MeetingIntelligencePanelComponent implements OnInit {
   loadingSuggestions = false;
   autoSuggestionsEnabled = false;
 
-  // Collapse/Expand states
-  intelligenceExpanded = true;
-  suggestionsExpanded = true;
-  insightsExpanded = true;
+  // System selection for AI suggestions
+  suggestionSystemMap: { [key: string]: string } = {}; // Maps suggestion ID to selected system ('zoho' or 'clickup')
 
-  constructor(private readonly chatService: ChatService) {}
+  // Fathom Intelligence - Phase 1
+  fathomDecisions: string[] = [];
+  fathomTopics: string[] = [];
+  fathomKeyPoints: string[] = [];
+  speakerBalance: any = null;
+  fathomEffectiveness: any = null;
+  hasFathomData = false;
+
+  // PHASE 2: Advanced Analytics
+  participantEngagement: any = null;
+  transcriptKeywords: any[] = [];
+  extractedActionItems: any[] = [];
+  topicEvolution: any[] = [];
+
+  // Collapse/Expand states - all collapsed by default for cleaner UI
+  intelligenceExpanded = false;
+  suggestionsExpanded = false;
+  insightsExpanded = false;
+  fathomInsightsExpanded = false;
+
+  // Fathom subsection collapse/expand states
+  fathomEffectivenessExpanded = false;
+  fathomDecisionsExpanded = false;
+  fathomTopicsExpanded = false;
+  fathomSpeakerBalanceExpanded = false;
+  fathomKeyPointsExpanded = false;
+  fathomParticipantEngagementExpanded = false;
+  fathomKeywordsExpanded = false;
+  fathomExtractedActionsExpanded = false;
+  fathomTopicEvolutionExpanded = false;
+
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly fathomService: FathomIntelligenceService,
+    private readonly dialog: MatDialog
+  ) {}
 
   ngOnInit(): void {
     this.loadMeetingIntelligence();
@@ -435,6 +664,54 @@ export class MeetingIntelligencePanelComponent implements OnInit {
   private loadMeetingIntelligence(): void {
     this.refreshAnalysis();
     this.refreshSuggestions();
+    this.analyzeFathomData();
+  }
+
+  /**
+   * Analyze Fathom data if available
+   * PHASE 2: Enhanced with advanced analytics
+   */
+  private analyzeFathomData(): void {
+    // Check if meeting has Fathom data
+    this.hasFathomData = this.isFathomMeeting();
+
+    if (!this.hasFathomData) return;
+
+    // PHASE 1: Basic extraction
+    this.fathomDecisions = this.fathomService.extractDecisions(this.meeting.fathomSummary);
+    this.fathomTopics = this.fathomService.extractTopics(this.meeting.fathomSummary, this.meeting.title);
+    this.fathomKeyPoints = this.fathomService.extractKeyPoints(this.meeting.fathomSummary);
+
+    // Analyze transcript if available
+    if (this.meeting.transcriptEntries && this.meeting.transcriptEntries.length > 0) {
+      // PHASE 1: Speaker balance
+      this.speakerBalance = this.fathomService.analyzeSpeakerBalance(this.meeting.transcriptEntries);
+
+      // PHASE 2: Participant engagement analysis
+      this.participantEngagement = this.fathomService.analyzeParticipantEngagement(this.meeting);
+
+      // PHASE 2: Extract keywords from transcript
+      this.transcriptKeywords = this.fathomService.extractKeywords(this.meeting.transcriptEntries);
+
+      // PHASE 2: Extract action items from transcript
+      this.extractedActionItems = this.fathomService.extractActionItemsFromTranscript(this.meeting.transcriptEntries);
+
+      // PHASE 2: Analyze topic evolution
+      this.topicEvolution = this.fathomService.analyzeTopicEvolution(this.meeting.transcriptEntries);
+    }
+
+    // Calculate Fathom-enhanced effectiveness (now includes PHASE 2 enhancements)
+    this.fathomEffectiveness = this.fathomService.analyzeMeetingEffectiveness(this.meeting);
+  }
+
+  /**
+   * Check if meeting is from Fathom
+   */
+  private isFathomMeeting(): boolean {
+    return !!(this.meeting.source === 'fathom' ||
+              this.meeting.fathomSummary ||
+              this.meeting.fathomRecordingUrl ||
+              (this.meeting.recordingUrl && this.meeting.recordingUrl.includes('fathom.video')));
   }
 
   refreshAnalysis(): void {
@@ -506,6 +783,73 @@ export class MeetingIntelligencePanelComponent implements OnInit {
 
   dismissSuggestion(suggestion: ActionItemSuggestion): void {
     this.suggestions = this.suggestions.filter(s => s !== suggestion);
+  }
+
+  /**
+   * Edit a suggestion - prompts user to edit the description
+   */
+  editSuggestion(suggestion: ActionItemSuggestion, index: number): void {
+    const newDescription = prompt('Edit description:', suggestion.description);
+    if (newDescription !== null && newDescription.trim()) {
+      suggestion.description = newDescription.trim();
+      // Trigger change detection by reassigning the array
+      this.suggestions = [...this.suggestions];
+    }
+  }
+
+  /**
+   * Delete a suggestion - removes it from the list after confirmation
+   */
+  deleteSuggestion(suggestion: ActionItemSuggestion, index: number): void {
+    if (confirm(`Delete this suggestion?\n\n"${suggestion.description}"`)) {
+      this.suggestions = this.suggestions.filter((s, i) => i !== index);
+    }
+  }
+
+  /**
+   * Generate a unique ID for a suggestion (used for system selection mapping)
+   */
+  getSuggestionId(suggestion: ActionItemSuggestion): string {
+    return `${suggestion.title}-${suggestion.priority}`;
+  }
+
+  /**
+   * Get display name for the selected system
+   */
+  getSystemDisplayName(system: string | undefined): string {
+    if (!system) return 'System';
+    if (system === 'zoho') return 'Zoho CRM';
+    if (system === 'clickup') return 'ClickUp';
+    return 'System';
+  }
+
+  /**
+   * Send suggestion to the selected system (Zoho CRM or ClickUp)
+   */
+  sendToSystem(suggestion: ActionItemSuggestion): void {
+    const selectedSystem = this.suggestionSystemMap[this.getSuggestionId(suggestion)];
+
+    if (!selectedSystem) {
+      console.warn('No system selected for suggestion:', suggestion);
+      return;
+    }
+
+    console.log(`Sending suggestion to ${selectedSystem}:`, suggestion);
+
+    // Emit the suggestion with system metadata
+    const suggestionWithSystem = {
+      ...suggestion,
+      targetSystem: selectedSystem,
+      systemName: this.getSystemDisplayName(selectedSystem)
+    };
+
+    this.actionItemAdded.emit(suggestionWithSystem);
+
+    // Remove from suggestions list
+    this.suggestions = this.suggestions.filter(s => s !== suggestion);
+
+    // Clean up the system selection
+    delete this.suggestionSystemMap[this.getSuggestionId(suggestion)];
   }
 
   toggleAutoSuggestions(): void {
@@ -635,19 +979,143 @@ export class MeetingIntelligencePanelComponent implements OnInit {
     alert('Meeting report generation started - you will receive it via email shortly');
   }
 
+  /**
+   * Schedule a follow-up meeting using Microsoft Graph
+   * Opens a dialog to create a follow-up meeting with pre-filled data
+   */
   scheduleFollowUp(): void {
-    console.log('Initiating follow-up scheduling...');
-    this.followUpScheduled.emit();
-    alert('Follow-up meeting scheduling initiated');
+    console.log('Opening follow-up meeting dialog for:', this.meeting.title);
+
+    const dialogRef = this.dialog.open(ScheduleFollowupDialogComponent, {
+      width: '600px',
+      data: { meeting: this.meeting }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.success) {
+        console.log('Follow-up meeting created:', result.meeting);
+
+        // Emit event to parent component
+        this.followUpScheduled.emit();
+
+        // Show success message
+        if (result.outlookEvent) {
+          alert(`✅ Follow-up meeting created successfully!\n\nMeeting: ${result.meeting.title}\n\nThe meeting has been added to your Outlook calendar.`);
+        } else if (result.outlookError) {
+          alert(`✅ Follow-up meeting created in database.\n\n⚠️ Note: Could not sync to Outlook calendar. Please check your calendar connection.`);
+        } else {
+          alert(`✅ Follow-up meeting created successfully!\n\nMeeting: ${result.meeting.title}`);
+        }
+      }
+    });
+  }
+
+  /**
+   * Schedule a meeting from an AI suggestion
+   * Opens the same follow-up meeting dialog with suggestion pre-filled
+   */
+  scheduleMeetingFromSuggestion(suggestion: ActionItemSuggestion): void {
+    console.log('Scheduling meeting from suggestion:', suggestion);
+
+    const dialogRef = this.dialog.open(ScheduleFollowupDialogComponent, {
+      width: '600px',
+      data: {
+        meeting: this.meeting,
+        suggestion: suggestion  // Pass the suggestion to pre-fill dialog
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.success) {
+        console.log('Meeting scheduled from suggestion:', result.meeting);
+
+        // Dismiss the suggestion after successful scheduling
+        this.dismissSuggestion(suggestion);
+
+        // Emit event to parent component
+        this.followUpScheduled.emit();
+
+        // Show success message
+        if (result.outlookEvent) {
+          alert(`✅ Meeting scheduled successfully!\n\nMeeting: ${result.meeting.title}\n\nThe meeting has been added to your Outlook calendar.`);
+        } else if (result.outlookError) {
+          alert(`✅ Meeting created in database.\n\n⚠️ Note: Could not sync to Outlook calendar. Please check your calendar connection.`);
+        } else {
+          alert(`✅ Meeting scheduled successfully!\n\nMeeting: ${result.meeting.title}`);
+        }
+      }
+    });
   }
 
   escalateRiskyItems(): void {
-    const riskyItems = this.meeting.actionItems?.filter(item => 
+    const riskyItems = this.meeting.actionItems?.filter(item =>
       item.priority === 'URGENT' || !item.assignee
     ) || [];
-    
+
     console.log('Escalating risky items:', riskyItems);
     alert(`Escalating ${riskyItems.length} high-risk action items to management`);
+  }
+
+  /**
+   * Toggle Fathom insights panel
+   */
+  toggleFathomInsights(): void {
+    this.fathomInsightsExpanded = !this.fathomInsightsExpanded;
+  }
+
+  /**
+   * Toggle methods for Fathom subsections
+   */
+  toggleFathomEffectiveness(): void {
+    this.fathomEffectivenessExpanded = !this.fathomEffectivenessExpanded;
+  }
+
+  toggleFathomDecisions(): void {
+    this.fathomDecisionsExpanded = !this.fathomDecisionsExpanded;
+  }
+
+  toggleFathomTopics(): void {
+    this.fathomTopicsExpanded = !this.fathomTopicsExpanded;
+  }
+
+  toggleFathomSpeakerBalance(): void {
+    this.fathomSpeakerBalanceExpanded = !this.fathomSpeakerBalanceExpanded;
+  }
+
+  toggleFathomKeyPoints(): void {
+    this.fathomKeyPointsExpanded = !this.fathomKeyPointsExpanded;
+  }
+
+  toggleFathomParticipantEngagement(): void {
+    this.fathomParticipantEngagementExpanded = !this.fathomParticipantEngagementExpanded;
+  }
+
+  toggleFathomKeywords(): void {
+    this.fathomKeywordsExpanded = !this.fathomKeywordsExpanded;
+  }
+
+  toggleFathomExtractedActions(): void {
+    this.fathomExtractedActionsExpanded = !this.fathomExtractedActionsExpanded;
+  }
+
+  toggleFathomTopicEvolution(): void {
+    this.fathomTopicEvolutionExpanded = !this.fathomTopicEvolutionExpanded;
+  }
+
+  /**
+   * Refresh Fathom analysis
+   */
+  refreshFathomAnalysis(): void {
+    this.analyzeFathomData();
+  }
+
+  /**
+   * PHASE 2: Format timestamp for display
+   */
+  formatTimestamp(seconds: number): string {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
 }

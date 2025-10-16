@@ -174,8 +174,8 @@ export class HomeScreenComponent implements OnInit {
   get recentMeetings(): Meeting[] {
     // Only show recent meetings when no search is active
     if (!this.searchQuery.trim() && !this.hasActiveFilters()) {
+      // Don't filter out isJustCompleted - we want to show ALL recent meetings including ones that just finished
       return this.meetings
-        .filter(m => !m.isJustCompleted)
         .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
         .slice(0, 5);
     }
