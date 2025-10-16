@@ -72,7 +72,7 @@ public class FathomPollingService {
                             logger.info("📝 Transcript now available for recording {}, updating meeting", recordingId);
                             needsUpdate = true;
                         }
-                        if (existingMeeting.getFathomSummary() == null && recording.getSummary() != null && !recording.getSummary().isEmpty()) {
+                        if (existingMeeting.getFathomSummary() == null && recording.getDefaultSummary() != null && recording.getDefaultSummary().getMarkdownFormatted() != null) {
                             logger.info("📋 Summary now available for recording {}, updating meeting", recordingId);
                             needsUpdate = true;
                         }
